@@ -50,10 +50,20 @@ static inline int get_move_type(int move)
 
 // vector-model.c
 
-struct vector_cube {
+#define NUM_CUBIES 27
+struct vector_model {
     vec3 cubies[27];
     vec4 transforms[27];
 };
 int on_face(vec3, int);
-void move(struct vector_cube *, int);
-void vector_cube_init(struct vector_cube *);
+void vector_model_move(struct vector_model *, int); // TODO rename some symbols to be more consistent
+struct vector_model vector_model_new();
+int get_cubie_type(struct vector_model *, int);
+int get_cubie_permutation(struct vector_model *, int);
+int get_cubie_orientation(struct vector_model *, int);
+
+// cubie-model.c
+
+struct cubie_model {
+    char co[8], eo[12], cp[8], ep[8];
+};

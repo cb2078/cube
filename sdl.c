@@ -39,17 +39,16 @@ void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 
 int main(void)
 {
-    struct vector_cube cube;
-    vector_cube_init(&cube);
+    struct vector_model cube = vector_model_new();
 
-    vec2 vertices[]={
+    vec2 vertices[] = {
         {-0.5f, -0.5f},
         { 0.5f, -0.5f},
         { 0.5f,  0.5f},
         {-0.5f,  0.5f},
     };
 
-    vec3 colours[7]={
+    vec3 colours[7] = {
         {0, 0, 0},
         {255, 255, 255}, // U
         {255, 0, 0}, // R
@@ -154,7 +153,7 @@ int main(void)
                     goto exit;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
-                        #define CASE(x, y) case SDLK_##x: move(&cube, y); break
+                        #define CASE(x, y) case SDLK_##x: vector_model_move(&cube, y); break
                         CASE(1, S);
                         CASE(2, E);
                         // CASE(3, <);
