@@ -70,12 +70,9 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_Window *window=SDL_CreateWindow("cube_solve", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+    SDL_Window *window=SDL_CreateWindow("cube_solve", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
     SDL_GLContext context=SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // enable vsync
-    SDL_DisplayMode mode;
-    SDL_GetCurrentDisplayMode(0, &mode);
-    printf("%d\n", mode.refresh_rate);
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glEnable(GL_DEPTH_TEST);
@@ -149,10 +146,10 @@ int main(void)
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
-                case SDL_QUIT:
+                case SDL_EVENT_QUIT:
                     goto exit;
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym) {
+                case SDL_EVENT_KEY_DOWN:
+                    switch (event.key.key) {
                         #define CASE(x, y) case SDLK_##x: vector_model_move(&cube, y); break
                         CASE(1, S);
                         CASE(2, E);
@@ -164,33 +161,33 @@ int main(void)
                         // CASE(8, >);
                         CASE(9, E3);
                         CASE(0, S3);
-                        CASE(q, Z3);
-                        CASE(w, B);
-                        CASE(e, L3);
-                        CASE(r, LW3);
-                        CASE(t, X);
-                        CASE(y, X);
-                        CASE(u, RW);
-                        CASE(i, R);
-                        CASE(o, B3);
-                        CASE(p, Z);
-                        CASE(a, Y3);
-                        CASE(s, D);
-                        CASE(d, L);
-                        CASE(f, U3);
-                        CASE(g, F3);
-                        CASE(h, F);
-                        CASE(j, U);
-                        CASE(k, R3);
-                        CASE(l, D3);
+                        CASE(Q, Z3);
+                        CASE(W, B);
+                        CASE(E, L3);
+                        CASE(R, LW3);
+                        CASE(T, X);
+                        CASE(Y, X);
+                        CASE(U, RW);
+                        CASE(I, R);
+                        CASE(O, B3);
+                        CASE(P, Z);
+                        CASE(A, Y3);
+                        CASE(S, D);
+                        CASE(D, L);
+                        CASE(F, U3);
+                        CASE(G, F3);
+                        CASE(H, F);
+                        CASE(J, U);
+                        CASE(K, R3);
+                        CASE(L, D3);
                         CASE(SEMICOLON, Y);
-                        CASE(z, DW);
-                        CASE(x, M3);
-                        CASE(c, UW3);
-                        CASE(v, LW);
-                        CASE(b, X3);
-                        CASE(n, X3);
-                        CASE(m, RW3);
+                        CASE(Z, DW);
+                        CASE(X, M3);
+                        CASE(C, UW3);
+                        CASE(V, LW);
+                        CASE(B, X3);
+                        CASE(N, X3);
+                        CASE(M, RW3);
                         CASE(COMMA, UW3);
                         CASE(PERIOD, M3);
                         CASE(SLASH, DW3);
@@ -204,7 +201,7 @@ int main(void)
             float cos_theta=glm_quat_dot(current_transforms[i], cube.transforms[i]);
             if (ABS(cos_theta)<EPSILON)
                 continue;
-            float speed = 1.0f / mode.refresh_rate * 10;
+            float speed = 1.0f / 144 * 10; // todo: time between frames
             glm_quat_nlerp(current_transforms[i], cube.transforms[i], speed, current_transforms[i]);
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
         }
@@ -218,7 +215,7 @@ int main(void)
     }
 
     exit:
-    SDL_GL_DeleteContext(context);
+    SDL_GL_DestroyContext(context);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;

@@ -1,1 +1,1 @@
-clang -Wall -lSDL2 -lGL -lm *.c
+clang -Wall -lSDL3 -lGL -lm *.c
