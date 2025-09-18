@@ -1,1 +1,1 @@
-clang -Wall -lSDL3 -lGL -lm *.c
+gcc -Wpedantic -lSDL3 -lGL -lm -g *.c
