@@ -62,7 +62,7 @@ struct vector_model {
 };
 int on_face(vec3, int);
 void vector_model_move(struct vector_model *, int); // TODO rename some symbols to be more consistent
-struct vector_model vector_model_new(void);
+void vector_model_new(struct vector_model *);
 int get_cubie_type(struct vector_model *, int);
 int get_cubie_permutation(struct vector_model *, int);
 int get_cubie_orientation(struct vector_model *, int);

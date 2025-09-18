@@ -39,7 +39,8 @@ void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 
 int main(void)
 {
-    struct vector_model cube = vector_model_new();
+    struct vector_model cube;
+    vector_model_new(&cube);
 
     vec2 vertices[] = {
         {-0.5f, -0.5f},
