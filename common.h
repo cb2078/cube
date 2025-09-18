@@ -15,6 +15,10 @@
 #define LOOP(i, j, k) for (int i=0; i<3; ++i) for (int j=0; j<3; ++j) for (int k=0; k<3; ++k)
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
 
+#define NUM_CUBIES 27
+#define NUM_CORNERS 8
+#define NUM_EDGES 12
+
 enum move_type {
     FACE_TURN,
     WIDE_MOVE,
@@ -36,6 +40,8 @@ enum move {
     Y3, X3, Z3, E3, M3, S3,
 };
 
+enum cubie_type {CORNER, EDGE, CENTRE};
+
 static inline int get_move_type(int move)
 {
     move%=U2;
@@ -50,14 +56,13 @@ static inline int get_move_type(int move)
 
 // vector-model.c
 
-#define NUM_CUBIES 27
 struct vector_model {
-    vec3 cubies[27];
-    vec4 transforms[27];
+    vec3 cubies[NUM_CUBIES];
+    vec4 transforms[NUM_CUBIES];
 };
 int on_face(vec3, int);
 void vector_model_move(struct vector_model *, int); // TODO rename some symbols to be more consistent
-struct vector_model vector_model_new();
+struct vector_model vector_model_new(void);
 int get_cubie_type(struct vector_model *, int);
 int get_cubie_permutation(struct vector_model *, int);
 int get_cubie_orientation(struct vector_model *, int);

@@ -63,8 +63,8 @@ int main(void)
             glm_vec3_copy(colours[on_face((vec3){x-1, y-1, z-1}, i) ? i+1 : 0], facelet_colours[x][y][z][i]);
     }
 
-    vec4 current_transforms[27];
-    glm_quat_identity_array(current_transforms, 27);
+    vec4 current_transforms[NUM_CUBIES];
+    glm_quat_identity_array(current_transforms, NUM_CUBIES);
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -196,7 +196,7 @@ int main(void)
             }
         }
 
-        mat4 cubie_transforms[27];
+        mat4 cubie_transforms[NUM_CUBIES];
         for (int i=0; i<LENGTH(cubie_transforms); ++i) {
             float cos_theta=glm_quat_dot(current_transforms[i], cube.transforms[i]);
             if (ABS(cos_theta)<EPSILON)
@@ -210,7 +210,7 @@ int main(void)
         // rendering
         glClearColor(0.1, 0.1, 0.1, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 6*27);
+        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 6*NUM_CUBIES);
         SDL_GL_SwapWindow(window);
     }
 

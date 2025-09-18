@@ -35,7 +35,7 @@ void vector_model_move(struct vector_model *cube, int move)
     int amount=move/U2+1;
     int sign=1-face/3*2;
 
-    for (int i=0; i<27; ++i) {
+    for (int i=0; i<NUM_CUBIES; ++i) {
         vec3 v;
         get_cubie_position(cube, i, v);
         if (!can_move_cubie(v, face, type)) continue;
@@ -53,17 +53,15 @@ struct vector_model vector_model_new(void)
     struct vector_model cube;
     int i=0;
     LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cube.cubies[i++]);
-    glm_quat_identity_array(cube.transforms, 27);
+    glm_quat_identity_array(cube.transforms, NUM_CUBIES);
     return cube;
 }
 
 int get_cubie_type(struct vector_model *cube, int i)
 {
-    vec3 v;
-    get_cubie_position(cube, i, v);
     int num_zeros = 0;
-    for (int i=0; i<3; ++i) num_zeros += v[i];
-    return (enum cubie_type)num_zeros;
+    for (int j=0; j<3; ++j) num_zeros += cube->cubies[i][j]==0;
+    return num_zeros;
 }
 
 int get_cubie_permutation(struct vector_model *cube, int i)
@@ -73,9 +71,13 @@ int get_cubie_permutation(struct vector_model *cube, int i)
     get_cubie_position(cube, i, v);
     int type = get_cubie_type(cube, i);
 
-    for (int i=0, j=0; i<27; ++i) {
-        if (glm_vec3_eqv_eps(v, solved.cubies[i])) return j;
-        j += get_cubie_type(cube, i)==type;
+    for (int j=0, count=0; j<NUM_CUBIES; ++j)
+    {
+        if (get_cubie_type(cube, j)!= type)
+            continue;
+        if (glm_vec3_eqv_eps(v, solved.cubies[j]))
+            return count;
+        ++count;
     }
     assert(0); // todo: unreachable
 }
@@ -90,26 +92,40 @@ int get_cubie_orientation(struct vector_model *cube, int i)
     int edge_move_set[] = {U, R, F2, D, L, B2};
     int *move_set = type==CORNER ? corner_move_set : edge_move_set;
 
-    int visited[12] = {0};
-    struct vector_model stack[12] = {*cube};
+    int visited[NUM_EDGES] = {0};
+    visited[get_cubie_permutation(cube, i)] = 1;
+    struct vector_model stack[NUM_EDGES] = {*cube};
     struct vector_model *top = 1+stack;
-    while (top>stack) {
-        cube = --top;
+    while (top>stack)
+    {
+        struct vector_model cube = *--top;
 
-        int perm = get_cubie_permutation(cube, i);
-        if (perm==target) {
-            float theta = glm_quat_angle(cube->transforms[i]);
-            float order = type==CORNER ? 3 : 2;
-            return lroundf(theta / M_2_PI * order);
+        int perm = get_cubie_permutation(&cube, i);
+        if (perm==target)
+        {
+            float theta = glm_quat_angle(cube.transforms[i]);
+            vec3 axis;
+            glm_quat_axis(cube.transforms[i], axis);
+            // adjust theta if the axis of rotation points in the opposite direction
+            if (glm_vec3_dot(cube.cubies[i], axis) < 0)
+                theta = 2*M_PI-theta;
+            int order = type==CORNER ? 3 : 2;
+            int result = lroundf(theta / M_PI / 2 * order);
+            return result % order;
         }
-        if (visited[perm]) continue;
-        visited[perm] = 1;
 
-        for (int i=0; i<6; ++i) {
-            struct vector_model next = *cube;
-            vector_model_move(&next, move_set[i]);
-            *++top = next;
+        for (int j=0; j<6; ++j)
+        {
+            struct vector_model next = cube;
+            vector_model_move(&next, move_set[j]);
+            int next_perm = get_cubie_permutation(&next, i);
+            if (visited[next_perm])
+                continue;
+            else
+                visited[next_perm] = 1;
+            assert(top-stack<LENGTH(stack));
+            *top++ = next;
         }
     }
-    assert(0);
+    assert(0 && "exhausted search");
 }
