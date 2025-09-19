@@ -38,6 +38,8 @@ enum move {
     U3, R3, F3, D3, L3, B3,
     UW3, RW3, FW3, DW3, LW3, BW3,
     Y3, X3, Z3, E3, M3, S3,
+
+    NUM_MOVES,
 };
 
 enum cubie_type {CORNER, EDGE, CENTRE};
@@ -70,5 +72,9 @@ int vm_get_cubie_orientation(struct vector_model *, int);
 // cubie-model.c
 
 struct cubie_model {
-    char co[8], eo[12], cp[8], ep[8];
+    char cp[NUM_CORNERS], co[NUM_CORNERS], ep[NUM_EDGES], eo[NUM_EDGES];
 };
+void cm_from_vm(struct vector_model *, struct cubie_model *);
+void cm_print(struct cubie_model *);
+void cm_new(struct cubie_model *);
+void cm_move(struct cubie_model *, int);
