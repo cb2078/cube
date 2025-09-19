@@ -47,7 +47,7 @@ void vm_move(struct vector_model *cube, int move)
     }
 }
 
-void vm_new(struct vector_model *cube)
+void vm_init(struct vector_model *cube)
 {
     int i=0;
     LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cube->cubies[i++]);
@@ -64,7 +64,7 @@ int vm_get_cubie_type(struct vector_model *cube, int i)
 int vm_get_cubie_permutation(struct vector_model *cube, int i)
 {
     struct vector_model solved;
-    vm_new(&solved);
+    vm_init(&solved);
     vec3 v;
     get_cubie_position(cube, i, v);
     int type = vm_get_cubie_type(cube, i);
@@ -83,7 +83,7 @@ int vm_get_cubie_permutation(struct vector_model *cube, int i)
 int vm_get_cubie_orientation(struct vector_model *cube, int i)
 {
     struct vector_model solved;
-    vm_new(&solved);
+    vm_init(&solved);
     int target = vm_get_cubie_permutation(&solved, i);
     int type = vm_get_cubie_type(cube, i);
     assert(type==CORNER || type==EDGE);

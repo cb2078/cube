@@ -33,7 +33,7 @@ void cm_from_vm(struct vector_model *vcube, struct cubie_model *ccube)
 static void generate_move_table(void)
 {
     struct vector_model cube, solved;
-    vm_new(&solved);
+    vm_init(&solved);
     for (int move=0; move<NUM_MOVES; ++move)
     {
         if (!valid_move[move]) continue;
@@ -43,7 +43,7 @@ static void generate_move_table(void)
     }
 }
 
-void cm_new(struct cubie_model *cube)
+void cm_init(struct cubie_model *cube)
 {
     static int initialised = 0;
     if (!initialised)

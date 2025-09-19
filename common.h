@@ -64,7 +64,7 @@ struct vector_model {
 };
 int on_face(vec3, int);
 void vm_move(struct vector_model *, int);
-void vm_new(struct vector_model *);
+void vm_init(struct vector_model *);
 int vm_get_cubie_type(struct vector_model *, int);
 int vm_get_cubie_permutation(struct vector_model *, int);
 int vm_get_cubie_orientation(struct vector_model *, int);
@@ -76,5 +76,5 @@ struct cubie_model {
 };
 void cm_from_vm(struct vector_model *, struct cubie_model *);
 void cm_print(struct cubie_model *);
-void cm_new(struct cubie_model *);
+void cm_init(struct cubie_model *);
 void cm_move(struct cubie_model *, int);
