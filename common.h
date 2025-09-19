@@ -61,11 +61,11 @@ struct vector_model {
     vec4 transforms[NUM_CUBIES];
 };
 int on_face(vec3, int);
-void vector_model_move(struct vector_model *, int); // TODO rename some symbols to be more consistent
-void vector_model_new(struct vector_model *);
-int get_cubie_type(struct vector_model *, int);
-int get_cubie_permutation(struct vector_model *, int);
-int get_cubie_orientation(struct vector_model *, int);
+void vm_move(struct vector_model *, int);
+void vm_new(struct vector_model *);
+int vm_get_cubie_type(struct vector_model *, int);
+int vm_get_cubie_permutation(struct vector_model *, int);
+int vm_get_cubie_orientation(struct vector_model *, int);
 
 // cubie-model.c
 
