@@ -1,6 +1,6 @@
 #include "common.h"
 
-GLuint new_shader(char *filename, GLuint type)
+static GLuint new_shader(char *filename, GLuint type)
 {
     FILE *f=fopen(filename, "r");
     fseek(f, 0, SEEK_END);
@@ -27,17 +27,17 @@ GLuint new_shader(char *filename, GLuint type)
     return shader;
 }
 
-void set_mat4(GLuint program, char *location, mat4 m)
+static void set_mat4(GLuint program, char *location, mat4 m)
 {
    	glUniformMatrix4fv(glGetUniformLocation(program, location), 1, GL_FALSE, m[0]);
 }
 
-void set_mat4s(GLuint program, char *location, mat4 *m, int count)
+static void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 {
    	glUniformMatrix4fv(glGetUniformLocation(program, location), count, GL_FALSE, *m[0]);
 }
 
-int main(void)
+void gui(void)
 {
     struct vector_model cube;
     vm_init(&cube);
@@ -142,6 +142,9 @@ int main(void)
     glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH/WINDOW_HEIGHT, 0.1f, 100.0f, projection);
     set_mat4(sp, "projection", projection);
 
+    struct cubie_model ccube;
+    cm_init(&ccube);
+
     for (;;) {
         // poll events
         SDL_Event event;
@@ -219,5 +222,4 @@ int main(void)
     SDL_GL_DestroyContext(context);
     SDL_DestroyWindow(window);
     SDL_Quit();
-    return 0;
 }

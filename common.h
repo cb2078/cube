@@ -56,6 +56,9 @@ static inline int get_move_type(int move)
     return FACE_TURN;
 }
 
+// sdlc.
+void gui(void);
+
 // vector-model.c
 
 struct vector_model {
