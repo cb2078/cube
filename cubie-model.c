@@ -1,6 +1,4 @@
 #include "common.h"
-#include <cglm/quat.h>
-#include <cglm/vec3-ext.h>
 
 static int valid_move[NUM_MOVES] = {
     [U] =1, [R] =1, [F] =1, [D] =1, [L] =1, [B] =1,
@@ -40,6 +38,10 @@ static void generate_move_table(void)
         cube = solved;
         vm_move(&cube, move);
         cm_from_vm(&cube, &move_table[move]);
+        #if 0
+        printf("move:%d\n", move);
+        cm_print(&move_table[move]);
+        #endif
     }
 }
 
@@ -83,3 +85,4 @@ void cm_move(struct cubie_model *cube, int move)
         cube->eo[i] %= 2;
     }
 }
+
