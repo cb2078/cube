@@ -59,22 +59,7 @@ static inline int get_move_type(int move)
 // sdlc.
 void gui(void);
 
-// vector-model.c
-
-struct vector_model {
-    vec3 cubies[NUM_CUBIES];
-    vec4 transforms[NUM_CUBIES];
-};
-int on_face(vec3, int);
-void vm_move(struct vector_model *, int);
-void vm_init(struct vector_model *);
-int vm_get_cubie_type(struct vector_model *, int);
-int vm_get_cubie_permutation(struct vector_model *, int);
-int vm_get_cubie_orientation(struct vector_model *, int);
-void vm_print(struct vector_model *);
-
 // cubie-model.c
-
 struct cubie_model {
     char cp[NUM_CORNERS], co[NUM_CORNERS], ep[NUM_EDGES], eo[NUM_EDGES];
 };

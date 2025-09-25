@@ -1,5 +1,57 @@
 #include "common.h"
 
+static vec3 cubie_offsets[NUM_CUBIES];
+static vec4 desired_transforms[NUM_CUBIES];
+
+static int on_face(vec3 cubie, int face)
+{
+    return round(cubie[face%3])==(int)(face/3)*2-1;
+}
+
+static int can_move_cubie(vec3 cubie, int face, int type)
+{
+    int opposite_face=(face+3)%6;
+    switch (type)
+    {
+        case FACE_TURN:
+            return on_face(cubie, face);
+        case WIDE_MOVE:
+            return !on_face(cubie, opposite_face);
+        case ROTATION:
+            return 1;
+        case SLICE_MOVE:
+            return !on_face(cubie, face) && !on_face(cubie, opposite_face);
+        default:
+            exit(1);
+    }
+}
+
+static void get_cubie_position(int i, vec3 v)
+{
+    glm_quat_rotatev(desired_transforms[i], cubie_offsets[i], v);
+}
+
+static void move(int move)
+{
+    int face=move%6;
+    int type=get_move_type(move);
+    int dim=face%3;
+    int amount=move/U2+1;
+    int sign=1-face/3*2;
+
+    for (int i=0; i<NUM_CUBIES; ++i)
+    {
+        vec3 v;
+        get_cubie_position(i, v);
+        if (!can_move_cubie(v, face, type)) continue;
+        glm_vec3_zero(v);
+        v[dim]=1;
+        vec4 q;
+        glm_quatv(q, sign*amount*glm_rad(90), v);
+        glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
+    }
+}
+
 static GLuint new_shader(char *filename, GLuint type)
 {
     FILE *f=fopen(filename, "r");
@@ -39,8 +91,8 @@ static void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 
 void gui(void)
 {
-    struct vector_model cube;
-    vm_init(&cube);
+    LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cubie_offsets[x*9+y*3+z]);
+    glm_quat_identity_array(desired_transforms, NUM_CUBIES);
 
     vec2 vertices[] = {
         {-0.5f, -0.5f},
@@ -58,8 +110,10 @@ void gui(void)
         {255, 165, 0}, // L
         {0, 0, 255}, // B
     };
+
     vec3 facelet_colours[3][3][3][6];
-    LOOP(x, y, z) {
+    LOOP(x, y, z)
+    {
         for (int i=0; i<6; ++i)
             glm_vec3_copy(colours[on_face((vec3){x-1, y-1, z-1}, i) ? i+1 : 0], facelet_colours[x][y][z][i]);
     }
@@ -100,7 +154,7 @@ void gui(void)
     GLuint cubie_translation_vbo;
     glGenBuffers(1, &cubie_translation_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, cubie_translation_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube.cubies), cube.cubies, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubie_offsets), cubie_offsets, GL_STATIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void *)0);
     glVertexAttribDivisor(1, 6);
@@ -114,7 +168,8 @@ void gui(void)
     glVertexAttribDivisor(2, 1);
 
     mat4 facelet_transforms[6];
-    for (int i=0; i<LENGTH(facelet_transforms); ++i) {
+    for (int i=0; i<LENGTH(facelet_transforms); ++i)
+    {
         int dim=i%3;
         vec3 v={0, 0, 0};
         v[dim]=(int)(i/3)-0.5f;
@@ -142,19 +197,20 @@ void gui(void)
     glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH/WINDOW_HEIGHT, 0.1f, 100.0f, projection);
     set_mat4(sp, "projection", projection);
 
-    struct cubie_model ccube;
-    cm_init(&ccube);
-
-    for (;;) {
+    for (;;)
+    {
         // poll events
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
                 case SDL_EVENT_QUIT:
                     goto exit;
                 case SDL_EVENT_KEY_DOWN:
-                    switch (event.key.key) {
-                        #define CASE(x, y) case SDLK_##x: vm_move(&cube, y); break
+                    switch (event.key.key)
+                    {
+                        #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
                         // CASE(3, <);
@@ -201,12 +257,13 @@ void gui(void)
         }
 
         mat4 cubie_transforms[NUM_CUBIES];
-        for (int i=0; i<LENGTH(cubie_transforms); ++i) {
-            float cos_theta=glm_quat_dot(current_transforms[i], cube.transforms[i]);
+        for (int i=0; i<LENGTH(cubie_transforms); ++i)
+        {
+            float cos_theta=glm_quat_dot(current_transforms[i], desired_transforms[i]);
             if (ABS(cos_theta)<EPSILON)
                 continue;
             float speed = 1.0f / 144 * 10; // todo: time between frames
-            glm_quat_nlerp(current_transforms[i], cube.transforms[i], speed, current_transforms[i]);
+            glm_quat_nlerp(current_transforms[i], desired_transforms[i], speed, current_transforms[i]);
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
         }
         set_mat4s(sp, "cubie_transforms", cubie_transforms, LENGTH(cubie_transforms));
