@@ -71,6 +71,7 @@ void vm_init(struct vector_model *);
 int vm_get_cubie_type(struct vector_model *, int);
 int vm_get_cubie_permutation(struct vector_model *, int);
 int vm_get_cubie_orientation(struct vector_model *, int);
+void vm_print(struct vector_model *);
 
 // cubie-model.c
 

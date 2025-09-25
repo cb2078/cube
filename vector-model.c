@@ -128,3 +128,25 @@ int vm_get_cubie_orientation(struct vector_model *cube, int i)
     }
     assert(0 && "exhausted search");
 }
+
+void vm_print(struct vector_model *cube)
+{   
+    printf("start  | transform                    | end\n"
+           "-------+------------------------------+---------\n");
+    for (int i=0; i<NUM_CUBIES; ++i)
+    {
+        char faces[] = "URFDLB";
+        int n=0;
+        for (int j=0; j<6; ++j) on_face(cube->cubies[i], j) ? printf("%c", faces[j]) : ++n;
+        while (n--) printf(" ");
+        printf(" | ");
+
+        for (int j=0; j<4; ++j) printf("% 1.3f ", cube->transforms[i][j]);
+        printf(" | ");
+
+        vec3 v;
+        get_cubie_position(cube, i, v);
+        for (int j=0; j<3; ++j) printf("% 1.0f ", v[j]);
+        printf("\n");
+    }
+}
