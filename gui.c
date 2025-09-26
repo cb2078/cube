@@ -1,4 +1,16 @@
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <SDL3/SDL.h>
+
+#include <cglm/cglm.h>
+
 #include "common.h"
+
+#define EPSILON 1e-3
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
+#define LOOP(i, j, k) for (int i=0; i<3; ++i) for (int j=0; j<3; ++j) for (int k=0; k<3; ++k)
 
 static vec3 cubie_offsets[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
