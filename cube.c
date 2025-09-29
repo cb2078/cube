@@ -158,35 +158,68 @@ static int index_eo(cube x)
     return result;
 }
 
-static int index_tetrad_unordered(cube x, int j);
-
-static int index_slice_unordered(cube x, int j)
+static int index_orbit_unordered(char *cubies, int j, int length)
 {
-    int slice[4];
-    for (int i=0, n=0; i<NUM_EDGES; ++i)
-        if ((x.edges[i]&0x0f)>>2 == j)
-            slice[n++] = i;
-    return combination_index(slice, 4);
+    int orbit[4];
+    for (int i=0, n=0; i<length; ++i)
+        if ((cubies[i]&PERM_MASK)/4 == j)
+            orbit[n++]=i;
+    return combination_index(orbit, 4);
 }
+#define index_tetrad_unordered(x) index_orbit_unordered((x).corners, 0, 8)
+#define index_slice_unordered(x, j) index_orbit_unordered((x).edges, (j), 12)
 
-static int index_tetrad(cube x, int j);
-static int index_slice(cube x, int j);
-
-static int index_twist_ud_slice(cube x)
+static int index_orbit(char *cubies, int j, int length)
 {
-    return index_co(x) +pow3[NUM_CORNERS-1]*index_slice_unordered(x, SLICE_UD);
+    int orbit[4];
+    for (int i=0; i<length; ++i)
+        if ((cubies[i]&PERM_MASK)/4 == j)
+            orbit[(cubies[i]&PERM_MASK)%4]=i;
+    return permutation_index(orbit, 4);
+}
+#define index_tetrad(x) index_orbit((x).corners, 0, 8)
+#define index_slice(x, j) index_orbit((x).edges, (j), 12)
+
+static int index_parity(cube x)
+{
+    int result=0;
+    for (int i=0; i<NUM_CORNERS; ++i)
+        for (int j=i+1; j<NUM_CORNERS; ++j)
+            result ^= (x.corners[i]&ORIENT_MASK)<(x.corners[j]&ORIENT_MASK);
+    return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+static int index_tw_g0(cube x)
+{
+    return index_eo(x);
+}
+
+static int index_tw_g1(cube x)
+{
+    return index_co(x) + pow3[NUM_CORNERS-1]*index_slice_unordered(x, SLICE_UD);
+}
+
+static int index_tw_g2(cube x)
+{
+    return
+        index_slice_unordered(x, SLICE_FB) +
+        index_tetrad_unordered(x) * choose(8, 4) +
+        index_parity(x) * choose(8, 4) * choose(8, 4);
+}
+
+static int index_tw_g3(cube x);
 
 struct {
     int (*index)(cube);
     int goal;
     int quater_turns[6];
 } stages[] = {
-    //                               U  R  F  D  L  B
-    {index_eo,             0,       {1, 1, 1, 1, 1, 1}},
-    {index_twist_ud_slice, 1080378, {1, 1, 0, 1, 1, 0}},
+    {index_tw_g0, 0,       {1, 1, 1, 1, 1, 1}},
+    {index_tw_g1, 1080378, {1, 1, 0, 1, 1, 0}},
+    {index_tw_g2, 69,      {1, 0, 0, 1, 0, 0}},
+    // {index_tw_g2, ?,       {1, 0, 0, 1, 0, 0}},
 };
 
 // for now, solve EO and return number of moves
