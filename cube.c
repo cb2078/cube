@@ -2,8 +2,36 @@
 
 #include "common.h"
 
+// todo maybe move these to another file
+static int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
+static int fact[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800};
+
+static int choose(int n, int r)
+{
+    return n>=r ?  fact[n]/fact[r]/fact[n-r] : 0;
+}
+
+static int combination_index(int *x, int n)
+{
+    int result=0;
+    for (int i=0; i<n; ++i)
+        result += choose(x[i], i+1);
+    return result;
+}
+
+static int permutation_index(int *x, int n);
+
+///////////////////////////////////////////////////////////////////////////////
+
 #define PERM_MASK   0x0f
 #define ORIENT_MASK 0xf0
+
+enum slice
+{
+    SLICE_UD=2,
+    SLICE_RL=0,
+    SLICE_FB=1,
+};
 
 union cube
 {
@@ -120,15 +148,52 @@ static cube apply_moves(cube x, int *moves, int length)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static int index_co(cube x)
+{
+    int result=0;
+    for (int i=0; i<NUM_CORNERS-1; ++i)
+        result += (x.corners[i]>>4)*pow3[i];
+    return result;
+}
+
 static int index_eo(cube x)
 {
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
-        result += (x.edges[i]>>4!=0)<<i;
+        result += (x.edges[i]>>4)<<i;
     return result;
 }
 
+static int index_tetrad_unordered(cube x, int j);
+
+static int index_slice_unordered(cube x, int j)
+{
+    int slice[4];
+    for (int i=0, n=0; i<NUM_EDGES; ++i)
+        if ((x.edges[i]&0x0f)>>2 == j)
+            slice[n++] = i;
+    return combination_index(slice, 4);
+}
+
+static int index_tetrad(cube x, int j);
+static int index_slice(cube x, int j);
+
+static int index_twist_ud_slice(cube x)
+{
+    return index_co(x) +pow3[NUM_CORNERS-1]*index_slice_unordered(x, SLICE_UD);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
+
+struct {
+    int (*index)(cube);
+    int goal;
+    int quater_turns[6];
+} stages[] = {
+    //                               U  R  F  D  L  B
+    {index_eo,             0,       {1, 1, 1, 1, 1, 1}},
+    {index_twist_ud_slice, 1080378, {1, 1, 0, 1, 1, 0}},
+};
 
 // for now, solve EO and return number of moves
 static int dls(cube x, int *path, int max_depth)
@@ -138,20 +203,35 @@ static int dls(cube x, int *path, int max_depth)
         cube cube;
         int move;
         int depth;
+        int stage;
     } node;
-    node stack[2048] = {{x, 0xff, 0}};
+    node stack[2048] = {{.cube=x, .depth=0, .stage=0}};
     node *top = 1+stack;
     while (top>stack)
     {
         node cur = *--top;
         if (cur.depth)
             path[cur.depth-1] = cur.move;
-        if (index_eo(cur.cube) == 0)
-            return 0;
+        while (stages[cur.stage].index(cur.cube) == stages[cur.stage].goal)
+        {
+            cur.stage++;
+            if (cur.stage == LENGTH(stages))
+                return 0;
+        }
 
         for (int i=0; i<LENGTH(move_set); ++i)
         {
-            node next = {apply_move(cur.cube, move_set[i]), move_set[i], cur.depth+1};
+            int face=move_set[i]%6;
+            int n=1+move_set[i]/U2;
+            if (n!=2 && !stages[cur.stage].quater_turns[face])
+                continue;
+
+            node next = {
+                .cube = apply_move(cur.cube, move_set[i]),
+                .move = move_set[i],
+                .depth = cur.depth+1,
+                .stage = cur.stage,
+            };
             if (next.depth > max_depth) continue;
             assert(top-stack < 2048);
             *top++ = next;
