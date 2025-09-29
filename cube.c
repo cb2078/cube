@@ -28,12 +28,12 @@ static int permutation_index(int *x, int n);
 
 enum slice
 {
-    SLICE_UD=2,
-    SLICE_RL=0,
-    SLICE_FB=1,
+    SLICE_RL,
+    SLICE_FB,
+    SLICE_UD,
 };
 
-union cube
+typedef union
 {
     struct
     {
@@ -48,12 +48,8 @@ union cube
         char corners[NUM_CORNERS];
         char edges[NUM_EDGES];
     };
-    struct
-    {
-        char cubies[NUM_CORNERS+NUM_EDGES];
-    };
-};
-typedef union cube cube;
+    char cubies[NUM_CORNERS+NUM_EDGES];
+} cube;
 // static_assert(sizeof(cube)==20, "");
 
 static int move_set[18] = {
@@ -63,27 +59,25 @@ static int move_set[18] = {
 };
 
 static cube move_table[] = {
-    #define CUBE(...) {{__VA_ARGS__}}
-    //          URF ULB DRB DLF URB ULF DRF DLB  UR  UL  DR  DL  UF  UB  DF  DB  RF  RB  LF  LB
-    [U]  = CUBE(  4,  5,  2,  3,  1,  0,  6,  7,  5,  4,  2,  3,  0,  1,  6,  7,  8,  9, 10, 11),
-    [R]  = CUBE( 38,  1, 36,  3, 16,  5, 18,  7,  8,  1,  9,  3,  4,  5,  6,  7,  2,  0, 10, 11),
-    [F]  = CUBE( 21,  1,  2, 22,  4, 35, 32,  7,  0,  1,  2,  3, 26,  5, 24,  7, 20,  9, 22, 11),
-    [D]  = CUBE(  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  6,  7,  4,  5,  3,  2,  8,  9, 10, 11),
-    [L]  = CUBE(  0, 39,  2, 37,  4, 17,  6, 19,  0, 11,  2, 10,  4,  5,  6,  7,  8,  9,  1,  3),
-    [B]  = CUBE(  0, 20, 23,  3, 34,  5,  6, 33,  0,  1,  2,  3,  4, 25,  6, 27,  8, 23, 10, 21),
-    [U2] = CUBE(  1,  0,  2,  3,  5,  4,  6,  7,  1,  0,  2,  3,  5,  4,  6,  7,  8,  9, 10, 11),
-    [R2] = CUBE(  2,  1,  0,  3,  6,  5,  4,  7,  2,  1,  0,  3,  4,  5,  6,  7,  9,  8, 10, 11),
-    [F2] = CUBE(  3,  1,  2,  0,  4,  6,  5,  7,  0,  1,  2,  3,  6,  5,  4,  7, 10,  9,  8, 11),
-    [D2] = CUBE(  0,  1,  3,  2,  4,  5,  7,  6,  0,  1,  3,  2,  4,  5,  7,  6,  8,  9, 10, 11),
-    [L2] = CUBE(  0,  3,  2,  1,  4,  7,  6,  5,  0,  3,  2,  1,  4,  5,  6,  7,  8,  9, 11, 10),
-    [B2] = CUBE(  0,  2,  1,  3,  7,  5,  6,  4,  0,  1,  2,  3,  4,  7,  6,  5,  8, 11, 10,  9),
-    [U3] = CUBE(  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11),
-    [R3] = CUBE( 36,  1, 38,  3, 18,  5, 16,  7,  9,  1,  8,  3,  4,  5,  6,  7,  0,  2, 10, 11),
-    [F3] = CUBE( 22,  1,  2, 21,  4, 32, 35,  7,  0,  1,  2,  3, 24,  5, 26,  7, 22,  9, 20, 11),
-    [D3] = CUBE(  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  7,  6,  4,  5,  2,  3,  8,  9, 10, 11),
-    [L3] = CUBE(  0, 37,  2, 39,  4, 19,  6, 17,  0, 10,  2, 11,  4,  5,  6,  7,  8,  9,  3,  1),
-    [B3] = CUBE(  0, 23, 20,  3, 33,  5,  6, 34,  0,  1,  2,  3,  4, 27,  6, 25,  8, 21, 10, 23),
-    #undef CUBE
+    //      URF ULB DRB DLF URB ULF DRF DLB  UR  UL  DR  DL  UF  UB  DF  DB  RF  RB  LF  LB
+    [U]  = {  4,  5,  2,  3,  1,  0,  6,  7,  5,  4,  2,  3,  0,  1,  6,  7,  8,  9, 10, 11},
+    [R]  = { 38,  1, 36,  3, 16,  5, 18,  7,  8,  1,  9,  3,  4,  5,  6,  7,  2,  0, 10, 11},
+    [F]  = { 21,  1,  2, 22,  4, 35, 32,  7,  0,  1,  2,  3, 26,  5, 24,  7, 20,  9, 22, 11},
+    [D]  = {  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  6,  7,  4,  5,  3,  2,  8,  9, 10, 11},
+    [L]  = {  0, 39,  2, 37,  4, 17,  6, 19,  0, 11,  2, 10,  4,  5,  6,  7,  8,  9,  1,  3},
+    [B]  = {  0, 20, 23,  3, 34,  5,  6, 33,  0,  1,  2,  3,  4, 25,  6, 27,  8, 23, 10, 21},
+    [U2] = {  1,  0,  2,  3,  5,  4,  6,  7,  1,  0,  2,  3,  5,  4,  6,  7,  8,  9, 10, 11},
+    [R2] = {  2,  1,  0,  3,  6,  5,  4,  7,  2,  1,  0,  3,  4,  5,  6,  7,  9,  8, 10, 11},
+    [F2] = {  3,  1,  2,  0,  4,  6,  5,  7,  0,  1,  2,  3,  6,  5,  4,  7, 10,  9,  8, 11},
+    [D2] = {  0,  1,  3,  2,  4,  5,  7,  6,  0,  1,  3,  2,  4,  5,  7,  6,  8,  9, 10, 11},
+    [L2] = {  0,  3,  2,  1,  4,  7,  6,  5,  0,  3,  2,  1,  4,  5,  6,  7,  8,  9, 11, 10},
+    [B2] = {  0,  2,  1,  3,  7,  5,  6,  4,  0,  1,  2,  3,  4,  7,  6,  5,  8, 11, 10,  9},
+    [U3] = {  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11},
+    [R3] = { 36,  1, 38,  3, 18,  5, 16,  7,  9,  1,  8,  3,  4,  5,  6,  7,  0,  2, 10, 11},
+    [F3] = { 22,  1,  2, 21,  4, 32, 35,  7,  0,  1,  2,  3, 24,  5, 26,  7, 22,  9, 20, 11},
+    [D3] = {  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  7,  6,  4,  5,  2,  3,  8,  9, 10, 11},
+    [L3] = {  0, 37,  2, 39,  4, 19,  6, 17,  0, 10,  2, 11,  4,  5,  6,  7,  8,  9,  3,  1},
+    [B3] = {  0, 23, 20,  3, 33,  5,  6, 34,  0,  1,  2,  3,  4, 27,  6, 25,  8, 21, 10, 23},
 };
 
 // use struct/constant instead of function that returns one
@@ -213,6 +207,8 @@ static int dls(cube x, int *path, int max_depth, int stage)
             path[cur.depth-1] = cur.move;
         if (stages[stage].index(cur.cube) == stages[stage].goal)
             return 0;
+        if (cur.depth == max_depth)
+            continue;
 
         for (int i=0; i<LENGTH(move_set); ++i)
         {
@@ -220,16 +216,12 @@ static int dls(cube x, int *path, int max_depth, int stage)
             int n=1+move_set[i]/U2;
             if (n!=2 && !stages[stage].quater_turns[face])
                 continue;
-
-            node next = {
+            assert(top-stack < 2048);
+            *top++ = (node){
                 .cube = apply_move(cur.cube, move_set[i]),
                 .move = move_set[i],
                 .depth = cur.depth+1,
             };
-            if (next.depth > max_depth)
-                continue;
-            assert(top-stack < 2048);
-            *top++ = next;
         }
     }
     return 1;
