@@ -196,43 +196,38 @@ struct {
 };
 
 // for now, solve EO and return number of moves
-static int dls(cube x, int *path, int max_depth)
+static int dls(cube x, int *path, int max_depth, int stage)
 {
     typedef struct
     {
         cube cube;
         int move;
         int depth;
-        int stage;
     } node;
-    node stack[2048] = {{.cube=x, .depth=0, .stage=0}};
+    node stack[2048] = {{.cube=x}};
     node *top = 1+stack;
     while (top>stack)
     {
         node cur = *--top;
         if (cur.depth)
             path[cur.depth-1] = cur.move;
-        while (stages[cur.stage].index(cur.cube) == stages[cur.stage].goal)
-        {
-            cur.stage++;
-            if (cur.stage == LENGTH(stages))
-                return 0;
-        }
+        if (stages[stage].index(cur.cube) == stages[stage].goal)
+            return 0;
 
         for (int i=0; i<LENGTH(move_set); ++i)
         {
             int face=move_set[i]%6;
             int n=1+move_set[i]/U2;
-            if (n!=2 && !stages[cur.stage].quater_turns[face])
+            if (n!=2 && !stages[stage].quater_turns[face])
                 continue;
 
             node next = {
                 .cube = apply_move(cur.cube, move_set[i]),
                 .move = move_set[i],
                 .depth = cur.depth+1,
-                .stage = cur.stage,
             };
-            if (next.depth > max_depth) continue;
+            if (next.depth > max_depth)
+                continue;
             assert(top-stack < 2048);
             *top++ = next;
         }
@@ -240,11 +235,23 @@ static int dls(cube x, int *path, int max_depth)
     return 1;
 }
 
-static int iddfs(cube x, int *path)
+static void iddfs(cube x, int *path, int *length)
 {
-    int depth=0;
-    while (dls(x, path, depth)) ++depth;
-    return depth;
+    *length=0;
+    for (int stage=0; stage<LENGTH(stages); ++stage)
+    {
+        int depth=0;
+        while (dls(x, path+*length, depth, stage))
+            ++depth;
+        x=apply_moves(x, path+*length, depth);
+        #if 1
+        printf("stage%d:", stage);
+        for (int i=0; i<depth; ++i)
+            printf(" %s", move_str[path[*length+i]]);
+        printf("\n");
+        #endif
+        *length+=depth;
+    }
 }
 #define search iddfs
 
