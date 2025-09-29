@@ -19,7 +19,19 @@ static int combination_index(int *x, int n)
     return result;
 }
 
-static int permutation_index(int *x, int n);
+static int permutation_index(unsigned *x, int n)
+{
+    unsigned b = 0;
+    unsigned result = 0;
+    for (int i=0; i<n; ++i)
+    {
+        b |= 1 << ((n-1)-x[i]);
+        unsigned s = b >> (n-x[i]);
+        unsigned c = x[i]-__builtin_popcount(s);
+        result += c*fact[(n-1)-i];
+    }
+    return result;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -140,6 +152,40 @@ static cube apply_moves(cube x, int *moves, int length)
     return result;
 }
 
+static void get_orbit(char *cubies, int j, int length, int orbit[4])
+{
+    for (int i=0, n=0; i<length; ++i)
+        if ((cubies[i]&PERM_MASK)/4 == j)
+            orbit[n++] = i;
+}
+
+static void get_tetrad(cube x, int j, int tetrad[4])
+{
+    get_orbit(x.corners, j, NUM_CORNERS, tetrad);
+}
+
+static void get_slice(cube x, int j, int slice[4])
+{
+    get_orbit(x.edges, j, NUM_EDGES, slice);
+}
+
+static void get_orbit_ordered(char *cubies, int j, int length, int orbit[4])
+{
+    for (int i=0; i<length; ++i)
+        if ((cubies[i]&PERM_MASK)/4 == j)
+            orbit[(cubies[i]&PERM_MASK)%4] = i;
+}
+
+static void get_tetrad_ordered(cube x, int j, int tetrad[4])
+{
+    get_orbit_ordered(x.corners, j, NUM_CORNERS, tetrad);
+}
+
+static void get_slice_ordered(cube x, int j, int slice[4])
+{
+    get_orbit_ordered(x.edges, j, NUM_EDGES, slice);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static int index_co(cube x)
@@ -158,27 +204,22 @@ static int index_eo(cube x)
     return result;
 }
 
-static int index_orbit_unordered(char *cubies, int j, int length)
-{
-    int orbit[4];
-    for (int i=0, n=0; i<length; ++i)
-        if ((cubies[i]&PERM_MASK)/4 == j)
-            orbit[n++]=i;
-    return combination_index(orbit, 4);
-}
-#define index_tetrad_unordered(x) index_orbit_unordered((x).corners, 0, 8)
-#define index_slice_unordered(x, j) index_orbit_unordered((x).edges, (j), 12)
-
 static int index_orbit(char *cubies, int j, int length)
 {
     int orbit[4];
-    for (int i=0; i<length; ++i)
-        if ((cubies[i]&PERM_MASK)/4 == j)
-            orbit[(cubies[i]&PERM_MASK)%4]=i;
-    return permutation_index(orbit, 4);
+    get_orbit(cubies, j, length, orbit);
+    return combination_index(orbit, 4);
 }
-#define index_tetrad(x) index_orbit((x).corners, 0, 8)
-#define index_slice(x, j) index_orbit((x).edges, (j), 12)
+
+static int index_tetrad(cube x)
+{
+    return index_orbit(x.corners, 0, NUM_CORNERS);
+}
+
+static int index_slice(cube x, int j)
+{
+    return index_orbit(x.edges, j, NUM_EDGES);
+}
 
 static int index_parity(cube x)
 {
@@ -198,18 +239,38 @@ static int index_tw_g0(cube x)
 
 static int index_tw_g1(cube x)
 {
-    return index_co(x) + pow3[NUM_CORNERS-1]*index_slice_unordered(x, SLICE_UD);
+    return index_co(x) + pow3[NUM_CORNERS-1]*index_slice(x, SLICE_UD);
 }
 
 static int index_tw_g2(cube x)
 {
-    return
-        index_slice_unordered(x, SLICE_FB) +
-        index_tetrad_unordered(x) * choose(8, 4) +
-        index_parity(x) * choose(8, 4) * choose(8, 4);
+    int result = 0;
+    result += index_slice(x, SLICE_FB);
+    result += index_tetrad(x) * choose(8, 4);
+    result += index_parity(x) * choose(8, 4) * choose(8, 4);
+    return result;
 }
 
-static int index_tw_g3(cube x);
+static int index_tw_g3(cube x)
+{
+    unsigned orbits[5][4];
+    get_tetrad_ordered(x, 0, (int *)orbits[0]);
+    get_tetrad_ordered(x, 1, (int *)orbits[1]);
+    get_slice_ordered(x, 0, (int *)orbits[2]);
+    get_slice_ordered(x, 1, (int *)orbits[3]);
+    get_slice_ordered(x, 2, (int *)orbits[4]);
+
+    // since cubies are in their tetrad/slice, number them from 0-3 within their tetrad
+    for (int i=0; i<5; ++i) for (int j=0; j<4; ++j) orbits[i][j] %= 4;
+
+    int result = 0;
+    result += permutation_index(orbits[0], 4);
+    result += permutation_index(orbits[2], 4) * fact[4];
+    result += permutation_index(orbits[3], 4) * fact[4] * fact[4];
+    result += orbits[1][0] * fact[4] * fact[4] * fact[4];
+    result += orbits[4][0] * fact[4] * fact[4] * fact[4] * 4;
+    return result;
+}
 
 struct {
     int (*index)(cube);
@@ -219,7 +280,7 @@ struct {
     {index_tw_g0, 0,       {1, 1, 1, 1, 1, 1}},
     {index_tw_g1, 1080378, {1, 1, 0, 1, 1, 0}},
     {index_tw_g2, 69,      {1, 0, 0, 1, 0, 0}},
-    // {index_tw_g2, ?,       {1, 0, 0, 1, 0, 0}},
+    {index_tw_g3, 0,       {0, 0, 0, 0, 0, 0}},
 };
 
 // for now, solve EO and return number of moves
