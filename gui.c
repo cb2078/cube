@@ -6,13 +6,16 @@
 
 #include "common.h"
 
-#define EPSILON 1e-3
+#include "moves.c"
+
+#define EPSILON 1e-5
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
 #define LOOP(i, j, k) for (int i=0; i<3; ++i) for (int j=0; j<3; ++j) for (int k=0; k<3; ++k)
 
 static vec3 cubie_offsets[NUM_CUBIES];
+vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
 
 static int on_face(vec3 cubie, int face)
@@ -64,6 +67,22 @@ static void move(int move)
     }
 }
 
+static void scramble(void)
+{
+    printf("current\n");
+    for (int i=0; i<NUM_CUBIES; ++i) glm_versor_print(current_transforms[i], stdout);
+    printf("desired\n");
+    for (int i=0; i<NUM_CUBIES; ++i) glm_versor_print(desired_transforms[i], stdout);
+    int moves[100];
+    make_scramble(moves, LENGTH(moves));
+    for (int i=0; i<LENGTH(moves); ++i) move(moves[i]);
+}
+
+static void reset(void)
+{
+    glm_quat_identity_array(desired_transforms, NUM_CUBIES);
+}
+
 static GLuint new_shader(char *filename, GLuint type)
 {
     FILE *f=fopen(filename, "r");
@@ -104,7 +123,7 @@ static void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 void gui(void)
 {
     LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cubie_offsets[x*9+y*3+z]);
-    glm_quat_identity_array(desired_transforms, NUM_CUBIES);
+    reset();
 
     vec2 vertices[] = {
         {-0.5f, -0.5f},
@@ -130,7 +149,6 @@ void gui(void)
             glm_vec3_copy(colours[on_face((vec3){x-1, y-1, z-1}, i) ? i+1 : 0], facelet_colours[x][y][z][i]);
     }
 
-    vec4 current_transforms[NUM_CUBIES];
     glm_quat_identity_array(current_transforms, NUM_CUBIES);
 
     SDL_Init(SDL_INIT_VIDEO);
@@ -222,6 +240,8 @@ void gui(void)
                 case SDL_EVENT_KEY_DOWN:
                     switch (event.key.key)
                     {
+                        case SDLK_F1: scramble(); break;
+                        case SDLK_F2: reset(); break;
                         #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
@@ -272,8 +292,8 @@ void gui(void)
         for (int i=0; i<LENGTH(cubie_transforms); ++i)
         {
             float cos_theta=glm_quat_dot(current_transforms[i], desired_transforms[i]);
-            if (ABS(cos_theta)<EPSILON)
-                continue;
+            if (ABS(cos_theta)>1-EPSILON)
+                glm_quat_copy(desired_transforms[i], current_transforms[i]);
             float speed = 1.0f / 144 * 10; // todo: time between frames
             glm_quat_nlerp(current_transforms[i], desired_transforms[i], speed, current_transforms[i]);
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
