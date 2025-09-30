@@ -358,7 +358,6 @@ struct {
     {index_tw_g3, 0,       {0, 0, 0, 0, 0, 0}},
 };
 
-// for now, solve EO and return number of moves
 static int dls(cube x, int *path, int max_depth, int stage)
 {
     typedef struct
@@ -384,6 +383,8 @@ static int dls(cube x, int *path, int max_depth, int stage)
             int face=move_set[i]%6;
             int n=1+move_set[i]/U2;
             if (n!=2 && !stages[stage].quater_turns[face])
+                continue;
+            if (prune_move(cur.move, move_set[i]))
                 continue;
             assert(top-stack < 2048);
             *top++ = (node){
