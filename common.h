@@ -4,6 +4,7 @@
 
 #define ABS(x) ((x)<0 ? -(x) : x)
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
+#define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
 
 #define NUM_CUBIES 27
 #define NUM_CORNERS 8

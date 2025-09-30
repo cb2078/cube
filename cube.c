@@ -188,6 +188,81 @@ static void get_slice_ordered(cube x, int j, int slice[4])
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static int move_face(int x)
+{
+    return x%6;
+}
+
+static int move_axis(int x)
+{
+    return x%3;
+}
+
+static int move_amount(int x)
+{
+    return x/U2+1;
+}
+
+static int inverse_move(int x)
+{
+    return move_face(x) + U2*(3-move_amount(x));
+}
+
+static int prune_move(int x, int y)
+{
+    return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
+}
+
+static void print_moves(int *moves, int length)
+{
+    for (int i=0; i<length; ++i) printf("%s%s", i?" ":"", move_str[moves[i]]);
+}
+
+static void make_scramble(int *moves, int length)
+{
+    for (int i=0; i<length; i+=i==0||!prune_move(moves[i-1], moves[i]))
+        moves[i]=move_set[rand()%LENGTH(move_set)];
+}
+
+static int apply_cancellations(int *moves, int *length)
+{
+    int cancelled=0;
+    for (int i=*length-2; i>=0; --i)
+    {
+        if (!prune_move(moves[i], moves[i+1]))
+            continue;
+        if (move_face(moves[i])==move_face(moves[i+1]))
+        {
+            int amount=(move_amount(moves[i])+move_amount(moves[i+1]))%4;
+            if (amount)
+            {
+                moves[i]=move_face(moves[i])+U2*(amount-1);
+                memcpy(&moves[i+1], &moves[i+2], *length-(i+2));
+                *length-=1;
+            }
+            else
+            {
+                memcpy(&moves[i], &moves[i+2], *length-(i+2));
+            }
+            cancelled=1;
+        }
+        else
+        {
+            SWAP(moves[i], moves[i+1]);
+        }
+    }
+    if (cancelled) apply_cancellations(moves, length);
+    return cancelled;
+}
+
+static void inverse_moves(int *moves, int length)
+{
+    for (int i=0; i<length; ++i) moves[i]=inverse_move(moves[i]);
+    for (int i=0, j=length-1; i<j; ++i, --j) SWAP(moves[i], moves[j]);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 static int index_co(cube x)
 {
     int result=0;
@@ -327,14 +402,12 @@ static void iddfs(cube x, int *path, int *length)
     for (int stage=0; stage<LENGTH(stages); ++stage)
     {
         int depth=0;
-        while (dls(x, path+*length, depth, stage))
-            ++depth;
+        while (dls(x, path+*length, depth, stage)) ++depth;
         x=apply_moves(x, path+*length, depth);
         #if 1
-        printf("stage%d:", stage);
-        for (int i=0; i<depth; ++i)
-            printf(" %s", move_str[path[*length+i]]);
-        printf("\n");
+        printf("stage%d: ", stage);
+        print_moves(path+*length, depth);
+        printf(" // %d move%s\n", depth, depth==1?"":"s");
         #endif
         *length+=depth;
     }
