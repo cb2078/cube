@@ -224,6 +224,28 @@ static void make_scramble(int *moves, int length)
         moves[i]=move_set[rand()%LENGTH(move_set)];
 }
 
+static void read_moves(char *s, int *moves, int *length)
+{
+    *length=0;
+    for (int i=0; i<strlen(s);)
+    {
+        int n=0;
+        while (s[i+n]!=' ' && s[i+n]!='\0')
+            ++n;
+        int j=0;
+        for (; j<NUM_MOVES; ++j)
+            if (0 == strncmp(s+i, move_str[j], n))
+                break;
+        if (j==NUM_MOVES)
+        {
+            printf("invalid scramble\n%d\n%s\n", i, s+i);
+            exit(1);
+        }
+        moves[(*length)++] = j;
+        i += 1+n;
+    }
+}
+
 static int apply_cancellations(int *moves, int *length)
 {
     int cancelled=0;
