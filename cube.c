@@ -259,12 +259,13 @@ static int apply_cancellations(int *moves, int *length)
             if (amount)
             {
                 moves[i]=move_face(moves[i])+U2*(amount-1);
-                memcpy(&moves[i+1], &moves[i+2], *length-(i+2));
+                memmove(&moves[i+1], &moves[i+2], sizeof(int)*(*length-(i+2)));
                 *length-=1;
             }
             else
             {
-                memcpy(&moves[i], &moves[i+2], *length-(i+2));
+                memmove(&moves[i], &moves[i+2], sizeof(int)*(*length-(i+2)));
+                *length-=2;
             }
             cancelled=1;
         }
