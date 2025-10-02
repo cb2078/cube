@@ -68,24 +68,24 @@ typedef union
 
 static cube move_table[] = {
     //      URF ULB DRB DLF URB ULF DRF DLB  UR  UL  DR  DL  UF  UB  DF  DB  RF  RB  LF  LB
-    [U]  = {  4,  5,  2,  3,  1,  0,  6,  7,  5,  4,  2,  3,  0,  1,  6,  7,  8,  9, 10, 11},
-    [R]  = { 38,  1, 36,  3, 16,  5, 18,  7,  8,  1,  9,  3,  4,  5,  6,  7,  2,  0, 10, 11},
-    [F]  = { 21,  1,  2, 22,  4, 35, 32,  7,  0,  1,  2,  3, 26,  5, 24,  7, 20,  9, 22, 11},
-    [D]  = {  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  6,  7,  4,  5,  3,  2,  8,  9, 10, 11},
-    [L]  = {  0, 39,  2, 37,  4, 17,  6, 19,  0, 11,  2, 10,  4,  5,  6,  7,  8,  9,  1,  3},
-    [B]  = {  0, 20, 23,  3, 34,  5,  6, 33,  0,  1,  2,  3,  4, 25,  6, 27,  8, 23, 10, 21},
+    [U]  = {  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11},
+    [R]  = { 36,  1, 38,  3, 18,  5, 16,  7,  9,  1,  8,  3,  4,  5,  6,  7,  0,  2, 10, 11},
+    [F]  = { 22,  1,  2, 21,  4, 32, 35,  7,  0,  1,  2,  3, 24,  5, 26,  7, 22,  9, 20, 11},
+    [D]  = {  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  7,  6,  4,  5,  2,  3,  8,  9, 10, 11},
+    [L]  = {  0, 37,  2, 39,  4, 19,  6, 17,  0, 10,  2, 11,  4,  5,  6,  7,  8,  9,  3,  1},
+    [B]  = {  0, 23, 20,  3, 33,  5,  6, 34,  0,  1,  2,  3,  4, 27,  6, 25,  8, 21, 10, 23},
     [U2] = {  1,  0,  2,  3,  5,  4,  6,  7,  1,  0,  2,  3,  5,  4,  6,  7,  8,  9, 10, 11},
     [R2] = {  2,  1,  0,  3,  6,  5,  4,  7,  2,  1,  0,  3,  4,  5,  6,  7,  9,  8, 10, 11},
     [F2] = {  3,  1,  2,  0,  4,  6,  5,  7,  0,  1,  2,  3,  6,  5,  4,  7, 10,  9,  8, 11},
     [D2] = {  0,  1,  3,  2,  4,  5,  7,  6,  0,  1,  3,  2,  4,  5,  7,  6,  8,  9, 10, 11},
     [L2] = {  0,  3,  2,  1,  4,  7,  6,  5,  0,  3,  2,  1,  4,  5,  6,  7,  8,  9, 11, 10},
     [B2] = {  0,  2,  1,  3,  7,  5,  6,  4,  0,  1,  2,  3,  4,  7,  6,  5,  8, 11, 10,  9},
-    [U3] = {  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11},
-    [R3] = { 36,  1, 38,  3, 18,  5, 16,  7,  9,  1,  8,  3,  4,  5,  6,  7,  0,  2, 10, 11},
-    [F3] = { 22,  1,  2, 21,  4, 32, 35,  7,  0,  1,  2,  3, 24,  5, 26,  7, 22,  9, 20, 11},
-    [D3] = {  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  7,  6,  4,  5,  2,  3,  8,  9, 10, 11},
-    [L3] = {  0, 37,  2, 39,  4, 19,  6, 17,  0, 10,  2, 11,  4,  5,  6,  7,  8,  9,  3,  1},
-    [B3] = {  0, 23, 20,  3, 33,  5,  6, 34,  0,  1,  2,  3,  4, 27,  6, 25,  8, 21, 10, 23},
+    [U3] = {  4,  5,  2,  3,  1,  0,  6,  7,  5,  4,  2,  3,  0,  1,  6,  7,  8,  9, 10, 11},
+    [R3] = { 38,  1, 36,  3, 16,  5, 18,  7,  8,  1,  9,  3,  4,  5,  6,  7,  2,  0, 10, 11},
+    [F3] = { 21,  1,  2, 22,  4, 35, 32,  7,  0,  1,  2,  3, 26,  5, 24,  7, 20,  9, 22, 11},
+    [D3] = {  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  6,  7,  4,  5,  3,  2,  8,  9, 10, 11},
+    [L3] = {  0, 39,  2, 37,  4, 17,  6, 19,  0, 11,  2, 10,  4,  5,  6,  7,  8,  9,  1,  3},
+    [B3] = {  0, 20, 23,  3, 34,  5,  6, 33,  0,  1,  2,  3,  4, 25,  6, 27,  8, 23, 10, 21},
 };
 
 // use struct/constant instead of function that returns one
@@ -121,15 +121,15 @@ static cube compose(cube x, cube y)
 
     for (int i=0; i<NUM_CORNERS; ++i)
     {
-        result.corners[i] = x.corners[y.corners[i] & PERM_MASK];
-        result.corners[i] += y.corners[i] & ORIENT_MASK;
+        result.corners[i] = y.corners[x.corners[i] & PERM_MASK];
+        result.corners[i] += x.corners[i] & ORIENT_MASK;
         result.corners[i] %= 3*0x10;
     }
 
     for (int i=0; i<NUM_EDGES; ++i)
     {
-        result.edges[i] = x.edges[y.edges[i] & PERM_MASK];
-        result.edges[i] += y.edges[i] & ORIENT_MASK;
+        result.edges[i] = y.edges[x.edges[i] & PERM_MASK];
+        result.edges[i] += x.edges[i] & ORIENT_MASK;
         result.edges[i] %= 2*0x10;
     }
 
@@ -148,28 +148,9 @@ static cube apply_moves(cube x, int *moves, int length)
     return result;
 }
 
-static void get_orbit(char *cubies, int j, int length, int orbit[4])
-{
-    for (int i=0, n=0; i<length; ++i)
-        if ((cubies[i]&PERM_MASK)/4 == j)
-            orbit[n++] = i;
-}
-
-static void get_tetrad(cube x, int j, int tetrad[4])
-{
-    get_orbit(x.corners, j, NUM_CORNERS, tetrad);
-}
-
-static void get_slice(cube x, int j, int slice[4])
-{
-    get_orbit(x.edges, j, NUM_EDGES, slice);
-}
-
 static void get_orbit_ordered(char *cubies, int j, int length, int orbit[4])
 {
-    for (int i=0; i<length; ++i)
-        if ((cubies[i]&PERM_MASK)/4 == j)
-            orbit[(cubies[i]&PERM_MASK)%4] = i;
+    for (int i=0; i<4; ++i) orbit[i]=cubies[j*4+i]&PERM_MASK;
 }
 
 static void get_tetrad_ordered(cube x, int j, int tetrad[4])
@@ -182,13 +163,38 @@ static void get_slice_ordered(cube x, int j, int slice[4])
     get_orbit_ordered(x.edges, j, NUM_EDGES, slice);
 }
 
+static void get_orbit(char *cubies, int j, int length, int orbit[4])
+{
+    get_orbit_ordered(cubies, j, length, orbit);
+    // https://bertdobbelaere.github.io/sorting_networks.html#N4L5D3
+    #define SORT(i, j) do if (orbit[i]>orbit[j]) SWAP(orbit[i], orbit[j]); while (0)
+    SORT(0,2); SORT(1,3);
+    SORT(0,1); SORT(2,3);
+    SORT(1,2);
+    #undef SORT
+}
+
+static void get_tetrad(cube x, int j, int tetrad[4])
+{
+    get_orbit(x.corners, j, NUM_CORNERS, tetrad);
+}
+
+static void get_slice(cube x, int j, int slice[4])
+{
+    get_orbit(x.edges, j, NUM_EDGES, slice);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static int index_co(cube x)
 {
-    int result=0;
+    int result = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
-        result += (x.corners[i]>>4)*pow3[i];
+    {
+        int cp = x.corners[i]&PERM_MASK;
+        int co = x.corners[cp]>>4;
+        result += co*pow3[i];
+    }
     return result;
 }
 
@@ -196,7 +202,11 @@ static int index_eo(cube x)
 {
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
-        result += (x.edges[i]>>4)<<i;
+    {
+        int ep = x.corners[i]&PERM_MASK;
+        int eo = x.corners[ep]>>4;
+        result += eo<<i;
+    }
     return result;
 }
 
