@@ -180,8 +180,8 @@ static int index_eo(cube x)
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
     {
-        int ep = x.corners[i]&PERM_MASK;
-        int eo = x.corners[ep]>>4;
+        int ep = x.edges[i]&PERM_MASK;
+        int eo = x.edges[ep]>>4;
         result += eo<<i;
     }
     return result;

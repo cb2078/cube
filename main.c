@@ -9,6 +9,7 @@ int main(void)
     int length=10;
 
     make_scramble(moves, length);
+    printf("scramble: "), print_moves(moves, length), putchar('\n');
     gui_show_moves(moves, length);
     cube x = apply_moves(new_cube(), moves, length);
     solve(x, moves, &length);
