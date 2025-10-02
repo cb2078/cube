@@ -343,6 +343,12 @@ void gui_show_moves(int *moves, int length)
     for (int i=0; i<length; ++i) move(moves[i]), SDL_Delay(500);
 }
 
+void gui_show_moves_fast(int *moves, int length)
+{
+    gui();
+    for (int i=0; i<length; ++i) move(moves[i]);
+}
+
 void gui_show_cube(cube x)
 {
     gui();
