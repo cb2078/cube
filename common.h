@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +40,15 @@ enum move
     NUM_MOVES,
 };
 
+enum cubies
+{
+    URF, ULB, DRB, DLF,
+    URB, ULF, DRF, DLB,
+    UR,  UL,  DR,  DL,
+    UF,  UB,  DF,  DB,
+    RF,  RB,  LF,  LB,
+};
+
 static char *move_str[] = {
     "U", "R", "F", "D", "L", "B",
     "UW", "RW", "FW", "DW", "LW", "BW",
@@ -53,18 +63,9 @@ static char *move_str[] = {
     "Y'", "X'", "Z'", "E'", "M'", "S'",
 };
 
-enum cubies
-{
-    URF, ULB, DRB, DLF,
-    URB, ULF, DRL, DLB,
-    UR,  UL,  DR,  DL,
-    UF,  UB,  DF,  DB,
-    RF,  RB,  LF,  LB,
-};
-
 static char *cubie_str[] = {
     "URF", "ULB", "DRB", "DLF",
-    "URB", "ULF", "DRL", "DLB",
+    "URB", "ULF", "DRF", "DLB",
     "UR",  "UL",  "DR",  "DL",
     "UF",  "UB",  "DF",  "DB",
     "RF",  "RB",  "LF",  "LB",
@@ -81,3 +82,44 @@ static inline int get_move_type(int move)
         return WIDE_MOVE;
     return FACE_TURN;
 }
+
+// cube.c
+typedef union
+{
+    struct
+    {
+        char urf, ulb, drb, dlf;
+        char urb, ulf, drl, dlb;
+        char ur, ul, dr, dl;
+        char uf, ub, df, db;
+        char rf, rb, lf, lb;
+    };
+    struct
+    {
+        char corners[NUM_CORNERS];
+        char edges[NUM_EDGES];
+    };
+    struct
+    {
+        char cubies[NUM_CORNERS+NUM_EDGES];
+    };
+} cube;
+cube new_cube(void);
+cube apply_move(cube, int);
+cube apply_moves(cube, int *, int);
+void solve(cube, int *, int *);
+
+// moves.c
+extern int move_set[18];
+int prune_move(int, int);
+void print_moves(int *, int);
+void make_scramble(int *, int);
+void read_moves(char *s, int *, int *);
+int apply_cancellations(int *, int *);
+void inverse_moves(int *, int);
+
+// gui.c
+void gui(void);
+void gui_show_moves(int *, int);
+void gui_show_cube(cube);
+void gui_wait_for_close();

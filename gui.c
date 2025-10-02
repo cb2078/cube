@@ -1,12 +1,9 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <SDL3/SDL.h>
-
 #include <cglm/cglm.h>
 
 #include "common.h"
-
-#include "moves.c"
 
 #define EPSILON 1e-5
 #define WINDOW_WIDTH 800
@@ -14,8 +11,13 @@
 
 #define LOOP(i, j, k) for (int i=0; i<3; ++i) for (int j=0; j<3; ++j) for (int k=0; k<3; ++k)
 
+static SDL_Condition *condition;
+static SDL_Mutex *mutex;
+static SDL_Thread *thread;
+static int initialised;
+
 static vec3 cubie_offsets[NUM_CUBIES];
-vec4 current_transforms[NUM_CUBIES];
+static vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
 
 static int on_face(vec3 cubie, int face)
@@ -54,6 +56,7 @@ static void move(int move)
     int amount=move/U2+1;
     int sign=1-face/3*2;
 
+    SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
     {
         vec3 v;
@@ -65,6 +68,7 @@ static void move(int move)
         glm_quatv(q, sign*amount*glm_rad(90), v);
         glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
     }
+    SDL_UnlockMutex(mutex);
 }
 
 static void scramble(void)
@@ -120,8 +124,10 @@ static void set_mat4s(GLuint program, char *location, mat4 *m, int count)
    	glUniformMatrix4fv(glGetUniformLocation(program, location), count, GL_FALSE, *m[0]);
 }
 
-void gui(void)
+static int gui_thread(void *data)
 {
+    SDL_LockMutex(mutex);
+
     LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cubie_offsets[x*9+y*3+z]);
     reset();
 
@@ -227,6 +233,9 @@ void gui(void)
     glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH/WINDOW_HEIGHT, 0.1f, 100.0f, projection);
     set_mat4(sp, "projection", projection);
 
+    initialised = 1;
+    SDL_BroadcastCondition(condition);
+    SDL_UnlockMutex(mutex);
     for (;;)
     {
         // poll events
@@ -288,6 +297,7 @@ void gui(void)
             }
         }
 
+        SDL_LockMutex(mutex);
         mat4 cubie_transforms[NUM_CUBIES];
         for (int i=0; i<LENGTH(cubie_transforms); ++i)
         {
@@ -299,6 +309,7 @@ void gui(void)
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
         }
         set_mat4s(sp, "cubie_transforms", cubie_transforms, LENGTH(cubie_transforms));
+        SDL_UnlockMutex(mutex);
 
         // rendering
         glClearColor(0.1, 0.1, 0.1, 1.0);
@@ -310,5 +321,43 @@ void gui(void)
     exit:
     SDL_GL_DestroyContext(context);
     SDL_DestroyWindow(window);
+    return 0;
+}
+
+void gui(void)
+{
+    if (initialised) return;
+
+    condition = SDL_CreateCondition();
+    mutex = SDL_CreateMutex();
+    thread = SDL_CreateThread(gui_thread, "gui", (void *)0);
+
+    SDL_LockMutex(mutex);
+    while (!initialised) SDL_WaitCondition(condition, mutex);
+    SDL_UnlockMutex(mutex);
+}
+
+void gui_show_moves(int *moves, int length)
+{
+    gui();
+    for (int i=0; i<length; ++i) move(moves[i]), SDL_Delay(1000);
+}
+
+void gui_show_cube(cube x)
+{
+    gui();
+    int moves[64];
+    int length;
+    solve(x, moves, &length);
+    reset();
+    for (int i=0; i<length; ++i) move(moves[i]);
+}
+
+void gui_wait_for_close(void)
+{
+    SDL_WaitThread(thread, NULL);
+    SDL_DestroyMutex(mutex);
+    SDL_DestroyCondition(condition);
     SDL_Quit();
+    initialised = 0;
 }

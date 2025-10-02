@@ -1,8 +1,4 @@
-#include <assert.h>
-
 #include "common.h"
-
-#include "moves.c"
 
 // todo maybe move these to another file
 static int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
@@ -47,25 +43,6 @@ enum slice
     SLICE_UD,
 };
 
-typedef union
-{
-    struct
-    {
-        char urf, ulb, drb, dlf;
-        char urb, ulf, drl, dlb;
-        char ur, ul, dr, dl;
-        char uf, ub, df, db;
-        char rf, rb, lf, lb;
-    };
-    struct
-    {
-        char corners[NUM_CORNERS];
-        char edges[NUM_EDGES];
-    };
-    char cubies[NUM_CORNERS+NUM_EDGES];
-} cube;
-// static_assert(sizeof(cube)==20, "");
-
 static cube move_table[] = {
     //      URF ULB DRB DLF URB ULF DRF DLB  UR  UL  DR  DL  UF  UB  DF  DB  RF  RB  LF  LB
     [U]  = {  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11},
@@ -89,7 +66,7 @@ static cube move_table[] = {
 };
 
 // use struct/constant instead of function that returns one
-static cube new_cube(void)
+cube new_cube(void)
 {
     cube x;
     for (int i=0; i<NUM_CORNERS; ++i) x.corners[i]=i;
@@ -136,12 +113,12 @@ static cube compose(cube x, cube y)
     return result;
 }
 
-static cube apply_move(cube x, int move)
+cube apply_move(cube x, int move)
 {
     return compose(x, move_table[move]);
 }
 
-static cube apply_moves(cube x, int *moves, int length)
+cube apply_moves(cube x, int *moves, int length)
 {
     cube result=x;
     for (int i=0; i<length; ++i) result=apply_move(result, moves[i]);
@@ -344,7 +321,11 @@ static void iddfs(cube x, int *path, int *length)
         *length+=depth;
     }
 }
-#define search iddfs
+
+void solve(cube x, int *moves, int *length)
+{
+    iddfs(x, moves, length);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
