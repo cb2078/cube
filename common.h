@@ -105,6 +105,7 @@ typedef union
     };
 } cube;
 cube new_cube(void);
+void print_cube(cube);
 cube apply_move(cube, int);
 cube apply_moves(cube, int *, int);
 void solve(cube, int *, int *);

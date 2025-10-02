@@ -74,7 +74,7 @@ cube new_cube(void)
     return x;
 }
 
-static void print_cube(cube x)
+void print_cube(cube x)
 {
     #define PRINT(x, ...) \
         printf("%2s ", x); \
