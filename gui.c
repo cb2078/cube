@@ -73,10 +73,6 @@ static void move(int move)
 
 static void scramble(void)
 {
-    printf("current\n");
-    for (int i=0; i<NUM_CUBIES; ++i) glm_versor_print(current_transforms[i], stdout);
-    printf("desired\n");
-    for (int i=0; i<NUM_CUBIES; ++i) glm_versor_print(desired_transforms[i], stdout);
     int moves[100];
     make_scramble(moves, LENGTH(moves));
     for (int i=0; i<LENGTH(moves); ++i) move(moves[i]);
