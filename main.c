@@ -6,7 +6,7 @@ int main(void)
     srand(time(0));
     tetrad_twist_table = init_tetrad_twist_table();
 
-    int moves[64];
+    int moves[128];
     int length=100;
 
     make_scramble(moves, length);
