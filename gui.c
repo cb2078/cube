@@ -122,6 +122,8 @@ static void set_mat4s(GLuint program, char *location, mat4 *m, int count)
 
 static int gui_thread(void *data)
 {
+    (void)data;
+
     SDL_LockMutex(mutex);
 
     LOOP(x, y, z) glm_vec3_copy((vec3){x-1, y-1, z-1}, cubie_offsets[x*9+y*3+z]);

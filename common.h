@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define ABS(x) ((x)<0 ? -(x) : x)
-#define LENGTH(x) (sizeof(x)/sizeof(x[0]))
+#define LENGTH(x) (long signed int)(sizeof(x)/sizeof(x[0]))
 #define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
 
 #define NUM_CUBIES 27
@@ -117,7 +117,7 @@ cube new_cube(void);
 void print_cube(cube);
 cube apply_move(cube, int);
 cube apply_moves(cube, int *, int);
-void solve(cube, int *, int *, int (*)(cube), int *);
+void solve(cube, int *, int *, int (*)(cube), int[6]);
 
 // moves.c
 extern int move_set[18];

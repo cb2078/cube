@@ -45,7 +45,7 @@ void make_scramble(int *moves, int length)
 void read_moves(char *s, int *moves, int *length)
 {
     *length=0;
-    for (int i=0; i<strlen(s);)
+    for (int i=0; i<(int)strlen(s);)
     {
         int n=0;
         while (s[i+n]!=' ' && s[i+n]!='\0')
