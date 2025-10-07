@@ -350,7 +350,7 @@ void gui_show_cube(cube x)
     gui();
     int moves[64];
     int length;
-    solve(x, moves, &length);
+    thistlethwaite(x, moves, &length);
     reset();
     for (int i=0; i<length; ++i) move(moves[i]);
 }

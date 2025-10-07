@@ -103,12 +103,21 @@ typedef union
     {
         char cubies[NUM_CORNERS+NUM_EDGES];
     };
+    struct
+    {
+        char tetrads[2][4];
+        char slices[3][4];
+    };
+    struct
+    {
+        char orbits[5][4];
+    };
 } cube;
 cube new_cube(void);
 void print_cube(cube);
 cube apply_move(cube, int);
 cube apply_moves(cube, int *, int);
-void solve(cube, int *, int *);
+void solve(cube, int *, int *, int (*)(cube), int *);
 
 // moves.c
 extern int move_set[18];
@@ -125,3 +134,24 @@ void gui_show_moves(int *, int);
 void gui_show_moves_fast(int *, int);
 void gui_show_cube(cube);
 void gui_wait_for_close();
+
+// table.c
+typedef struct
+{
+    int size; // size in bytes
+    int bits; // bits per entry
+    int mask; // (1<<bits)-1
+    int divisor; // sizeof(data[0])*/bits
+    char *filename;
+    unsigned *data;
+} table;
+table table_new(int size, int bits, char *filename);
+int table_read(table t);
+int table_write(table t);
+void table_set(table t, int i, int x);
+int table_get(table t, int i);
+
+//
+table init_tetrad_twist_table(void);
+extern table tetrad_twist_table;
+void thistlethwaite(cube x, int *path, int *length);
