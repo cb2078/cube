@@ -236,7 +236,7 @@ static int index_parity(cube x)
     int result=0;
     for (int i=0; i<NUM_CORNERS; ++i)
         for (int j=i+1; j<NUM_CORNERS; ++j)
-            result ^= (x.corners[i]&ORIENT_MASK)<(x.corners[j]&ORIENT_MASK);
+            result ^= (x.corners[i]&PERM_MASK)<(x.corners[j]&PERM_MASK);
     return result;
 }
 
@@ -372,7 +372,6 @@ void thistlethwaite(cube x, int *path, int *length)
         #endif
         *length += depth;
     }
-    printf("%d twist\n", index_tetrad_twist(x));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
