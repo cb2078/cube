@@ -386,7 +386,7 @@ table tetrad_twist_table;
 table init_tetrad_twist_table(void)
 {
     int n = fact[8];
-    table t = table_new(n, 1, "tetrad-twist");
+    table t = table_new(n, 1, "tetrad-twist.bin");
     if (table_read(t)) return t;
 
     for (int i=0; i<n; ++i)
