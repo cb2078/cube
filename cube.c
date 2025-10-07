@@ -152,42 +152,6 @@ cube apply_moves(cube x, int *moves, int length)
     return result;
 }
 
-static void get_orbit_ordered(char *cubies, int j, int length, char orbit[4])
-{
-    for (int i=0; i<4; ++i) orbit[i]=cubies[j*4+i]&PERM_MASK;
-}
-
-static void get_tetrad_ordered(cube x, int j, char tetrad[4])
-{
-    get_orbit_ordered(x.corners, j, NUM_CORNERS, tetrad);
-}
-
-static void get_slice_ordered(cube x, int j, char slice[4])
-{
-    get_orbit_ordered(x.edges, j, NUM_EDGES, slice);
-}
-
-static void get_orbit(char *cubies, int j, int length, char orbit[4])
-{
-    get_orbit_ordered(cubies, j, length, orbit);
-    // https://bertdobbelaere.github.io/sorting_networks.html#N4L5D3
-    #define SORT(i, j) do if (orbit[i]>orbit[j]) SWAP(orbit[i], orbit[j]); while (0)
-    SORT(0,2); SORT(1,3);
-    SORT(0,1); SORT(2,3);
-    SORT(1,2);
-    #undef SORT
-}
-
-static void get_tetrad(cube x, int j, char tetrad[4])
-{
-    get_orbit(x.corners, j, NUM_CORNERS, tetrad);
-}
-
-static void get_slice(cube x, int j, char slice[4])
-{
-    get_orbit(x.edges, j, NUM_EDGES, slice);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 static int index_co(cube x)
@@ -216,8 +180,14 @@ static int index_eo(cube x)
 
 static int index_orbit(char *cubies, int j, int length)
 {
-    char     orbit[4];
-    get_orbit(cubies, j, length, orbit);
+    char orbit[4];
+    for (int i=0; i<4; ++i) orbit[i]=cubies[j*4+i]&PERM_MASK;
+    // https://bertdobbelaere.github.io/sorting_networks.html#N4L5D3
+    #define SORT(i, j) do if (orbit[i]>orbit[j]) SWAP(orbit[i], orbit[j]); while (0)
+    SORT(0,2); SORT(1,3);
+    SORT(0,1); SORT(2,3);
+    SORT(1,2);
+    #undef SORT
     return combination_index(orbit, 4);
 }
 
@@ -273,25 +243,18 @@ static int goal_tw_g3(cube x)
 {
     static int powfact4[] = {1, 24, 576, 13824, 331776};
 
-    char orbits[5][4];
-    get_tetrad_ordered(x, 0, orbits[0]);
-    get_tetrad_ordered(x, 1, orbits[1]);
-    get_slice_ordered(x, 0, orbits[2]);
-    get_slice_ordered(x, 1, orbits[3]);
-    get_slice_ordered(x, 2, orbits[4]);
-
     // since cubies are in their tetrad/slice, number them from 0-3 within their tetrad
-    for (int i=0; i<5; ++i) for (int j=0; j<4; ++j) orbits[i][j] %= 4;
+    for (int i=0; i<5; ++i) for (int j=0; j<4; ++j) x.orbits[i][j] %= 4;
 
     int result = 0;
-    result += permutation_index(orbits[0], 4) * powfact4[0];
-    result += permutation_index(orbits[2], 4) * powfact4[1];
-    result += permutation_index(orbits[3], 4) * powfact4[2];
-    result += orbits[1][0]                    * powfact4[3];
+    result += permutation_index(x.orbits[0], 4) * powfact4[0];
+    result += permutation_index(x.orbits[2], 4) * powfact4[1];
+    result += permutation_index(x.orbits[3], 4) * powfact4[2];
+    result += x.orbits[1][0]                    * powfact4[3];
     // this isn't the most compact way of indexing the last slice
     // todo use pick perm
-    result += orbits[4][0]                    * powfact4[3] * 4;
-    result += orbits[4][1]                    * powfact4[3] * 16;
+    result += x.orbits[4][0]                    * powfact4[3] * 4;
+    result += x.orbits[4][1]                    * powfact4[3] * 16;
     return result == 221184;
 }
 
