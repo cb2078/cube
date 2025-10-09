@@ -85,12 +85,12 @@ int apply_cancellations(int *moves, int *length)
                 memmove(&moves[i], &moves[i+2], sizeof(int)*(*length-(i+2)));
                 *length-=2;
             }
-            cancelled=1;
         }
         else
         {
             SWAP(moves[i], moves[i+1]);
         }
+        cancelled=1;
     }
     if (cancelled) apply_cancellations(moves, length);
     return cancelled;
