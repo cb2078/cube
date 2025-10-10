@@ -1,8 +1,7 @@
-debug=1
-options='-Wall -Wextra -Wpedantic -lSDL3 -lGL -lm *.c'
-if test $debug -eq 1
+OPTIONS='-Wall -Wextra -Wpedantic -lSDL3 -lGL -lm *.c'
+if test ! $RELEASE
 then
-    gcc $options -Wno-unused-function -Wno-unused-variable -Wno-parentheses -g
+    gcc $OPTIONS -Wno-unused-function -Wno-unused-variable -Wno-parentheses -g
 else
-    gcc $options -O3
+    gcc $OPTIONS -O3
 fi
