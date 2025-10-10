@@ -36,10 +36,10 @@ int table_write(table t)
 void table_set(table t, int i, int x)
 {
     assert(x<=t.mask);
-    t.data[i/t.divisor] |= x<<(i&t.divisor-1);
+    t.data[i/t.divisor] |= x<<(i%t.divisor*t.bits);
 }
 
 int table_get(table t, int i)
 {
-    return (t.data[i/t.divisor]>>(i&t.divisor-1))&t.mask;
+    return (t.data[i/t.divisor]>>(i%t.divisor*t.bits))&t.mask;
 }

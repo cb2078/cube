@@ -4,9 +4,14 @@
 static int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
 static int fact[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800};
 
-static int choose(int n, int r)
+static int choose(int n, int k)
 {
-    return n>=r ?  fact[n]/fact[r]/fact[n-r] : 0;
+    return n>=k ? fact[n]/fact[k]/fact[n-k] : 0;
+}
+
+static int pick(int n, int k)
+{
+    return n>=k ? fact[n]/fact[n-k] : 0;
 }
 
 static int combination_index(char *x, int n)
@@ -17,31 +22,36 @@ static int combination_index(char *x, int n)
     return result;
 }
 
-static int permutation_index(char *x, int n)
+static int partial_permutation_index(char *x, int n, int k)
 {
     unsigned b = 0;
     int result = 0;
-    for (int i=0; i<n; ++i)
+    for (int i=0; i<k; ++i)
     {
-        b |= 1 << ((n-1)-x[i]);
+        b |= 1 << (n-1-x[i]);
         unsigned s = b >> (n-x[i]);
         int c = x[i]-__builtin_popcount(s);
-        result += c*fact[(n-1)-i];
+        result += c*pick(n-1-i, k-1-i);
     }
     return result;
 }
 
-static void inv_permutation_index(char *x, int n, int r)
+static int permutation_index(char *x, int n)
+{
+    return partial_permutation_index(x, n, n);
+}
+
+static void inv_permutation_index(char *x, int n, int j)
 {
     unsigned b = (1<<n)-1;
     for (int i=0; i<n; ++i)
     {
-        int c = r/fact[n-1-i];
+        int c = j/fact[n-1-i];
         x[i] = c;
         unsigned s;
         while (s=b>>(n-1-x[i]), __builtin_popcount(s)<=c) ++x[i];
         b ^= 1<<(n-1-x[i]);
-        r %= fact[n-1-i];
+        j %= fact[n-1-i];
     }
 }
 
@@ -244,18 +254,15 @@ static int goal_tw_g3(cube x)
     static int powfact4[] = {1, 24, 576, 13824, 331776};
 
     // since cubies are in their tetrad/slice, number them from 0-3 within their tetrad
-    for (int i=0; i<5; ++i) for (int j=0; j<4; ++j) x.orbits[i][j] %= 4;
+    for (int i=0; i<LENGTH(x.cubies); ++i) x.cubies[i] %= 4;
 
     int result = 0;
-    result += permutation_index(x.orbits[0], 4) * powfact4[0];
-    result += permutation_index(x.orbits[2], 4) * powfact4[1];
-    result += permutation_index(x.orbits[3], 4) * powfact4[2];
-    result += x.orbits[1][0]                    * powfact4[3];
-    // this isn't the most compact way of indexing the last slice
-    // todo use pick perm
-    result += x.orbits[4][0]                    * powfact4[3] * 4;
-    result += x.orbits[4][1]                    * powfact4[3] * 16;
-    return result == 221184;
+    result += permutation_index(x.tetrads[0], 4)           * powfact4[0];
+    result += permutation_index(x.slices[0], 4)            * powfact4[1];
+    result += permutation_index(x.slices[1], 4)            * powfact4[2];
+    result += partial_permutation_index(x.slices[2], 4, 2) * powfact4[3];
+    result += x.tetrads[1][0]                              * powfact4[3] * 12;
+    return result == 0;
 }
 
 struct
@@ -349,10 +356,10 @@ table tetrad_twist_table;
 table init_tetrad_twist_table(void)
 {
     int n = fact[8];
-    table t = table_new(n, 1, "tetrad-twist.bin");
+    table t = table_new(n, 4, "tetrad-twist.bin");
     if (table_read(t)) return t;
 
-    for (int i=0; i<n; ++i)
+    for (int i=0, j, k; i<n; ++i)
     {
         #if 1
         cube x = new_cube();
@@ -362,13 +369,14 @@ table init_tetrad_twist_table(void)
         int moves[64], length;
         solve(x, moves, &length, goal_cp5, stages[3].quater_turns);
         x = apply_moves(x, moves, length);
-        table_set(t, i, permutation_index(x.corners, 3)>0);
+        table_set(t, i, j=permutation_index(x.corners, 3));
         #else
-        table_set(t, i, permutation_index(
+        table_set(t, i, j=permutation_index(
             solve(seperate_corners(inv_index_cp(i)), goal_cp5),
             3
         ));
         #endif
+        assert((k=table_get(t, i)) == j);
     }
 
     table_write(t); // todo error handling
