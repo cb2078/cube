@@ -1,5 +1,7 @@
-a.out
-todo.md
-run.sh
-*.bin
 scripts/
+
+*.bin
+.project.gf
+a.out
+run.sh
+todo.md
