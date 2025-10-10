@@ -374,23 +374,3 @@ table init_tetrad_twist_table(void)
     table_write(t); // todo error handling
     return t;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-#if 1
-static void test(void)
-{
-    cube x = new_cube();
-    for (int i=0; i<LENGTH(move_set); ++i)
-    {
-        cube y = move_table[move_set[i]];
-        assert(cube_eq(compose(x, y), y));
-        assert(cube_eq(y, compose(x, y)));
-    }
-
-    int jperm[] = {R,U,R3,F3,R,U,R3,U3,R3,F,R2,U3,R3,U3};
-    x = apply_moves(x, jperm, LENGTH(jperm));
-    x = apply_moves(x, jperm, LENGTH(jperm));
-    assert(cube_eq(x, new_cube()));
-}
-#endif
