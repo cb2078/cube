@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,9 +45,9 @@ enum cubies
 {
     URF, ULB, DRB, DLF,
     URB, ULF, DRF, DLB,
-    UR,  UL,  DR,  DL,
-    UF,  UB,  DF,  DB,
     RF,  RB,  LF,  LB,
+    UF,  UB,  DF,  DB,
+    UR,  UL,  DR,  DL,
 };
 
 static char *move_str[] = {
@@ -66,9 +67,9 @@ static char *move_str[] = {
 static char *cubie_str[] = {
     "URF", "ULB", "DRB", "DLF",
     "URB", "ULF", "DRF", "DLB",
-    "UR",  "UL",  "DR",  "DL",
-    "UF",  "UB",  "DF",  "DB",
     "RF",  "RB",  "LF",  "LB",
+    "UF",  "UB",  "DF",  "DB",
+    "UR",  "UL",  "DR",  "DL",
 };
 
 static inline int get_move_type(int move)
@@ -90,9 +91,9 @@ typedef union
     {
         char urf, ulb, drb, dlf;
         char urb, ulf, drl, dlb;
-        char ur, ul, dr, dl;
-        char uf, ub, df, db;
         char rf, rb, lf, lb;
+        char uf, ub, df, db;
+        char ur, ul, dr, dl;
     };
     struct
     {
@@ -113,15 +114,33 @@ typedef union
         char orbits[5][4];
     };
 } cube;
+enum tetrad
+{
+    TETRAD_URF,
+    TETRAD_URB,
+};
+enum slice
+{
+    SLICE_UD,
+    SLICE_RL,
+    SLICE_FB,
+};
 cube new_cube(void);
 void print_cube(cube);
 cube apply_move(cube, int);
 cube apply_moves(cube, int *, int);
-void solve(cube, int *, int *, int (*)(cube), int[6]);
+//
+int get_co(cube);
+int get_eo(cube);
+void set_co(cube *, int);
+void set_eo(cube *, int);
+int get_tetrad_twist(cube);
+void set_tetrad_twist(cube *, int);
 
 // moves.c
 extern int move_set[18];
 int prune_move(int, int);
+void possible_moves(int *, int *, int, int[6]);
 void print_moves(int *, int);
 void make_scramble(int *, int);
 void read_moves(char *s, int *, int *);
@@ -141,8 +160,8 @@ typedef struct
     int size; // size in bytes
     int bits; // bits per entry
     int mask; // (1<<bits)-1
-    int divisor; // sizeof(data[0])*/bits
-    char *filename;
+    int divisor; // sizeof(data[0])/bits
+    char filename[256];
     unsigned *data;
 } table;
 table table_new(int size, int bits, char *filename);

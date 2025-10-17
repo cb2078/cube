@@ -1,7 +1,7 @@
 scripts/
 
-*.bin
+*bin
 .project.gf
-a.out
-run.sh
+cube
+meta
 todo.md

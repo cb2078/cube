@@ -1,93 +1,28 @@
 #include "common.h"
-
-// todo maybe move these to another file
-static int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
-static int fact[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800};
-
-static int choose(int n, int k)
-{
-    return n>=k ? fact[n]/fact[k]/fact[n-k] : 0;
-}
-
-static int pick(int n, int k)
-{
-    return n>=k ? fact[n]/fact[n-k] : 0;
-}
-
-static int combination_index(char *x, int n)
-{
-    int result=0;
-    for (int i=0; i<n; ++i)
-        result += choose(x[i], i+1);
-    return result;
-}
-
-static int partial_permutation_index(char *x, int n, int k)
-{
-    unsigned b = 0;
-    int result = 0;
-    for (int i=0; i<k; ++i)
-    {
-        b |= 1 << (n-1-x[i]);
-        unsigned s = b >> (n-x[i]);
-        int c = x[i]-__builtin_popcount(s);
-        result += c*pick(n-1-i, k-1-i);
-    }
-    return result;
-}
-
-static int permutation_index(char *x, int n)
-{
-    return partial_permutation_index(x, n, n);
-}
-
-static void inv_permutation_index(char *x, int n, int j)
-{
-    unsigned b = (1<<n)-1;
-    for (int i=0; i<n; ++i)
-    {
-        int c = j/fact[n-1-i];
-        x[i] = c;
-        unsigned s;
-        while (s=b>>(n-1-x[i]), __builtin_popcount(s)<=c) ++x[i];
-        b ^= 1<<(n-1-x[i]);
-        j %= fact[n-1-i];
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define PERM_MASK   0x0f
-#define ORIENT_MASK 0xf0
-
-enum slice
-{
-    SLICE_RL,
-    SLICE_FB,
-    SLICE_UD,
-};
+#include "coord.h"
+#include "util.h"
 
 static cube move_table[] =
 {
-    //       URF ULB DRB DLF URB ULF DRF DLB  UR  UL  DR  DL  UF  UB  DF  DB  RF  RB  LF  LB
-    [U]  = {{  4,  5,  2,  3,  1,  0,  6,  7,  5,  4,  2,  3,  0,  1,  6,  7,  8,  9, 10, 11}},
-    [R]  = {{ 38,  1, 36,  3, 16,  5, 18,  7,  8,  1,  9,  3,  4,  5,  6,  7,  2,  0, 10, 11}},
-    [F]  = {{ 21,  1,  2, 22,  4, 35, 32,  7,  0,  1,  2,  3, 26,  5, 24,  7, 20,  9, 22, 11}},
-    [D]  = {{  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  6,  7,  4,  5,  3,  2,  8,  9, 10, 11}},
-    [L]  = {{  0, 39,  2, 37,  4, 17,  6, 19,  0, 11,  2, 10,  4,  5,  6,  7,  8,  9,  1,  3}},
-    [B]  = {{  0, 20, 23,  3, 34,  5,  6, 33,  0,  1,  2,  3,  4, 25,  6, 27,  8, 23, 10, 21}},
-    [U2] = {{  1,  0,  2,  3,  5,  4,  6,  7,  1,  0,  2,  3,  5,  4,  6,  7,  8,  9, 10, 11}},
-    [R2] = {{  2,  1,  0,  3,  6,  5,  4,  7,  2,  1,  0,  3,  4,  5,  6,  7,  9,  8, 10, 11}},
-    [F2] = {{  3,  1,  2,  0,  4,  6,  5,  7,  0,  1,  2,  3,  6,  5,  4,  7, 10,  9,  8, 11}},
-    [D2] = {{  0,  1,  3,  2,  4,  5,  7,  6,  0,  1,  3,  2,  4,  5,  7,  6,  8,  9, 10, 11}},
-    [L2] = {{  0,  3,  2,  1,  4,  7,  6,  5,  0,  3,  2,  1,  4,  5,  6,  7,  8,  9, 11, 10}},
-    [B2] = {{  0,  2,  1,  3,  7,  5,  6,  4,  0,  1,  2,  3,  4,  7,  6,  5,  8, 11, 10,  9}},
-    [U3] = {{  5,  4,  2,  3,  0,  1,  6,  7,  4,  5,  2,  3,  1,  0,  6,  7,  8,  9, 10, 11}},
-    [R3] = {{ 36,  1, 38,  3, 18,  5, 16,  7,  9,  1,  8,  3,  4,  5,  6,  7,  0,  2, 10, 11}},
-    [F3] = {{ 22,  1,  2, 21,  4, 32, 35,  7,  0,  1,  2,  3, 24,  5, 26,  7, 22,  9, 20, 11}},
-    [D3] = {{  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  7,  6,  4,  5,  2,  3,  8,  9, 10, 11}},
-    [L3] = {{  0, 37,  2, 39,  4, 19,  6, 17,  0, 10,  2, 11,  4,  5,  6,  7,  8,  9,  3,  1}},
-    [B3] = {{  0, 23, 20,  3, 33,  5,  6, 34,  0,  1,  2,  3,  4, 27,  6, 25,  8, 21, 10, 23}},
+    //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
+    [U]  = {{  4,  5,  2,  3,  1,  0,  6,  7,  0,  1,  2,  3,  8,  9,  6,  7,  5,  4, 10, 11}},
+    [R]  = {{ 38,  1, 36,  3, 16,  5, 18,  7, 10,  8,  2,  3,  4,  5,  6,  7,  0,  9,  1, 11}},
+    [F]  = {{ 21,  1,  2, 22,  4, 35, 32,  7, 20,  1, 22,  3, 18,  5, 16,  7,  8,  9, 10, 11}},
+    [D]  = {{  0,  1,  6,  7,  4,  5,  3,  2,  0,  1,  2,  3,  4,  5, 11, 10,  8,  9,  6,  7}},
+    [L]  = {{  0, 39,  2, 37,  4, 17,  6, 19,  0,  1,  9, 11,  4,  5,  6,  7,  8,  3, 10,  2}},
+    [B]  = {{  0, 20, 23,  3, 34,  5,  6, 33,  0, 23,  2, 21,  4, 17,  6, 19,  8,  9, 10, 11}},
+    [U2] = {{  1,  0,  2,  3,  5,  4,  6,  7,  0,  1,  2,  3,  5,  4,  6,  7,  9,  8, 10, 11}},
+    [R2] = {{  2,  1,  0,  3,  6,  5,  4,  7,  1,  0,  2,  3,  4,  5,  6,  7, 10,  9,  8, 11}},
+    [F2] = {{  3,  1,  2,  0,  4,  6,  5,  7,  2,  1,  0,  3,  6,  5,  4,  7,  8,  9, 10, 11}},
+    [D2] = {{  0,  1,  3,  2,  4,  5,  7,  6,  0,  1,  2,  3,  4,  5,  7,  6,  8,  9, 11, 10}},
+    [L2] = {{  0,  3,  2,  1,  4,  7,  6,  5,  0,  1,  3,  2,  4,  5,  6,  7,  8, 11, 10,  9}},
+    [B2] = {{  0,  2,  1,  3,  7,  5,  6,  4,  0,  3,  2,  1,  4,  7,  6,  5,  8,  9, 10, 11}},
+    [U3] = {{  5,  4,  2,  3,  0,  1,  6,  7,  0,  1,  2,  3,  9,  8,  6,  7,  4,  5, 10, 11}},
+    [R3] = {{ 36,  1, 38,  3, 18,  5, 16,  7,  8, 10,  2,  3,  4,  5,  6,  7,  1,  9,  0, 11}},
+    [F3] = {{ 22,  1,  2, 21,  4, 32, 35,  7, 22,  1, 20,  3, 16,  5, 18,  7,  8,  9, 10, 11}},
+    [D3] = {{  0,  1,  7,  6,  4,  5,  2,  3,  0,  1,  2,  3,  4,  5, 10, 11,  8,  9,  7,  6}},
+    [L3] = {{  0, 37,  2, 39,  4, 19,  6, 17,  0,  1, 11,  9,  4,  5,  6,  7,  8,  2, 10,  3}},
+    [B3] = {{  0, 23, 20,  3, 33,  5,  6, 34,  0, 21,  2, 23,  4, 19,  6, 17,  8,  9, 10, 11}},
 };
 
 // use struct/constant instead of function that returns one
@@ -107,7 +42,7 @@ void print_cube(cube x)
             printf(__VA_ARGS__); \
         printf("\n");
     PRINT("",   "%s%3s", i?" ":"", cubie_str[i]);
-    PRINT("p:", "%s%3d", i?",":"", x.cubies[i]&PERM_MASK);
+    PRINT("p:", "%s%3d", i?",":"", x.cubies[i]&0x0f);
     PRINT("o:", "%s%3d", i?",":"", x.cubies[i]>>4);
     #undef PRINT
 }
@@ -123,31 +58,18 @@ static cube compose(cube x, cube y)
 
     for (int i=0; i<NUM_CORNERS; ++i)
     {
-        result.corners[i] = x.corners[y.corners[i]&PERM_MASK];
-        result.corners[i] += y.corners[i]&ORIENT_MASK;
+        result.corners[i] = x.corners[y.corners[i]&0x0f];
+        result.corners[i] += y.corners[i]&0xf0;
         result.corners[i] %= 3*0x10;
     }
 
     for (int i=0; i<NUM_EDGES; ++i)
     {
-        result.edges[i] = x.edges[y.edges[i]&PERM_MASK];
-        result.edges[i] += y.edges[i]&ORIENT_MASK;
+        result.edges[i] = x.edges[y.edges[i]&0x0f];
+        result.edges[i] += y.edges[i]&0xf0;
         result.edges[i] %= 2*0x10;
     }
 
-    return result;
-}
-
-static cube separate_corners(cube x)
-{
-    cube result = x;
-    int j=0, k=0;
-    for (int i=0; i<NUM_CORNERS; ++i)
-        if (x.corners[i]<4)
-            result.tetrads[0][j++] = x.corners[i];
-        else
-            result.tetrads[1][k++] = x.corners[i];
-    assert(j==4 && k==4);
     return result;
 }
 
@@ -165,7 +87,29 @@ cube apply_moves(cube x, int *moves, int length)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static int index_co(cube x)
+static void orient(char *x, int orientation)
+{
+    assert(orientation<3);
+    *x = (*x&0x0f) | (orientation<<4);
+}
+
+int get_eo(cube x)
+{
+    int result = 0;
+    for (int i=0; i<NUM_EDGES-1; ++i)
+        result += x.edges[i]>>4<<i;
+    return result;
+}
+
+void set_eo(cube *x, int r)
+{
+    char parity = 0;
+    for (int i=0, y; i<NUM_EDGES-1; ++i, r>>=1)
+        orient(x->edges+i, y=r&1), parity^=y;
+    orient(x->edges+NUM_EDGES-1, parity);
+}
+
+int get_co(cube x)
 {
     int result = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
@@ -173,155 +117,169 @@ static int index_co(cube x)
     return result;
 }
 
-static int index_eo(cube x)
+void set_co(cube *x, int r)
 {
-    int result = 0;
-    for (int i=0; i<NUM_EDGES-1; ++i)
-        result += (x.edges[i]>>4)<<i;
-    return result;
+    char parity = 0;
+    for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
+        orient(x->corners+i, y=r%3), parity+=y;
+    orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
 }
 
-static int index_orbit(char *cubies, int length, int j)
+int get_tetrad_twist(cube x)
 {
-    char orbit[4];
-    for (int i=0, n=0; i<length; ++i)
-        if ((cubies[i]&PERM_MASK)/4 == j)
-            orbit[n++] = i;
-    return combination_index(orbit, 4);
+    return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
 }
 
-static int index_tetrad(cube x)
+void set_tetrad_twist(cube *x, int i)
 {
-    return index_orbit(x.corners, NUM_CORNERS, 0);
-}
-
-static int index_slice(cube x, int j)
-{
-    return index_orbit(x.edges, NUM_EDGES, j);
-}
-
-static int index_parity(cube x)
-{
-    int result=0;
+    char perm[3];
+    set_permutation(perm, 3, i);
     for (int i=0; i<NUM_CORNERS; ++i)
-        for (int j=i+1; j<NUM_CORNERS; ++j)
-            result ^= (x.corners[i]&PERM_MASK)<(x.corners[j]&PERM_MASK);
-    return result;
-}
-
-static int index_tetrad_twist(cube x)
-{
-    return table_get(tetrad_twist_table, permutation_index(x.corners, NUM_CORNERS));
+        if (x->corners[i] < 3)
+            x->corners[i] = perm[(int)x->corners[i]];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static int goal_tw_g0(cube x)
-{
-    int result = index_eo(x);
-    return result == 0;
-}
+#define STACK_SIZE 2048
+#define PUSH(cube, move, depth) (assert(top-stack<STACK_SIZE), *top++ = (node){(cube), (move), (depth)})
 
-static int goal_tw_g1(cube x)
+typedef struct
 {
-    int result = index_co(x) + pow3[NUM_CORNERS-1]*index_slice(x, SLICE_UD);
-    return result == 1080378;
-}
+    cube cube;
+    int move;
+    int depth;
+} node;
 
-static int goal_tw_g2(cube x)
+static int idA(cube x, int *path, int (*h)(cube), int quater_turns[6])
 {
-    int result = 0;
-    result += index_slice(x, SLICE_FB);
-    result += index_tetrad(x)       * choose(8, 4);
-    result += index_tetrad_twist(x) * choose(8, 4) * choose(8, 4);
-    return result == 69;
-}
-
-static int goal_tw_g3(cube x)
-{
-    static int powfact4[] = {1, 24, 576, 13824, 331776};
-
-    // since cubies are in their tetrad/slice, number them from 0-3 within their tetrad
-    for (int i=0; i<LENGTH(x.cubies); ++i) x.cubies[i] %= 4;
-
-    int result = 0;
-    result += permutation_index(x.tetrads[0], 4)           * powfact4[0];
-    result += permutation_index(x.slices[0], 4)            * powfact4[1];
-    result += permutation_index(x.slices[1], 4)            * powfact4[2];
-    result += partial_permutation_index(x.slices[2], 4, 2) * powfact4[3];
-    result += x.tetrads[1][0]                              * powfact4[3] * 12;
-    return result == 0;
-}
-
-struct
-{
-    int (*goal)(cube);
-    int quater_turns[6];
-} stages[] =
-{
-    {goal_tw_g0, {1, 1, 1, 1, 1, 1}},
-    {goal_tw_g1, {1, 1, 0, 1, 1, 0}},
-    {goal_tw_g2, {1, 0, 0, 1, 0, 0}},
-    {goal_tw_g3, {0, 0, 0, 0, 0, 0}},
-};
-
-static int dls(cube x, int *path, int max_depth, int (*goal)(cube), int quater_turns[6])
-{
-    typedef struct
+    for (int max_depth=0;;)
     {
-        cube cube;
-        int move;
-        int depth;
-    } node;
-    node stack[2048] = {{.cube=x}}; // todo look at different stack sizes
-    node *top = 1+stack;
-    while (top>stack)
-    {
-        node cur = *--top;
-        if (cur.depth)
-            path[cur.depth-1] = cur.move;
-        if (goal(cur.cube))
-            return 0;
-        if (cur.depth == max_depth)
-            continue;
-
-        for (int i=0; i<LENGTH(move_set); ++i)
+        int min = INT_MAX;
+        node stack[STACK_SIZE];
+        node *top = stack;
+        PUSH(x, 0xff, 0);
+        while (top>stack)
         {
-            int face=move_set[i]%6;
-            int n=1+move_set[i]/U2;
-            if (n!=2 && !quater_turns[face])
+            node cur = *--top;
+
+            int f = h(cur.cube) + cur.depth;
+            if (f > max_depth)
+            {
+                min = f<min ? f : min;
                 continue;
-            if (prune_move(cur.move, move_set[i]))
-                continue;
-            assert(top-stack < 2048);
-            *top++ = (node){
-                .cube = apply_move(cur.cube, move_set[i]),
-                .move = move_set[i],
-                .depth = cur.depth+1,
-            };
+            }
+            if (cur.depth)
+                path[cur.depth-1] = cur.move;
+            if (0 == h(cur.cube))
+                return cur.depth;
+
+            int moves[18];
+            int length;
+            possible_moves(moves, &length, cur.move, quater_turns);
+            for (int i=0; i<length; ++i)
+                PUSH(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
         }
+        max_depth = min;
     }
-    return 1;
 }
 
-static int iddfs(cube x, int *path, int (*goal)(cube), int quater_turns[6])
+static void solve(cube x, int *path, int *length, int (*h)(cube), int quater_turns[6])
 {
-    int depth = 0;
-    while (dls(x, path, depth, goal, quater_turns)) ++depth;
-    return depth;
+    *length = idA(x, path, h, quater_turns);
 }
 
-void solve(cube x, int *path, int *length, int (*goal)(cube), int quater_turns[6])
+///////////////////////////////////////////////////////////////////////////////
+
+static void init_prune_table(coord *c)
 {
-    *length = iddfs(x, path, goal, quater_turns);
+    if (table_read(c->table = table_new(c->order, 8, c->name)))
+        return;
+
+    memset(c->table.data, 0xff, c->table.size);
+    table_set(c->table, c->get(new_cube()), 0);
+    for (int n=1, depth=0; n<c->order && depth<c->table.mask; ++depth)
+        for (int i=0; i<c->order; ++i)
+            if (table_get(c->table, i) == depth)
+            {
+                int moves[18], length;
+                possible_moves(moves, &length, 0xff, c->quater_turns);
+                for (int j=0, k; j<length; ++j)
+                    if (table_get(c->table, k=c->get(apply_move(c->set(i), moves[j]))) == c->table.mask)
+                        table_set(c->table, k, depth+1), ++n;
+            }
+    int missed=0;
+    for (int i=0; i<c->order; ++i)
+        if (table_get(c->table, i) == c->table.mask)
+        {
+            printf("missed %d", i), print_cube(c->set(i)), putchar('\n');
+            ++missed;
+        }
+    if (missed>0)
+        printf("missed %d entries\n", missed), exit(1);
+
+    table_write(c->table);
 }
+
+table tetrad_twist_table;
+table init_tetrad_twist_table(void)
+{
+    cube separate_corners(cube x)
+    {
+        cube result = x;
+        int j=0, k=0;
+        for (int i=0; i<NUM_CORNERS; ++i)
+            if (x.corners[i]<4)
+                result.tetrads[0][j++] = x.corners[i];
+            else
+                result.tetrads[1][k++] = x.corners[i];
+        assert(j==4 && k==4);
+        return result;
+    }
+
+    int h_cp5(cube x)
+    {
+        for (int i=3; i<NUM_CORNERS; ++i)
+            if (x.corners[i]!=i)
+                return 1;
+        return 0;
+    }
+
+    int n = fact[8];
+    table t = table_new(n, 4, "tetrad-twist");
+    if (table_read(t)) return t;
+
+    for (int i=0; i<n; ++i)
+    {
+        cube x = new_cube();
+        set_permutation(x.corners, NUM_CORNERS, i);
+        x = separate_corners(x);
+        int moves[64], length;
+        solve(x, moves, &length, h_cp5, tw_coords[3].quater_turns);
+        x = apply_moves(x, moves, length);
+        table_set(t, i, get_permutation(x.corners, 3));
+    }
+
+    table_write(t); // todo error handling
+    return t;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void thistlethwaite(cube x, int *path, int *length)
 {
-    *length = 0;
-    for (int i=0; i<LENGTH(stages); ++i)
+    static int initialised = 0;
+    if (!initialised)
     {
-        int depth = iddfs(x, path+*length, stages[i].goal, stages[i].quater_turns);
+        for (int i=0; i<LENGTH(tw_coords); ++i)
+            init_prune_table(&tw_coords[i]);
+        initialised = 1;
+    }
+
+    *length = 0;
+    for (int i=0; i<LENGTH(tw_coords); ++i)
+    {
+        int depth = idA(x, path+*length, tw_coords[i].h, tw_coords[i].quater_turns);
         x = apply_moves(x, path+*length, depth);
         #if 1
         printf("stage%d: ", i);
@@ -330,43 +288,4 @@ void thistlethwaite(cube x, int *path, int *length)
         #endif
         *length += depth;
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static int goal_cp5(cube x)
-{
-    for (int i=3; i<NUM_CORNERS; ++i) if (x.corners[i]!=i) return 0;
-    return 1;
-}
-
-table tetrad_twist_table;
-table init_tetrad_twist_table(void)
-{
-    int n = fact[8];
-    table t = table_new(n, 4, "tetrad-twist.bin");
-    if (table_read(t)) return t;
-
-    for (int i=0, j, k; i<n; ++i)
-    {
-        #if 1
-        cube x = new_cube();
-        inv_permutation_index(x.corners, NUM_CORNERS, i);
-        x = separate_corners(x);
-        // todo function for this
-        int moves[64], length;
-        solve(x, moves, &length, goal_cp5, stages[3].quater_turns);
-        x = apply_moves(x, moves, length);
-        table_set(t, i, j=permutation_index(x.corners, 3));
-        #else
-        table_set(t, i, j=permutation_index(
-            solve(seperate_corners(inv_index_cp(i)), goal_cp5),
-            3
-        ));
-        #endif
-        assert((k=table_get(t, i)) == j);
-    }
-
-    table_write(t); // todo error handling
-    return t;
 }

@@ -31,6 +31,15 @@ int prune_move(int x, int y)
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
 }
 
+void possible_moves(int *moves, int *length, int move, int quater_turns[6])
+{
+    *length = 0;
+    for (int i=0; i<LENGTH(move_set); ++i)
+        if ((move==0xff || !prune_move(move, move_set[i])) &&
+            (quater_turns[move_face(move_set[i])] || move_amount(move_set[i])==2))
+            moves[(*length)++] = move_set[i];
+}
+
 void print_moves(int *moves, int length)
 {
     for (int i=0; i<length; ++i) printf("%s%s", i?" ":"", move_str[moves[i]]);
