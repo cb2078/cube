@@ -1,26 +1,24 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
-SRC = gui.c main.c cube.c coord.c moves.c util.c table.c test.c
+SRC = cube.c coord.c moves.c util.c table.c
 
-all: debug
+RELEASE = 0
+ifeq ($(RELEASE), 1)
+	CFLAGS += -O3
+else
+	CFLAGS += -Wno-unused-function -Wno-unused-variable -g
+endif
 
-coord.c: meta.c util.c
-	$(CC) $(CFLAGS) -o meta $^
+cube: CFLAGS += -lSDL3 -lGL -lm
+cube: $(SRC) gui.c main.c
+
+meta: meta.c util.c
+coord.c: meta
 	./meta
 
-cube: $(SRC)
-	$(CC) $(CFLAGS) -lSDL3 -lGL -lm -o $@ $^
-
-debug: CFLAGS += -Wno-unused-function -Wno-unused-variable -g
-debug: cube
-
-release: CFLAGS += -O3
-release: cube
+test: $(SRC)
 
 clean:
-	rm -f coord.c coord.h cube *.bin meta
+	rm -f coord.c coord.h cube *.bin meta test
 
-run: all
-	./cube
-
-.PHONY: all clean debug release run
+.PHONY: clean
