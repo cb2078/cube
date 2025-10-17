@@ -199,7 +199,7 @@ static const struct cubie_subset subsets[] = {
     },
 };
 
-static int write_coord_rec(const struct coord *x, char *s, enum mode mode, int remaining)
+static int write_coord_rec(const struct coord *x, enum mode mode, int at_start, int at_end)
 {
 #define S subsets[x->subset]
 
@@ -271,35 +271,41 @@ static int write_coord_rec(const struct coord *x, char *s, enum mode mode, int r
                 default:
                     unreachable();
             }
-            fprintf(fp, "    ");
-            if (mode == GET)
-                fprintf(fp, "result += get_");
-            else
-                fprintf(fp, "i = result%%%s;\n    set_", amount);
-            fprintf(fp, "%s", expr);
             if (mode == SET)
-                fprintf(fp, ", i");
-            fprintf(fp, ")%s;\n", s);
+            {
+                fprintf(fp, "    i = result");
+                if (!at_end)
+                    fprintf(fp, "%%%s", amount);
+                fprintf(fp, ";\n");
+            }
+            fprintf(fp, "    %s%s%s)%s;\n",
+                    mode==GET ?  "result += get_" : "set_",
+                    expr,
+                    mode==SET ? ", i" : "",
+                    mode==GET&&!at_start ? " * i" : "");
             write_set_offset();
-            if (remaining && mode == SET)
-                fprintf(fp, "    result /= %s;\n", amount);
-            else
-                strcat(s, " * "), strcat(s, amount);
+            if (!at_end)
+                fprintf(fp, "    %s= %s;\n", mode==GET ? "i *" : "result /", amount);
+            fprintf(fp, "\n");
             break;
         case SYM:
             exit(1);
         case COMPOSITE:
             for (int i=0; i<x->count; ++i)
-                max *= write_coord_rec(&x->coords[i], s, mode, x->count-1-i);
+                max *= write_coord_rec(&x->coords[i], mode, i==0, i==x->count-1);
             break;
     }
     return max;
 #undef S
 }
 
+static int write_coord(const struct coord *x, enum mode mode)
+{
+    return write_coord_rec(x, mode, 1, 1);
+}
+
 int main(void)
 {
-    char buf[256];
     fp = fopen("coord.c", "w");
     int n = length(tw_coords);
     int max[4];
@@ -315,9 +321,10 @@ int main(void)
                 "\n"
                "static int get_tw_g%d(cube x)\n"
                "{\n"
-               "    int result = 0;\n", i);
-        memset(buf, 0x00, sizeof(buf));
-        max[i] = write_coord_rec(tw_coords+i, buf, GET, 0);
+               "    int result=0%s;\n"
+               "\n", i,
+               tw_coords[i].type==COMPOSITE && tw_coords[i].count>1 ? ", i=1" : "");
+        max[i] = write_coord(tw_coords+i, GET);
         fprintf(fp,
                 "    return result;\n"
                "}\n");
@@ -330,9 +337,9 @@ int main(void)
                "static cube set_tw_g%d(int result)\n"
                "{\n"
                "    cube x = new_cube();\n"
-               "    int i;\n", i);
-        memset(buf, 0x00, sizeof(buf));
-        (void)write_coord_rec(tw_coords+i, buf, SET, 0);
+               "    int i;\n"
+               "\n", i);
+        (void)write_coord(tw_coords+i, SET);
         fprintf(fp,
                 "    return x;\n"
                 "}\n");
