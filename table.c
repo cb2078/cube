@@ -1,6 +1,6 @@
 #include "common.h"
 
-table table_new(int entries, int bits, char *filename)
+table table_new(long long entries, int bits, char *filename)
 {
     assert(bits==1 || bits==2 || bits==4 || bits==8);
     table t;
@@ -8,7 +8,7 @@ table table_new(int entries, int bits, char *filename)
     t.size = (entries*bits+7)/8;
     t.mask = (1<<t.bits)-1;
     t.data = calloc(1, t.size);
-    t.divisor = sizeof(t.data[0])*8/t.bits;
+    t.divisor = (int)sizeof(t.data[0])*8/t.bits;
     strcpy(t.filename, filename);
     strcat(t.filename, ".bin");
     return t;
@@ -40,15 +40,15 @@ int table_write(table t)
     return 1;
 }
 
-void table_set(table t, int i, int x)
+void table_set(table t, long long i, int x)
 {
     assert(x<=t.mask);
-    int shift = (i&(t.divisor-1))*t.bits;
+    int shift = (int)(i&(t.divisor-1))*t.bits;
     t.data[i/t.divisor] = (t.data[i/t.divisor]&~(t.mask<<shift)) | x<<shift;
 }
 
-int table_get(table t, int i)
+int table_get(table t, long long i)
 {
-    int shift = (i&(t.divisor-1))*t.bits;
+    int shift = (int)(i&(t.divisor-1))*t.bits;
     return (t.data[i/t.divisor]>>shift)&t.mask;
 }

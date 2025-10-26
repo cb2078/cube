@@ -101,9 +101,9 @@ int get_eo(cube x)
     return result;
 }
 
-void set_eo(cube *x, int r)
+void set_eo(cube *x, long long r)
 {
-    char parity = 0;
+    int parity = 0;
     for (int i=0, y; i<NUM_EDGES-1; ++i, r>>=1)
         orient(x->edges+i, y=r&1), parity^=y;
     orient(x->edges+NUM_EDGES-1, parity);
@@ -117,9 +117,9 @@ int get_co(cube x)
     return result;
 }
 
-void set_co(cube *x, int r)
+void set_co(cube *x, long long r)
 {
-    char parity = 0;
+    int parity = 0;
     for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
         orient(x->corners+i, y=r%3), parity+=y;
     orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
@@ -130,10 +130,10 @@ int get_tetrad_twist(cube x)
     return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
 }
 
-void set_tetrad_twist(cube *x, int i)
+void set_tetrad_twist(cube *x, int r)
 {
     char perm[3];
-    set_permutation(perm, 3, i);
+    set_permutation(perm, 3, r);
     for (int i=0; i<NUM_CORNERS; ++i)
         if (x->corners[i] < 3)
             x->corners[i] = perm[(int)x->corners[i]];
@@ -198,25 +198,27 @@ static void init_prune_table(coord *c)
 
     memset(c->table.data, 0xff, c->table.size);
     table_set(c->table, c->get(new_cube()), 0);
-    for (int n=1, depth=0; n<c->order && depth<c->table.mask; ++depth)
-        for (int i=0; i<c->order; ++i)
+    long long n = 1;
+    for (int depth=0; n<c->order && depth<c->table.mask; ++depth)
+        for (long long i=0; i<c->order; ++i)
             if (table_get(c->table, i) == depth)
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
-                for (int j=0, k; j<length; ++j)
-                    if (table_get(c->table, k=c->get(apply_move(c->set(i), moves[j]))) == c->table.mask)
-                        table_set(c->table, k, depth+1), ++n;
+                for (int j=0; j<length; ++j)
+                {
+                    long long k = c->get(apply_move(c->set(i), moves[j]));
+                    if (table_get(c->table, k) == c->table.mask)
+                    {
+                        table_set(c->table, k, depth+1);
+                        ++n;
+                        fprintf(stderr, "\rdepth=%d n=%lld completion=%.0f%%", depth, n, (double)n/c->order*100);
+                    }
+                }
             }
-    int missed=0;
-    for (int i=0; i<c->order; ++i)
-        if (table_get(c->table, i) == c->table.mask)
-        {
-            printf("missed %d", i), print_cube(c->set(i)), putchar('\n');
-            ++missed;
-        }
-    if (missed>0)
-        printf("missed %d entries\n", missed), exit(1);
+    fprintf(stderr, "\r                                           \r");
+    if (n!=c->order)
+        printf("missed %lld entries\n", c->order-n), exit(1);
 
     table_write(c->table);
 }
@@ -255,7 +257,7 @@ table init_tetrad_twist_table(void)
         set_permutation(x.corners, NUM_CORNERS, i);
         x = separate_corners(x);
         int moves[64], length;
-        solve(x, moves, &length, h_cp5, tw_coords[3].quater_turns);
+        solve(x, moves, &length, h_cp5, tw_coords[LENGTH(tw_coords)-1].quater_turns); // todo half turns
         x = apply_moves(x, moves, length);
         table_set(t, i, get_permutation(x.corners, 3));
     }

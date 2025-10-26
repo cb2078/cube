@@ -6,7 +6,7 @@ RELEASE = 0
 ifeq ($(RELEASE), 1)
 	CFLAGS += -O3
 else
-	CFLAGS += -Wno-unused-function -Wno-unused-variable -g
+	CFLAGS += -g3 -Wno-unused-function -Wno-unused-variable -fsanitize=undefined
 endif
 
 cube: CFLAGS += -lSDL3 -lGL -lm

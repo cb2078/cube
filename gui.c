@@ -206,7 +206,7 @@ static int gui_thread(void *data)
     {
         int dim=i%3;
         vec3 v={0, 0, 0};
-        v[dim]=(int)(i/3)-0.5f;
+        v[dim]=(float)(i/3)-0.5f;
         glm_mat4_identity(facelet_transforms[i]);
         glm_translate(facelet_transforms[i], v);
         if (dim==2)
@@ -310,7 +310,7 @@ static int gui_thread(void *data)
         SDL_UnlockMutex(mutex);
 
         // rendering
-        glClearColor(0.1, 0.1, 0.1, 1.0);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 6*NUM_CUBIES);
         SDL_GL_SwapWindow(window);

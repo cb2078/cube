@@ -2,18 +2,18 @@
 #include "table.h"
 #include "util.h"
 
-static int get_tw_g0(cube x)
+static long long get_tw_g0(cube x)
 {
-    int result=0;
+    long long result=0;
 
     result += get_eo(x);
 
     return result;
 }
 
-static int get_tw_g1(cube x)
+static long long get_tw_g1(cube x)
 {
-    int result=0, i=1;
+    long long result=0, i=1;
 
     result += get_co(x);
     i *= pow3[NUM_CORNERS-1];
@@ -23,9 +23,9 @@ static int get_tw_g1(cube x)
     return result;
 }
 
-static int get_tw_g2(cube x)
+static long long get_tw_g2(cube x)
 {
-    int result=0, i=1;
+    long long result=0, i=1;
 
     for (int i=0; i<8; ++i) x.slices[SLICE_RL][i] -= 4;
     result += get_combination(x.slices[SLICE_RL], 8, 4);
@@ -39,9 +39,9 @@ static int get_tw_g2(cube x)
     return result;
 }
 
-static int get_tw_g3(cube x)
+static long long get_tw_g3(cube x)
 {
-    int result=0, i=1;
+    long long result=0, i=1;
 
     result += get_permutation(x.tetrads[TETRAD_URF], 4);
     i *= fact[4];
@@ -63,10 +63,10 @@ static int get_tw_g3(cube x)
     return result;
 }
 
-static cube set_tw_g0(int result)
+static cube set_tw_g0(long long result)
 {
     cube x = new_cube();
-    int i;
+    long long i;
 
     i = result;
     set_eo(&x, i);
@@ -74,10 +74,10 @@ static cube set_tw_g0(int result)
     return x;
 }
 
-static cube set_tw_g1(int result)
+static cube set_tw_g1(long long result)
 {
     cube x = new_cube();
-    int i;
+    long long i;
 
     i = result%pow3[NUM_CORNERS-1];
     set_co(&x, i);
@@ -89,10 +89,10 @@ static cube set_tw_g1(int result)
     return x;
 }
 
-static cube set_tw_g2(int result)
+static cube set_tw_g2(long long result)
 {
     cube x = new_cube();
-    int i;
+    long long i;
 
     i = result%choose(8, 4);
     set_combination(x.slices[SLICE_RL], 8, 4, i);
@@ -109,10 +109,10 @@ static cube set_tw_g2(int result)
     return x;
 }
 
-static cube set_tw_g3(int result)
+static cube set_tw_g3(long long result)
 {
     cube x = new_cube();
-    int i;
+    long long i;
 
     i = result%fact[4];
     set_permutation(x.tetrads[TETRAD_URF], 4, i);

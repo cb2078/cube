@@ -3,10 +3,10 @@
 typedef struct
 {
     char *name;
-    int (*get)(cube);
-    cube (*set)(int);
+    long long (*get)(cube);
+    cube (*set)(long long);
     int (*h)(cube);
-    int order;
+    long long order;
     table table;
     int quater_turns[6];
 } coord;

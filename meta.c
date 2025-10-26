@@ -199,7 +199,7 @@ static const struct cubie_subset subsets[] = {
     },
 };
 
-static int write_coord_rec(const struct coord *x, enum mode mode, int at_start, int at_end)
+static long long write_coord_rec(const struct coord *x, enum mode mode, int at_start, int at_end)
 {
 #define S subsets[x->subset]
 
@@ -223,7 +223,7 @@ static int write_coord_rec(const struct coord *x, enum mode mode, int at_start, 
             write_offset('+');
     }
 
-    int max = 1;
+    long long max = 1;
     switch (x->type)
     {
         case RAW:
@@ -299,7 +299,7 @@ static int write_coord_rec(const struct coord *x, enum mode mode, int at_start, 
 #undef S
 }
 
-static int write_coord(const struct coord *x, enum mode mode)
+static long long write_coord(const struct coord *x, enum mode mode)
 {
     return write_coord_rec(x, mode, 1, 1);
 }
@@ -308,7 +308,7 @@ int main(void)
 {
     fp = fopen("coord.c", "w");
     int n = length(tw_coords);
-    int max[4];
+    long long max[n];
 
     fprintf(fp,
             "#include \"coord.h\"\n"
@@ -319,9 +319,9 @@ int main(void)
     {
         fprintf(fp,
                 "\n"
-               "static int get_tw_g%d(cube x)\n"
+               "static long long get_tw_g%d(cube x)\n"
                "{\n"
-               "    int result=0%s;\n"
+               "    long long result=0%s;\n"
                "\n", i,
                tw_coords[i].type==COMPOSITE && tw_coords[i].count>1 ? ", i=1" : "");
         max[i] = write_coord(tw_coords+i, GET);
@@ -334,10 +334,10 @@ int main(void)
     {
         fprintf(fp,
                 "\n"
-               "static cube set_tw_g%d(int result)\n"
+               "static cube set_tw_g%d(long long result)\n"
                "{\n"
                "    cube x = new_cube();\n"
-               "    int i;\n"
+               "    long long i;\n"
                "\n", i);
         (void)write_coord(tw_coords+i, SET);
         fprintf(fp,
@@ -367,7 +367,7 @@ int main(void)
     };
     for (int i=0; i<n; ++i)
         fprintf(fp,
-                "    {.name=\"tw_g%d\", .get=get_tw_g%d, .set=set_tw_g%d, .h=h_tw_g%d, .quater_turns=%s, .order=%d},\n",
+                "    {.name=\"tw_g%d\", .get=get_tw_g%d, .set=set_tw_g%d, .h=h_tw_g%d, .quater_turns=%s, .order=%lld},\n",
                 i, i, i, i, quater_turns[i], max[i]);
     fprintf(fp, "};\n");
 
@@ -380,10 +380,10 @@ int main(void)
             "typedef struct\n"
             "{\n"
             "    char *name;\n"
-            "    int (*get)(cube);\n"
-            "    cube (*set)(int);\n"
+            "    long long (*get)(cube);\n"
+            "    cube (*set)(long long);\n"
             "    int (*h)(cube);\n"
-            "    int order;\n"
+            "    long long order;\n"
             "    table table;\n"
             "    int quater_turns[6];\n"
             "} coord;\n");
