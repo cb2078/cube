@@ -193,7 +193,7 @@ static void solve(cube x, int *path, int *length, int (*h)(cube), int quater_tur
 
 static void init_prune_table(coord *c)
 {
-    if (table_read(c->table = table_new(c->order, 8, c->name)))
+    if (table_read(c->table = table_new(c->order, 4, c->name)))
         return;
 
     void print(long long n, int depth, int reverse)
@@ -202,7 +202,7 @@ static void init_prune_table(coord *c)
         if (reverse)
             fprintf(stderr, " (backsearch)");
     }
-#if 1
+
     memset(c->table.data, 0xff, c->table.size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
