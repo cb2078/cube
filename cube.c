@@ -196,10 +196,14 @@ static void init_prune_table(coord *c)
     if (table_read(c->table = table_new(c->order, 8, c->name)))
         return;
 
+    void print(long long n, int depth)
+    {
+        fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth, (double)n/c->order*100);
+    }
     memset(c->table.data, 0xff, c->table.size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
-    for (int depth=0; n<c->order && depth<c->table.mask; ++depth)
+    for (int depth=0, x=0; n<c->order && depth<c->table.mask; ++depth)
         for (long long i=0; i<c->order; ++i)
             if (table_get(c->table, i) == depth)
             {
@@ -212,10 +216,16 @@ static void init_prune_table(coord *c)
                     {
                         table_set(c->table, k, depth+1);
                         ++n;
-                        fprintf(stderr, "\rdepth=%d n=%lld completion=%.0f%%", depth, n, (double)n/c->order*100);
+                        if (n*10000/c->order>x)
+                        {
+                            print(n, depth);
+                            ++x;
+                        }
                     }
                 }
             }
+        print(n, depth);
+    }
     fprintf(stderr, "\r                                           \r");
     if (n!=c->order)
         printf("missed %lld entries\n", c->order-n), exit(1);
