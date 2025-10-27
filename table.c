@@ -8,6 +8,7 @@ table table_new(long long entries, int bits, char *filename)
     t.size = (entries*bits+7)/8;
     t.mask = (1<<t.bits)-1;
     t.data = calloc(1, t.size);
+    if (!t.data) fprintf(stderr, "failed to allocate table: %s\n", filename), exit(1);
     t.divisor = (int)sizeof(t.data[0])*8/t.bits;
     strcpy(t.filename, filename);
     strcat(t.filename, ".bin");
