@@ -196,42 +196,45 @@ static void init_prune_table(coord *c)
     if (table_read(c->table = table_new(c->order, 8, c->name)))
         return;
 
-    void print(long long n, int depth)
+    void print(long long n, int depth, int reverse)
     {
         fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth, (double)n/c->order*100);
+        if (reverse)
+            fprintf(stderr, " (backsearch)");
     }
 #if 1
     memset(c->table.data, 0xff, c->table.size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
-    for (int depth=0, x=0; n<c->order && depth<c->table.mask; ++depth)
+    for (int depth=0, x=0, reverse=0; n<c->order && depth<c->table.mask; ++depth)
     {
         for (long long i=0; i<c->order; ++i)
-            if (c->table.data[i/c->table.divisor] == UINT_MAX)
+            if (!reverse && c->table.data[i/c->table.divisor] == UINT_MAX)
             {
                 i += c->table.divisor-1;
                 continue;
             }
-            else if (table_get(c->table, i) == depth)
+            else if (table_get(c->table, i) == (reverse ? c->table.mask : depth))
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
                 for (int j=0; j<length; ++j)
                 {
                     long long k = c->get(apply_move(c->set(i), moves[j]));
-                    if (table_get(c->table, k) == c->table.mask)
-                    {
+                    if (!reverse && table_get(c->table, k) == c->table.mask)
                         table_set(c->table, k, depth+1);
-                        ++n;
-                        if (n*10000/c->order>x)
-                        {
-                            print(n, depth);
-                            ++x;
-                        }
-                    }
+                    else if (reverse && table_get(c->table, k) == depth)
+                        table_set(c->table, i, depth+1);
+                    else
+                        continue;
+                    if (++n*10000/c->order > x)
+                        print(n, depth, reverse), ++x;
+                    if (reverse)
+                        break;
                 }
             }
-        print(n, depth);
+        reverse = n>c->order/2;
+        print(n, depth, reverse);
     }
     fprintf(stderr, "\r                                           \r");
     if (n!=c->order)
