@@ -200,12 +200,19 @@ static void init_prune_table(coord *c)
     {
         fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth, (double)n/c->order*100);
     }
+#if 1
     memset(c->table.data, 0xff, c->table.size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
     for (int depth=0, x=0; n<c->order && depth<c->table.mask; ++depth)
+    {
         for (long long i=0; i<c->order; ++i)
-            if (table_get(c->table, i) == depth)
+            if (c->table.data[i/c->table.divisor] == UINT_MAX)
+            {
+                i += c->table.divisor-1;
+                continue;
+            }
+            else if (table_get(c->table, i) == depth)
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
