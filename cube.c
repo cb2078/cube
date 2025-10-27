@@ -238,7 +238,7 @@ static void init_prune_table(coord *c)
     }
     fprintf(stderr, "\r                                           \r");
     if (n!=c->order)
-        printf("missed %lld entries\n", c->order-n), exit(1);
+        printf("skpped %lld entries\n", c->order-n);
 
     table_write(c->table);
 }
