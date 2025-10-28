@@ -27,7 +27,7 @@ static long long get_tw_g2(cube x)
 {
     long long result=0, i=1;
 
-    for (int i=0; i<8; ++i) x.slices[SLICE_RL][i] -= 4;
+    for (int i=0; i<8; ++i) *(x.slices[SLICE_RL]+i) -= 4;
     result += get_combination(x.slices[SLICE_RL], 8, 4);
     i *= choose(8, 4);
 
@@ -49,15 +49,15 @@ static long long get_tw_g3(cube x)
     result += get_permutation(x.slices[SLICE_UD], 4) * i;
     i *= fact[4];
 
-    for (int i=0; i<4; ++i) x.slices[SLICE_RL][i] -= 4;
+    for (int i=0; i<4; ++i) *(x.slices[SLICE_RL]+i) -= 4;
     result += get_permutation(x.slices[SLICE_RL], 4) * i;
     i *= fact[4];
 
-    for (int i=0; i<4; ++i) x.slices[SLICE_FB][i] -= 8;
+    for (int i=0; i<4; ++i) *(x.slices[SLICE_FB]+i) -= 8;
     result += get_partial_permutation(x.slices[SLICE_FB], 4, 2) * i;
     i *= pick(4, 2);
 
-    for (int i=0; i<4; ++i) x.tetrads[TETRAD_URB][i] -= 4;
+    for (int i=0; i<4; ++i) *(x.tetrads[TETRAD_URB]+i) -= 4;
     result += get_partial_permutation(x.tetrads[TETRAD_URB], 4, 1) * i;
 
     return result;
@@ -96,7 +96,7 @@ static cube set_tw_g2(long long result)
 
     i = result%choose(8, 4);
     set_combination(x.slices[SLICE_RL], 8, 4, i);
-    for (int i=0; i<8; ++i) x.slices[SLICE_RL][i] += 4;
+    for (int i=0; i<8; ++i) *(x.slices[SLICE_RL]+i) += 4;
     result /= choose(8, 4);
 
     i = result%choose(8, 4);
@@ -124,17 +124,17 @@ static cube set_tw_g3(long long result)
 
     i = result%fact[4];
     set_permutation(x.slices[SLICE_RL], 4, i);
-    for (int i=0; i<4; ++i) x.slices[SLICE_RL][i] += 4;
+    for (int i=0; i<4; ++i) *(x.slices[SLICE_RL]+i) += 4;
     result /= fact[4];
 
     i = result%pick(4, 2);
     set_partial_permutation(x.slices[SLICE_FB], 4, 2, i);
-    for (int i=0; i<4; ++i) x.slices[SLICE_FB][i] += 8;
+    for (int i=0; i<4; ++i) *(x.slices[SLICE_FB]+i) += 8;
     result /= pick(4, 2);
 
     i = result;
     set_partial_permutation(x.tetrads[TETRAD_URB], 4, 1, i);
-    for (int i=0; i<4; ++i) x.tetrads[TETRAD_URB][i] += 4;
+    for (int i=0; i<4; ++i) *(x.tetrads[TETRAD_URB]+i) += 4;
 
     return x;
 }

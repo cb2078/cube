@@ -208,7 +208,7 @@ static long long write_coord_rec(const struct coord *x, enum mode mode, int at_s
         if (!S.start)
             return;
         int n = x->indexer==PERMUTATION ? S.length : S.end-S.start;
-        fprintf(fp, "    for (int i=0; i<%d; ++i) x.%s[i] %c= %d;\n", n, S.name, op, S.start);
+        fprintf(fp, "    for (int i=0; i<%d; ++i) *(x.%s+i) %c= %d;\n", n, S.name, op, S.start);
     }
 
     void write_get_offset(void)
@@ -355,10 +355,8 @@ int main(void)
 
     fprintf(fp,
             "\n"
-           "coord tw_coords[] = \n"
-           "{\n"
-           // "    //         U  R  F  D  L  B\n"
-           );
+            "coord tw_coords[] = \n"
+            "{\n");
     static const char *quater_turns[] = {
         "{1, 1, 1, 1, 1, 1}",
         "{1, 1, 0, 1, 1, 0}",

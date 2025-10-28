@@ -68,7 +68,7 @@ void table_set(table *t, long long i, int x)
 {
     assert(x<=t->mask);
     int shift = (int)(i&(t->divisor-1))*t->bits;
-    t->data[i/t->divisor] = (t->data[i/t->divisor]&~(t->mask<<shift)) | x<<shift;
+    t->data[i/t->divisor] = (t->data[i/t->divisor]&~((unsigned)t->mask<<shift)) | (unsigned)x<<shift;
 }
 
 int table_get(table *t, long long i)
