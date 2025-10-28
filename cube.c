@@ -281,7 +281,9 @@ void init_tetrad_twist_table(void)
         solve(x, moves, &length, h_cp5, tw_coords[LENGTH(tw_coords)-1].quater_turns); // todo half turns
         x = apply_moves(x, moves, length);
         table_set(tetrad_twist_table, i, get_permutation(x.corners, 3));
+        fprintf(stderr, "\rcompletion=%.2f%%", (float)i/n*100);
     }
+    fprintf(stderr, "\r                                        \r");
 
     table_write(tetrad_twist_table); // todo error handling
 }
