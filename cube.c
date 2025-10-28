@@ -1,6 +1,5 @@
 #include "common.h"
 #include "coord.h"
-#include "table.h"
 #include "util.h"
 
 static cube move_table[] =
@@ -141,6 +140,14 @@ void set_tetrad_twist(cube *x, int r)
             x->corners[i] = perm[(int)x->corners[i]];
 }
 
+static int h_cp5(cube x)
+{
+    for (int i=3; i<NUM_CORNERS; ++i)
+        if (x.corners[i]!=i)
+            return 1;
+    return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define STACK_SIZE 2048
@@ -258,14 +265,6 @@ void init_tetrad_twist_table(void)
                 result.tetrads[1][k++] = x.corners[i];
         assert(j==4 && k==4);
         return result;
-    }
-
-    int h_cp5(cube x)
-    {
-        for (int i=3; i<NUM_CORNERS; ++i)
-            if (x.corners[i]!=i)
-                return 1;
-        return 0;
     }
 
     int n = fact[8];

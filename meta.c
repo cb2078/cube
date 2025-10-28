@@ -312,7 +312,6 @@ int main(void)
 
     fprintf(fp,
             "#include \"coord.h\"\n"
-            "#include \"table.h\"\n"
             "#include \"util.h\"\n");
 
     for (int i=0; i<n; ++i)

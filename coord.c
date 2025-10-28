@@ -1,5 +1,4 @@
 #include "coord.h"
-#include "table.h"
 #include "util.h"
 
 static long long get_tw_g0(cube x)
