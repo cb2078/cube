@@ -1,5 +1,6 @@
 #include "common.h"
 #include "coord.h"
+#include "table.h"
 #include "util.h"
 
 static cube move_table[] =
@@ -125,6 +126,7 @@ void set_co(cube *x, long long r)
     orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
 }
 
+static table *tetrad_twist_table;
 int get_tetrad_twist(cube x)
 {
     return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
@@ -203,25 +205,25 @@ static void init_prune_table(coord *c)
             fprintf(stderr, " (backsearch)");
     }
 
-    memset(c->table.data, 0xff, c->table.size);
+    memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
-    for (int depth=0, x=0, reverse=0; n<c->order && depth<c->table.mask; ++depth)
+    for (int depth=0, x=0, reverse=0; n<c->order && depth<c->table->mask; ++depth)
     {
         for (long long i=0; i<c->order; ++i)
-            if (!reverse && c->table.data[i/c->table.divisor] == UINT_MAX)
+            if (!reverse && c->table->data[i/c->table->divisor] == UINT_MAX)
             {
-                i += c->table.divisor-1;
+                i += c->table->divisor-1;
                 continue;
             }
-            else if (table_get(c->table, i) == (reverse ? c->table.mask : depth))
+            else if (table_get(c->table, i) == (reverse ? c->table->mask : depth))
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
                 for (int j=0; j<length; ++j)
                 {
                     long long k = c->get(apply_move(c->set(i), moves[j]));
-                    if (!reverse && table_get(c->table, k) == c->table.mask)
+                    if (!reverse && table_get(c->table, k) == c->table->mask)
                         table_set(c->table, k, depth+1);
                     else if (reverse && table_get(c->table, k) == depth)
                         table_set(c->table, i, depth+1);
@@ -243,8 +245,7 @@ static void init_prune_table(coord *c)
     table_write(c->table);
 }
 
-table tetrad_twist_table;
-table init_tetrad_twist_table(void)
+table *init_tetrad_twist_table(void)
 {
     cube separate_corners(cube x)
     {
@@ -268,7 +269,7 @@ table init_tetrad_twist_table(void)
     }
 
     int n = fact[8];
-    table t = table_new(n, 4, "tetrad-twist");
+    table *t = table_new(n, 4, "tetrad-twist");
     if (table_read(t)) return t;
 
     for (int i=0; i<n; ++i)
@@ -293,6 +294,7 @@ void thistlethwaite(cube x, int *path, int *length)
     static int initialised = 0;
     if (!initialised)
     {
+        tetrad_twist_table = init_tetrad_twist_table();
         for (int i=0; i<LENGTH(tw_coords); ++i)
             init_prune_table(&tw_coords[i]);
         initialised = 1;

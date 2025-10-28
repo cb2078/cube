@@ -1,4 +1,5 @@
 #include "cube.h"
+#include "table.h"
 
 typedef struct
 {
@@ -7,7 +8,7 @@ typedef struct
     cube (*set)(long long);
     int (*h)(cube);
     long long order;
-    table table;
+    table *table;
     int quater_turns[6];
 } coord;
 

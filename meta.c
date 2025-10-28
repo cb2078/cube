@@ -376,6 +376,7 @@ int main(void)
 
     fprintf(fp,
             "#include \"cube.h\"\n"
+            "#include \"table.h\"\n"
             "\n"
             "typedef struct\n"
             "{\n"
@@ -384,7 +385,7 @@ int main(void)
             "    cube (*set)(long long);\n"
             "    int (*h)(cube);\n"
             "    long long order;\n"
-            "    table table;\n"
+            "    table *table;\n"
             "    int quater_turns[6];\n"
             "} coord;\n");
 

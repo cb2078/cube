@@ -4,7 +4,6 @@
 int main(void)
 {
     srand(time(0));
-    tetrad_twist_table = init_tetrad_twist_table();
 
     int moves[128];
     int length=100;
