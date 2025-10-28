@@ -56,6 +56,25 @@ static int cube_valid(cube x)
 
 int main(void)
 {
+    TEST("valid cube")
+    {
+        cube x;
+        for (int i=0; i<LENGTH(move_set); ++i)
+        {
+            x = apply_move(new_cube(), move_set[i]);
+            // print_cube(x);
+            CHECK(cube_valid(x), 1);
+        }
+        for (int i=0; i<10; ++i)
+        {
+            int moves[256], length=100;
+            make_scramble(moves, length);
+            x = apply_moves(new_cube(), moves, length);
+            // print_cube(x);
+            CHECK(cube_valid(x), 1);
+        }
+    }
+
     TEST("combination")
     {
         int n=12, k=4;
