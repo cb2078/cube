@@ -303,11 +303,13 @@ void thistlethwaite(cube x, int *path, int *length)
     {
         int depth = idA(x, path+*length, tw_coords[i].h, tw_coords[i].quater_turns);
         x = apply_moves(x, path+*length, depth);
-        #if 1
         printf("stage%d: ", i);
         print_moves(path+*length, depth);
         printf(" // %d move%s\n", depth, depth==1?"":"s");
-        #endif
         *length += depth;
     }
+    apply_cancellations(path, length);
+    printf("full: ");
+    print_moves(path, *length);
+    printf(" // %d move%s\n", *length, *length==1?"":"s");
 }
