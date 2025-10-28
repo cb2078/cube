@@ -212,11 +212,13 @@ static void init_prune_table(coord *c)
             fprintf(stderr, " (backsearch)");
     }
 
+    long long distribution[20] = {1};
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     long long n = 1;
     for (int depth=0, x=0, reverse=0; n<c->order && depth<c->table->mask; ++depth)
     {
+        long long m = n;
         for (long long i=0; i<c->order; ++i)
             if (!reverse && c->table->data[i/c->table->divisor] == UINT_MAX)
             {
@@ -244,10 +246,15 @@ static void init_prune_table(coord *c)
             }
         reverse = n>c->order/2;
         print(n, depth, reverse);
+        distribution[depth+1] = n-m;
     }
     fprintf(stderr, "\r                                           \r");
     if (n!=c->order)
         printf("skpped %lld entries\n", c->order-n);
+    printf("%s distribution:\n", c->name);
+    for (int i=0; i<LENGTH(distribution); ++i)
+        if (distribution[i])
+            printf("%s[%d] = %lld\n", i<10?" ":"", i, distribution[i]);
 
     table_write(c->table);
 }
