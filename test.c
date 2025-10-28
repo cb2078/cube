@@ -9,6 +9,8 @@
 #define TEST(x) for (assert(!name), assert(x), name=(x); name; name=0)
 #define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
 
+table *init_tetrad_twist_table();
+
 static char *name;
 
 static void fail(int x, int y, char *xs, char *ys)
@@ -89,7 +91,7 @@ int main(void)
 
     TEST("Thistlethwaite coords")
     {
-        tetrad_twist_table = init_tetrad_twist_table();
+        init_tetrad_twist_table();
         for (int k=0; k<4; ++k)
             for (int i=0; i<tw_coords[k].order; ++i)
             {

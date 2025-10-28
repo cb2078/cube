@@ -245,7 +245,7 @@ static void init_prune_table(coord *c)
     table_write(c->table);
 }
 
-table *init_tetrad_twist_table(void)
+void init_tetrad_twist_table(void)
 {
     cube separate_corners(cube x)
     {
@@ -269,8 +269,8 @@ table *init_tetrad_twist_table(void)
     }
 
     int n = fact[8];
-    table *t = table_new(n, 4, "tetrad-twist");
-    if (table_read(t)) return t;
+    tetrad_twist_table = table_new(n, 4, "tetrad-twist");
+    if (table_read(tetrad_twist_table)) return;
 
     for (int i=0; i<n; ++i)
     {
@@ -280,11 +280,10 @@ table *init_tetrad_twist_table(void)
         int moves[64], length;
         solve(x, moves, &length, h_cp5, tw_coords[LENGTH(tw_coords)-1].quater_turns); // todo half turns
         x = apply_moves(x, moves, length);
-        table_set(t, i, get_permutation(x.corners, 3));
+        table_set(tetrad_twist_table, i, get_permutation(x.corners, 3));
     }
 
-    table_write(t); // todo error handling
-    return t;
+    table_write(tetrad_twist_table); // todo error handling
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -294,7 +293,7 @@ void thistlethwaite(cube x, int *path, int *length)
     static int initialised = 0;
     if (!initialised)
     {
-        tetrad_twist_table = init_tetrad_twist_table();
+        init_tetrad_twist_table();
         for (int i=0; i<LENGTH(tw_coords); ++i)
             init_prune_table(&tw_coords[i]);
         initialised = 1;
