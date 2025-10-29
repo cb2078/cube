@@ -16,7 +16,6 @@ static SDL_Mutex *mutex;
 static SDL_Thread *thread;
 static int initialised;
 
-static vec3 reflection;
 static vec3 cubie_offsets[NUM_CUBIES];
 static vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
@@ -44,11 +43,9 @@ static int can_move_cubie(vec3 cubie, int face, int type)
     }
 }
 
-static int reflected(void);
 static void get_cubie_position(int i, vec3 v)
 {
     glm_quat_rotatev(desired_transforms[i], cubie_offsets[i], v);
-    if (reflected()) glm_vec3_reflect(v, reflection, v);
 }
 
 static void move(int move)
@@ -57,7 +54,7 @@ static void move(int move)
     int type=get_move_type(move);
     int dim=face%3;
     int amount=move/U2+1;
-    int sign=(1-face/3*2)*(!reflected()||reflection[dim]?1:-1);
+    int sign=(1-face/3*2);
 
     SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
@@ -74,15 +71,23 @@ static void move(int move)
     SDL_UnlockMutex(mutex);
 }
 
-static void reflect(int dim)
+static void reflect(void)
 {
-    for (int i=0; i<3; ++i)
-        reflection[i] = i==dim ? !reflection[i] : 0;
-}
-
-static int reflected(void)
-{
-    return glm_vec3_dot(reflection, reflection);
+    SDL_LockMutex(mutex);
+    for (int i=0; i<NUM_CUBIES; ++i)
+    {
+        vec3 u, v;
+        vec4 q;
+        get_cubie_position(i, v);
+        if (can_move_cubie(v, 1, SLICE_MOVE))
+            continue;
+        v[0] = 0;
+        glm_vec3_reflect(v, (vec3){0, 1, 0}, u);
+        int sign = v[1]*v[2]>0 ? 1 : -1;
+        glm_quatv(q , glm_vec3_angle(u, v)*sign, (vec3){1, 0, 0});
+        glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
+    }
+    SDL_UnlockMutex(mutex);
 }
 
 static void scramble(void)
@@ -95,7 +100,6 @@ static void scramble(void)
 static void reset(void)
 {
     glm_quat_identity_array(desired_transforms, NUM_CUBIES);
-    glm_vec3_zero(reflection);
 }
 
 static GLuint new_shader(char *filename, GLuint type)
@@ -123,11 +127,6 @@ static GLuint new_shader(char *filename, GLuint type)
 
     free(buf);
     return shader;
-}
-
-static void set_vec3(GLuint program, char *location, vec3 v)
-{
-    glUniform3fv(glGetUniformLocation(program, location), 1, v);
 }
 
 static void set_mat4(GLuint program, char *location, mat4 m)
@@ -269,9 +268,7 @@ static int gui_thread(void *data)
                     {
                         case SDLK_F1: scramble(); break;
                         case SDLK_F2: reset(); break;
-                        case SDLK_F3: reflect(0); break;
-                        case SDLK_F4: reflect(1); break;
-                        case SDLK_F5: reflect(2); break;
+                        case SDLK_F4: reflect(); break;
                         #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
@@ -330,7 +327,6 @@ static int gui_thread(void *data)
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
         }
         set_mat4s(sp, "cubie_transforms", cubie_transforms, LENGTH(cubie_transforms));
-        set_vec3(sp, "reflection", reflection);
         SDL_UnlockMutex(mutex);
 
         // rendering

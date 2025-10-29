@@ -9,7 +9,6 @@ out vec3 VertexColour;
 float scale = 1.07;
 uniform mat4 facelet_transforms[6];
 uniform mat4 cubie_transforms[27];
-uniform vec3 reflection;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -19,7 +18,6 @@ void main()
 {
     gl_Position = scale * vec4(cubie_translation, 1) + facelet_transforms[gl_InstanceID % 6] * vec4(pos, 0, 1);
     gl_Position = cubie_transforms[gl_InstanceID / 6] * gl_Position;
-    gl_Position = vec4(gl_Position.xyz * (1 - 2 * reflection), gl_Position.w);
     gl_Position = projection * view * model * gl_Position;
     VertexColour = facelet_colour;
 }
