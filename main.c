@@ -3,6 +3,7 @@
 
 int main(void)
 {
+#if 0
     srand(time(0));
 
     int moves[128];
@@ -15,6 +16,10 @@ int main(void)
     thistlethwaite(x, moves, &length);
     gui_show_moves_fast(moves, length);
     gui_wait_for_close();
+#else
+    gui();
+    gui_wait_for_close();
+#endif
 
     return 0;
 }

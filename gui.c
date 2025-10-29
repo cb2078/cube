@@ -44,11 +44,11 @@ static int can_move_cubie(vec3 cubie, int face, int type)
     }
 }
 
+static int reflected(void);
 static void get_cubie_position(int i, vec3 v)
 {
     glm_quat_rotatev(desired_transforms[i], cubie_offsets[i], v);
-    if (glm_vec3_dot(reflection, reflection))
-        glm_vec3_reflect(v, reflection, v);
+    if (reflected()) glm_vec3_reflect(v, reflection, v);
 }
 
 static void move(int move)
@@ -57,7 +57,7 @@ static void move(int move)
     int type=get_move_type(move);
     int dim=face%3;
     int amount=move/U2+1;
-    int sign=(1-face/3*2)*(!reflection[1]||dim==1?1:-1);
+    int sign=(1-face/3*2)*(!reflected()||reflection[dim]?1:-1);
 
     SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
@@ -74,9 +74,15 @@ static void move(int move)
     SDL_UnlockMutex(mutex);
 }
 
-static void reflect(void)
+static void reflect(int dim)
 {
-    reflection[1]=!reflection[1];
+    for (int i=0; i<3; ++i)
+        reflection[i] = i==dim ? !reflection[i] : 0;
+}
+
+static int reflected(void)
+{
+    return glm_vec3_dot(reflection, reflection);
 }
 
 static void scramble(void)
@@ -263,7 +269,9 @@ static int gui_thread(void *data)
                     {
                         case SDLK_F1: scramble(); break;
                         case SDLK_F2: reset(); break;
-                        case SDLK_F4: reflect(); break;
+                        case SDLK_F3: reflect(0); break;
+                        case SDLK_F4: reflect(1); break;
+                        case SDLK_F5: reflect(2); break;
                         #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
