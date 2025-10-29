@@ -16,6 +16,7 @@ static SDL_Mutex *mutex;
 static SDL_Thread *thread;
 static int initialised;
 
+static vec3 reflection;
 static vec3 cubie_offsets[NUM_CUBIES];
 static vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
@@ -46,6 +47,8 @@ static int can_move_cubie(vec3 cubie, int face, int type)
 static void get_cubie_position(int i, vec3 v)
 {
     glm_quat_rotatev(desired_transforms[i], cubie_offsets[i], v);
+    if (glm_vec3_dot(reflection, reflection))
+        glm_vec3_reflect(v, reflection, v);
 }
 
 static void move(int move)
@@ -54,7 +57,7 @@ static void move(int move)
     int type=get_move_type(move);
     int dim=face%3;
     int amount=move/U2+1;
-    int sign=1-face/3*2;
+    int sign=(1-face/3*2)*(!reflection[1]||dim==1?1:-1);
 
     SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
@@ -71,6 +74,11 @@ static void move(int move)
     SDL_UnlockMutex(mutex);
 }
 
+static void reflect(void)
+{
+    reflection[1]=!reflection[1];
+}
+
 static void scramble(void)
 {
     int moves[100];
@@ -81,6 +89,7 @@ static void scramble(void)
 static void reset(void)
 {
     glm_quat_identity_array(desired_transforms, NUM_CUBIES);
+    glm_vec3_zero(reflection);
 }
 
 static GLuint new_shader(char *filename, GLuint type)
@@ -108,6 +117,11 @@ static GLuint new_shader(char *filename, GLuint type)
 
     free(buf);
     return shader;
+}
+
+static void set_vec3(GLuint program, char *location, vec3 v)
+{
+    glUniform3fv(glGetUniformLocation(program, location), 1, v);
 }
 
 static void set_mat4(GLuint program, char *location, mat4 m)
@@ -249,6 +263,7 @@ static int gui_thread(void *data)
                     {
                         case SDLK_F1: scramble(); break;
                         case SDLK_F2: reset(); break;
+                        case SDLK_F4: reflect(); break;
                         #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
@@ -307,6 +322,7 @@ static int gui_thread(void *data)
             glm_quat_mat4(current_transforms[i], cubie_transforms[i]);
         }
         set_mat4s(sp, "cubie_transforms", cubie_transforms, LENGTH(cubie_transforms));
+        set_vec3(sp, "reflection", reflection);
         SDL_UnlockMutex(mutex);
 
         // rendering
