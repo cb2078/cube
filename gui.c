@@ -54,7 +54,7 @@ static void move(int move)
     int type=get_move_type(move);
     int dim=face%3;
     int amount=move/U2+1;
-    int sign=(1-face/3*2);
+    int sign=1-face/3*2;
 
     SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
@@ -66,25 +66,6 @@ static void move(int move)
         v[dim]=1;
         vec4 q;
         glm_quatv(q, sign*amount*glm_rad(90), v);
-        glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
-    }
-    SDL_UnlockMutex(mutex);
-}
-
-static void reflect(void)
-{
-    SDL_LockMutex(mutex);
-    for (int i=0; i<NUM_CUBIES; ++i)
-    {
-        vec3 u, v;
-        vec4 q;
-        get_cubie_position(i, v);
-        if (can_move_cubie(v, 1, SLICE_MOVE))
-            continue;
-        v[0] = 0;
-        glm_vec3_reflect(v, (vec3){0, 1, 0}, u);
-        int sign = v[1]*v[2]>0 ? 1 : -1;
-        glm_quatv(q , glm_vec3_angle(u, v)*sign, (vec3){1, 0, 0});
         glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
     }
     SDL_UnlockMutex(mutex);
@@ -268,7 +249,6 @@ static int gui_thread(void *data)
                     {
                         case SDLK_F1: scramble(); break;
                         case SDLK_F2: reset(); break;
-                        case SDLK_F4: reflect(); break;
                         #define CASE(x, y) case SDLK_##x: move(y); break
                         CASE(1, S);
                         CASE(2, E);
