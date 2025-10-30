@@ -47,12 +47,12 @@ void print_cube(cube x)
     #undef PRINT
 }
 
-static int cube_eq(cube x, cube y)
+int cube_eq(cube x, cube y)
 {
     return 0==memcmp(&x, &y, sizeof(cube));
 }
 
-static cube compose(cube x, cube y)
+cube compose(cube x, cube y)
 {
     cube result;
 
@@ -146,6 +146,16 @@ static int h_cp5(cube x)
         if (x.corners[i]!=i)
             return 1;
     return 0;
+}
+
+cube invert_co(cube x)
+{
+    for (int i=0; i<NUM_CORNERS; ++i)
+    {
+        int co = x.corners[i]>>4;
+        orient(x.corners+i, co?3-co:co);
+    }
+    return x;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

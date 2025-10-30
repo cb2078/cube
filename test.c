@@ -56,6 +56,21 @@ static int cube_valid(cube x)
 
 int main(void)
 {
+    TEST("invert co")
+    {
+        for (int i=0; i<10; ++i)
+        {
+            int moves[256], length=100;
+            make_scramble(moves, length);
+            cube x = apply_moves(new_cube(), moves, length);
+            cube y = invert_co(x);
+            for (int i=0; i<NUM_CORNERS; ++i)
+                y.corners[i] = (y.corners[i]&0xf0)+i;
+            cube z = compose(x, y);
+            CHECK(get_co(z), 0);
+        }
+    }
+
     TEST("valid cube")
     {
         cube x;

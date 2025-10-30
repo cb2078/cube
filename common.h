@@ -126,7 +126,9 @@ enum slice
     SLICE_FB,
 };
 cube new_cube(void);
+int cube_eq(cube, cube);
 void print_cube(cube);
+cube compose(cube, cube);
 cube apply_move(cube, int);
 cube apply_moves(cube, int *, int);
 //
@@ -136,6 +138,7 @@ void set_co(cube *, long long);
 void set_eo(cube *, long long);
 int get_tetrad_twist(cube);
 void set_tetrad_twist(cube *, int);
+cube invert_co(cube);
 //
 void thistlethwaite(cube x, int *path, int *length);
 
