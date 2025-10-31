@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CUBE_H
+#define CUBE_H
 
 #define NUM_CORNERS 8
 #define NUM_EDGES 12
@@ -63,3 +64,5 @@ static int get_tetrad_twist(cube);
 static void set_tetrad_twist(cube *, int);
 
 static void thistlethwaite(cube x, int *path, int *length);
+
+#endif

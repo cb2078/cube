@@ -365,6 +365,9 @@ int main(void)
     fp = fopen("coord.h", "w");
 
     fprintf(fp,
+            "#ifndef COORD_H\n"
+            "#define COORD_H\n"
+            "\n"
             "#include \"cube.h\"\n"
             "#include \"table.h\"\n"
             "\n"
@@ -377,7 +380,9 @@ int main(void)
             "    long long order;\n"
             "    table *table;\n"
             "    int quater_turns[6];\n"
-            "} coord;\n");
+            "} coord;\n"
+            "\n"
+            "#endif\n");
 
     fprintf(fp,
             "\n"

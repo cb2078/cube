@@ -1,3 +1,6 @@
+#ifndef COORD_H
+#define COORD_H
+
 #include "cube.h"
 #include "table.h"
 
@@ -11,5 +14,7 @@ typedef struct
     table *table;
     int quater_turns[6];
 } coord;
+
+#endif
 
 static coord tw_coords[4];

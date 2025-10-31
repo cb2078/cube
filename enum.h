@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ENUM_H
+#define ENUM_H
 
 enum move
 {
@@ -49,3 +50,5 @@ static char *cubie_str[] =
     "UF",  "UB",  "DF",  "DB",
     "UR",  "UL",  "DR",  "DL",
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MOVES_H
+#define MOVES_H
 
 static int move_set[18] =
 {
@@ -15,3 +16,5 @@ static void make_scramble(int *, int);
 static void read_moves(char *s, int *, int *);
 static int apply_cancellations(int *, int *);
 static void inverse_moves(int *, int);
+
+#endif

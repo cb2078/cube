@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TABLE_H
+#define TABLE_H
 
 typedef struct
 {
@@ -15,3 +16,5 @@ static int table_read(table *t);
 static int table_write(table *t);
 static void table_set(table *t, long long i, int x);
 static int table_get(table *t, long long i);
+
+#endif
