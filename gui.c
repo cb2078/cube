@@ -4,12 +4,31 @@
 #include <cglm/cglm.h>
 
 #include "common.h"
+#include "cube.h"
+#include "enum.h"
+#include "moves.h"
 
+#define NUM_CUBIES 27
 #define EPSILON 1e-5
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
 #define LOOP(i, j, k) for (int i=0; i<3; ++i) for (int j=0; j<3; ++j) for (int k=0; k<3; ++k)
+
+enum cubie_type
+{
+    CORNER,
+    EDGE,
+    CENTRE,
+};
+
+enum move_type
+{
+    FACE_TURN,
+    WIDE_MOVE,
+    ROTATION,
+    SLICE_MOVE,
+};
 
 static SDL_Condition *condition;
 static SDL_Mutex *mutex;
@@ -19,6 +38,18 @@ static int initialised;
 static vec3 cubie_offsets[NUM_CUBIES];
 static vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
+
+static int get_move_type(int move)
+{
+    move%=U2;
+    if (move>=E)
+        return SLICE_MOVE;
+    if (move>=Y)
+        return ROTATION;
+    if (move>=UW)
+        return WIDE_MOVE;
+    return FACE_TURN;
+}
 
 static int on_face(vec3 cubie, int face)
 {

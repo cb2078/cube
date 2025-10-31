@@ -1,9 +1,6 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "common.h"
 #include "coord.h"
+#include "moves.h"
 #include "util.h"
 
 #define TEST(x) for (assert(!name), assert(x), name=(x); name; name=0)

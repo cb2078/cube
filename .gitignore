@@ -3,6 +3,7 @@ scripts/
 *bin
 .project.gf
 cube
-meta
+gen-coord
+gen-cube-table
 test
 todo.md

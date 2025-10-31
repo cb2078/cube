@@ -1,4 +1,6 @@
 #include "common.h"
+#include "gui.h"
+#include "moves.h"
 #include <time.h>
 
 int main(void)

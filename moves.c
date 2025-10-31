@@ -1,4 +1,6 @@
 #include "common.h"
+#include "enum.h"
+#include "moves.h"
 
 int move_set[18] = {
     U,  R,  F,  D,  L,  B,
