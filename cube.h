@@ -34,6 +34,23 @@ typedef union
     };
 } cube;
 
+enum cubies
+{
+    URF, ULB, DRB, DLF,
+    URB, ULF, DRF, DLB,
+    RF,  RB,  LF,  LB,
+    UF,  UB,  DF,  DB,
+    UR,  UL,  DR,  DL,
+};
+
+static char *cubie_str[] =
+{
+    "URF", "ULB", "DRB", "DLF",
+    "URB", "ULF", "DRF", "DLB",
+    "RF",  "RB",  "LF",  "LB",
+    "UF",  "UB",  "DF",  "DB",
+    "UR",  "UL",  "DR",  "DL",
+};
 enum tetrad
 {
     TETRAD_URF,

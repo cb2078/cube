@@ -2,7 +2,7 @@
 #define CUBE_TABLE_H
 
 #include "cube.h"
-#include "enum.h"
+#include "moves.h"
 
 static cube move_table[NUM_MOVES];
 static cube sym_table[48];

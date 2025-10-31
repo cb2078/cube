@@ -1,6 +1,5 @@
 #include "common.h"
 #include "cube-table.h"
-#include "enum.h"
 
 #include "coord.h"
 #include "cube.h"
