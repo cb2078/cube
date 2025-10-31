@@ -1,10 +1,4 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "table.h"
-
-table *table_new(long long entries, int bits, char *filename)
+static table *table_new(long long entries, int bits, char *filename)
 {
     assert(bits==1 || bits==2 || bits==4 || bits==8);
     long long size = (entries*bits+7)/8;
@@ -26,12 +20,12 @@ table *table_new(long long entries, int bits, char *filename)
     return t;
 }
 
-void table_destroy(table *t)
+static void table_destroy(table *t)
 {
     free(t);
 }
 
-int table_read(table *t)
+static int table_read(table *t)
 {
     FILE *f = fopen(t->filename, "r");
     if (f)
@@ -47,7 +41,7 @@ int table_read(table *t)
     }
 }
 
-int table_write(table *t)
+static int table_write(table *t)
 {
     FILE *f = fopen(t->filename, "w");
     if (f)
@@ -64,14 +58,14 @@ int table_write(table *t)
     }
 }
 
-void table_set(table *t, long long i, int x)
+static void table_set(table *t, long long i, int x)
 {
     assert(x<=t->mask);
     int shift = (int)(i&(t->divisor-1))*t->bits;
     t->data[i/t->divisor] = (t->data[i/t->divisor]&~((unsigned)t->mask<<shift)) | (unsigned)x<<shift;
 }
 
-int table_get(table *t, long long i)
+static int table_get(table *t, long long i)
 {
     int shift = (int)(i&(t->divisor-1))*t->bits;
     return (t->data[i/t->divisor]>>shift)&t->mask;

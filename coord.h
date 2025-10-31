@@ -12,4 +12,4 @@ typedef struct
     int quater_turns[6];
 } coord;
 
-extern coord tw_coords[4];
+static coord tw_coords[4];

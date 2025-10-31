@@ -1,6 +1,22 @@
 #include "common.h"
-#include "gui.h"
+#include "enum.h"
+
+#include "coord.h"
+#include "cube-table.h"
+#include "cube.h"
 #include "moves.h"
+#include "util.h"
+#include "table.h"
+#include "gui.h"
+
+#include "coord.c"
+#include "cube-table.c"
+#include "cube.c"
+#include "moves.c"
+#include "util.c"
+#include "table.c"
+#include "gui.c"
+
 #include <time.h>
 
 int main(void)

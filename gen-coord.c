@@ -1,9 +1,7 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "common.h"
 
 #include "util.h"
+#include "util.c"
 
 #define unreachable() assert(0 && "unreachable")
 #define length(x) (sizeof(x)/sizeof(x[0]))
@@ -310,10 +308,6 @@ int main(void)
     int n = length(tw_coords);
     long long max[n];
 
-    fprintf(fp,
-            "#include \"coord.h\"\n"
-            "#include \"util.h\"\n");
-
     for (int i=0; i<n; ++i)
     {
         fprintf(fp,
@@ -354,7 +348,7 @@ int main(void)
 
     fprintf(fp,
             "\n"
-            "coord tw_coords[] = \n"
+            "static coord tw_coords[] = \n"
             "{\n");
     static const char *quater_turns[] = {
         "{1, 1, 1, 1, 1, 1}",
@@ -388,7 +382,7 @@ int main(void)
 
     fprintf(fp,
             "\n"
-            "extern coord tw_coords[%d];\n", n);
+            "static coord tw_coords[%d];\n", n);
 
     fclose(fp);
 

@@ -46,19 +46,20 @@ enum slice
     SLICE_FB,
 };
 
-cube new_cube(void);
-void print_cube(cube);
-int cube_eq(cube, cube);
-cube compose(cube, cube);
-cube compose_3(cube, cube, cube);
-cube apply_move(cube, int);
-cube apply_moves(cube, int *, int);
-cube invert_co(cube);
+static cube new_cube(void);
+static void print_cube(cube);
+static int cube_eq(cube, cube);
+static cube compose(cube, cube);
+static cube compose_3(cube, cube, cube);
+static cube apply_move(cube, int);
+static cube apply_moves(cube, int *, int);
+static cube invert_co(cube);
 
-int get_co(cube);
-int get_eo(cube);
-void set_co(cube *, long long);
-void set_eo(cube *, long long);
-int get_tetrad_twist(cube);
-void set_tetrad_twist(cube *, int);
-void thistlethwaite(cube x, int *path, int *length);
+static int get_co(cube);
+static int get_eo(cube);
+static void set_co(cube *, long long);
+static void set_eo(cube *, long long);
+static int get_tetrad_twist(cube);
+static void set_tetrad_twist(cube *, int);
+
+static void thistlethwaite(cube x, int *path, int *length);

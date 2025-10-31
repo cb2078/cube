@@ -1,9 +1,10 @@
 scripts/
 
-*bin
+*.bin
+*.d
 .project.gf
-cube
 gen-coord
 gen-cube-table
+main
 test
 todo.md

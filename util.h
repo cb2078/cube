@@ -1,14 +1,14 @@
-extern int pow2[];
-extern int pow3[];
-extern int fact[];
-extern int powfact4[];
-int pick(int n, int k);
-int choose(int n, int k);
+static int pow2[];
+static int pow3[];
+static int fact[];
+static int powfact4[];
+static int pick(int n, int k);
+static int choose(int n, int k);
 
-int get_combination(char *x, int n, int k);
-void set_combination(char *x, int n, int k, int r);
-int get_partial_permutation(char *x, int n, int k);
-void set_partial_permutation(char *x, int n, int k, int r);
-int get_permutation(char *x, int n);
-void set_permutation(char *x, int n, int k);
-int get_parity(char *x, int n);
+static int get_combination(char *x, int n, int k);
+static void set_combination(char *x, int n, int k, int r);
+static int get_partial_permutation(char *x, int n, int k);
+static void set_partial_permutation(char *x, int n, int k, int r);
+static int get_permutation(char *x, int n);
+static void set_permutation(char *x, int n, int k);
+static int get_parity(char *x, int n);

@@ -1,13 +1,5 @@
-#include "common.h"
-#include "coord.h"
-#include "cube-table.h"
-#include "cube.h"
-#include "enum.h"
-#include "moves.h"
-#include "util.h"
-
-// use struct/constant instead of function that returns one
-cube new_cube(void)
+// TODO use struct/constant instead of function that returns one
+static cube new_cube(void)
 {
     cube x;
     for (int i=0; i<NUM_CORNERS; ++i) x.corners[i]=i;
@@ -15,7 +7,7 @@ cube new_cube(void)
     return x;
 }
 
-void print_cube(cube x)
+static void print_cube(cube x)
 {
     #define PRINT(x, ...) \
         printf("%2s ", x); \
@@ -28,12 +20,12 @@ void print_cube(cube x)
     #undef PRINT
 }
 
-int cube_eq(cube x, cube y)
+static int cube_eq(cube x, cube y)
 {
     return 0==memcmp(&x, &y, sizeof(cube));
 }
 
-cube compose(cube x, cube y)
+static cube compose(cube x, cube y)
 {
     cube result;
 
@@ -54,24 +46,24 @@ cube compose(cube x, cube y)
     return result;
 }
 
-cube compose_3(cube x, cube y, cube z)
+static cube compose_3(cube x, cube y, cube z)
 {
     return compose(compose(x, y), z);
 }
 
-cube apply_sim(cube x, int sym)
+static cube apply_sim(cube x, int sym)
 {
     x = compose_3(inv_sym_table[sym], x, sym_table[sym]);
     if (sym&1) x = invert_co(x);
     return x;
 }
 
-cube apply_move(cube x, int move)
+static cube apply_move(cube x, int move)
 {
     return compose(x, move_table[move]);
 }
 
-cube apply_moves(cube x, int *moves, int length)
+static cube apply_moves(cube x, int *moves, int length)
 {
     cube result=x;
     for (int i=0; i<length; ++i) result=apply_move(result, moves[i]);
@@ -86,7 +78,7 @@ static void orient(char *x, int orientation)
     *x = (*x&0x0f) | (orientation<<4);
 }
 
-int get_eo(cube x)
+static int get_eo(cube x)
 {
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
@@ -94,7 +86,7 @@ int get_eo(cube x)
     return result;
 }
 
-void set_eo(cube *x, long long r)
+static void set_eo(cube *x, long long r)
 {
     int parity = 0;
     for (int i=0, y; i<NUM_EDGES-1; ++i, r>>=1)
@@ -102,7 +94,7 @@ void set_eo(cube *x, long long r)
     orient(x->edges+NUM_EDGES-1, parity);
 }
 
-int get_co(cube x)
+static int get_co(cube x)
 {
     int result = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
@@ -110,7 +102,7 @@ int get_co(cube x)
     return result;
 }
 
-void set_co(cube *x, long long r)
+static void set_co(cube *x, long long r)
 {
     int parity = 0;
     for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
@@ -119,12 +111,12 @@ void set_co(cube *x, long long r)
 }
 
 static table *tetrad_twist_table;
-int get_tetrad_twist(cube x)
+static int get_tetrad_twist(cube x)
 {
     return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
 }
 
-void set_tetrad_twist(cube *x, int r)
+static void set_tetrad_twist(cube *x, int r)
 {
     char perm[3];
     set_permutation(perm, 3, r);
@@ -141,7 +133,7 @@ static int h_cp5(cube x)
     return 0;
 }
 
-cube invert_co(cube x)
+static cube invert_co(cube x)
 {
     for (int i=0; i<NUM_CORNERS; ++i)
     {
@@ -262,7 +254,7 @@ static void init_prune_table(coord *c)
     table_write(c->table);
 }
 
-void init_tetrad_twist_table(void)
+static void init_tetrad_twist_table(void)
 {
     cube separate_corners(cube x)
     {
@@ -299,7 +291,7 @@ void init_tetrad_twist_table(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void thistlethwaite(cube x, int *path, int *length)
+static void thistlethwaite(cube x, int *path, int *length)
 {
     static int initialised = 0;
     if (!initialised)

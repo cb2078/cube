@@ -3,11 +3,6 @@
 #include <SDL3/SDL.h>
 #include <cglm/cglm.h>
 
-#include "common.h"
-#include "cube.h"
-#include "enum.h"
-#include "moves.h"
-
 #define NUM_CUBIES 27
 #define EPSILON 1e-5
 #define WINDOW_WIDTH 800
@@ -353,7 +348,7 @@ static int gui_thread(void *data)
     return 0;
 }
 
-void gui(void)
+static void gui(void)
 {
     if (initialised) return;
 
@@ -366,19 +361,19 @@ void gui(void)
     SDL_UnlockMutex(mutex);
 }
 
-void gui_show_moves(int *moves, int length)
+static void gui_show_moves(int *moves, int length)
 {
     gui();
     for (int i=0; i<length; ++i) move(moves[i]), SDL_Delay(500);
 }
 
-void gui_show_moves_fast(int *moves, int length)
+static void gui_show_moves_fast(int *moves, int length)
 {
     gui();
     for (int i=0; i<length; ++i) move(moves[i]);
 }
 
-void gui_show_cube(cube x)
+static void gui_show_cube(cube x)
 {
     gui();
     int moves[64];
@@ -388,7 +383,7 @@ void gui_show_cube(cube x)
     for (int i=0; i<length; ++i) move(moves[i]);
 }
 
-void gui_wait_for_close(void)
+static void gui_wait_for_close(void)
 {
     SDL_WaitThread(thread, NULL);
     SDL_DestroyMutex(mutex);

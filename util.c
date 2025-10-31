@@ -1,13 +1,9 @@
-#include "util.h"
+static int pow2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
+static int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
+static int fact[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
+static int powfact4[] = {1, 24, 576, 13824, 331776};
 
-#define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
-
-int pow2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-int pow3[] = {1, 3, 9, 27, 81, 243, 729, 2187};
-int fact[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
-int powfact4[] = {1, 24, 576, 13824, 331776};
-
-int get_parity(char *x, int n)
+static int get_parity(char *x, int n)
 {
     int r = 0;
     for (int i=0; i<n; ++i)
@@ -16,12 +12,12 @@ int get_parity(char *x, int n)
     return r;
 }
 
-int pick(int n, int k)
+static int pick(int n, int k)
 {
     return n>=k ? fact[n]/fact[n-k] : 0;
 }
 
-int choose(int n, int k)
+static int choose(int n, int k)
 {
     return n>=k ? fact[n]/fact[n-k]/fact[k] : 0;
 }
@@ -33,7 +29,7 @@ static void fill_remaining(char *x, int n, int k, unsigned b)
             x[i] = k++;
 }
 
-int get_combination(char *x, int n, int k)
+static int get_combination(char *x, int n, int k)
 {
     int r=0;
     for (int i=0, j=0; i<n; ++i)
@@ -42,7 +38,7 @@ int get_combination(char *x, int n, int k)
     return r;
 }
 
-void set_combination(char *x, int n, int k, int r)
+static void set_combination(char *x, int n, int k, int r)
 {
     unsigned b = 0;
     for (int i=0, j=k; i<n; ++i)
@@ -57,7 +53,7 @@ void set_combination(char *x, int n, int k, int r)
     fill_remaining(x, n, k, b);
 }
 
-int get_partial_permutation(char *x, int n, int k)
+static int get_partial_permutation(char *x, int n, int k)
 {
     unsigned b = 0;
     int r = 0;
@@ -71,7 +67,7 @@ int get_partial_permutation(char *x, int n, int k)
     return r;
 }
 
-void set_partial_permutation(char *x, int n, int k, int r)
+static void set_partial_permutation(char *x, int n, int k, int r)
 {
     unsigned b = 0;
     for (int i=0; i<k; ++i)
@@ -87,12 +83,12 @@ void set_partial_permutation(char *x, int n, int k, int r)
     fill_remaining(x, n, k, b);
 }
 
-int get_permutation(char *x, int n)
+static int get_permutation(char *x, int n)
 {
     return get_partial_permutation(x, n, n);
 }
 
-void set_permutation(char *x, int n, int r)
+static void set_permutation(char *x, int n, int r)
 {
     set_partial_permutation(x, n, n, r);
 }

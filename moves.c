@@ -1,13 +1,3 @@
-#include "common.h"
-#include "enum.h"
-#include "moves.h"
-
-int move_set[18] = {
-    U,  R,  F,  D,  L,  B,
-    U2, R2, F2, D2, L2, B2,
-    U3, R3, F3, D3, L3, B3
-};
-
 static int move_face(int x)
 {
     return x%6;
@@ -28,12 +18,12 @@ static int inverse_move(int x)
     return move_face(x) + U2*(3-move_amount(x));
 }
 
-int prune_move(int x, int y)
+static int prune_move(int x, int y)
 {
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
 }
 
-void possible_moves(int *moves, int *length, int move, int quater_turns[6])
+static void possible_moves(int *moves, int *length, int move, int quater_turns[6])
 {
     *length = 0;
     for (int i=0; i<LENGTH(move_set); ++i)
@@ -42,18 +32,18 @@ void possible_moves(int *moves, int *length, int move, int quater_turns[6])
             moves[(*length)++] = move_set[i];
 }
 
-void print_moves(int *moves, int length)
+static void print_moves(int *moves, int length)
 {
     for (int i=0; i<length; ++i) printf("%s%s", i?" ":"", move_str[moves[i]]);
 }
 
-void make_scramble(int *moves, int length)
+static void make_scramble(int *moves, int length)
 {
     for (int i=0; i<length; i+=i==0||!prune_move(moves[i-1], moves[i]))
         moves[i]=move_set[rand()%LENGTH(move_set)];
 }
 
-void read_moves(char *s, int *moves, int *length)
+static void read_moves(char *s, int *moves, int *length)
 {
     *length=0;
     for (int i=0; i<(int)strlen(s);)
@@ -75,7 +65,7 @@ void read_moves(char *s, int *moves, int *length)
     }
 }
 
-int apply_cancellations(int *moves, int *length)
+static int apply_cancellations(int *moves, int *length)
 {
     int cancelled=0;
     for (int i=*length-2; i>=0; --i)
@@ -107,7 +97,7 @@ int apply_cancellations(int *moves, int *length)
     return cancelled;
 }
 
-void inverse_moves(int *moves, int length)
+static void inverse_moves(int *moves, int length)
 {
     for (int i=0; i<length; ++i) moves[i]=inverse_move(moves[i]);
     for (int i=0, j=length-1; i<j; ++i, --j) SWAP(moves[i], moves[j]);

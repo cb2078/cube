@@ -1,30 +1,23 @@
-CC = gcc
-CFLAGS = -Wall -Wextra
-SRC = cube.c cube-table.c coord.c moves.c util.c table.c
+CC := gcc
+CFLAGS := -Wall -Wextra
+# CFLAGS += -O3
+CFLAGS += -g3 -Wno-unused-function -Wno-unused-variable -fsanitize=undefined
+GEN := coord.c cube-table.c
+EXE := $(GEN:%.c=gen-%) main test
+DEP := $(EXE:%=%.d)
 
-RELEASE = 0
-ifeq ($(RELEASE), 1)
-	CFLAGS += -O3
-else
-	CFLAGS += -g3 -Wno-unused-function -Wno-unused-variable -fsanitize=undefined
-endif
-
-cube: CFLAGS += -lSDL3 -lGL -lm
-cube: $(SRC) gui.c main.c
-
-test: $(SRC)
-
-gen-coord: gen-coord.c util.c
-coord.c: gen-coord
-	./gen-coord
-
-gen-cube-table: gen-cube-table.c cube.c util.c table.c moves.c coord.c
-cube-table.c: gen-cube-table
-	./gen-cube-table
+all: main
 
 clean:
-	rm -f *bin
-	rm -f coord.c coord.h cube-table.c
-	rm -f cube gen-coord gen-cube-table test
+	rm -f $(EXE) $(GEN) $(wildcard *.bin)
 
-.PHONY: clean
+main: LDFLAGS += -lSDL3 -lGL -lm
+$(EXE): %: %.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $< -MMD -o $@
+
+$(GEN): %.c: gen-%
+	./$^
+
+.PHONY: all clean
+
+-include $(DEP)

@@ -1,12 +1,22 @@
 #include "common.h"
+#include "enum.h"
+
 #include "coord.h"
+#include "cube-table.h"
+#include "cube.h"
 #include "moves.h"
 #include "util.h"
+#include "table.h"
+
+#include "coord.c"
+#include "cube-table.c"
+#include "cube.c"
+#include "moves.c"
+#include "util.c"
+#include "table.c"
 
 #define TEST(x) for (assert(!name), assert(x), name=(x); name; name=0)
 #define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
-
-table *init_tetrad_twist_table();
 
 static char *name;
 

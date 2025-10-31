@@ -1,7 +1,4 @@
-#include "cube.h"
-#include "enum.h"
-
-cube move_table[] =
+static cube move_table[] =
 {
     //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     [U]  = {{  4,  5,  2,  3,  1,  0,  6,  7,  0,  1,  2,  3,  8,  9,  6,  7,  5,  4, 10, 11}},
@@ -24,7 +21,7 @@ cube move_table[] =
     [B3] = {{  0, 23, 20,  3, 33,  5,  6, 34,  0, 21,  2, 23,  4, 19,  6, 17,  8,  9, 10, 11}},
 };
 
-cube sym_table[] =
+static cube sym_table[] =
 {
     //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     [0]  = {{  0,  1,  2,  3,  4,  5,  6,  7,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11}},
@@ -77,7 +74,7 @@ cube sym_table[] =
     [47] = {{ 35, 32, 33, 34, 21, 22, 23, 20, 11,  9, 10,  8, 22, 20, 23, 21,  2,  0,  3,  1}},
 };
 
-cube inv_sym_table[] =
+static cube inv_sym_table[] =
 {
     //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     [0]  = {{  0,  1,  2,  3,  4,  5,  6,  7,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11}},

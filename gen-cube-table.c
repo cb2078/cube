@@ -1,10 +1,18 @@
 #include "common.h"
-#include "cube.h"
+#include "cube-table.h"
 #include "enum.h"
 
-cube move_table[18];
-cube sym_table[48];
-cube inv_sym_table[48];
+#include "coord.h"
+#include "cube.h"
+#include "moves.h"
+#include "util.h"
+#include "table.h"
+
+#include "coord.c"
+#include "cube.c"
+#include "moves.c"
+#include "util.c"
+#include "table.c"
 
 static FILE *fp;
 
@@ -28,7 +36,7 @@ static void write_cube_array(cube *arr, int length,
                              char *name, char *(*format)(int))
 {
     fprintf(fp,
-            "cube %s[] =\n"
+            "static cube %s[] =\n"
             "{\n"
             "    //      ", name);
     for (int i=0; i<20; ++i)
@@ -82,15 +90,11 @@ int main(void)
 
     fp = fopen("cube-table.c", "w");
     if (!fp) exit(1);
-    fprintf(fp,
-            "#include \"cube.h\"\n"
-            "#include \"enum.h\"\n"
-            "\n");
-    write_cube_array(move_table, LENGTH(move_table), "move_table", to_move_str);
+    write_cube_array(move_table, 18, "move_table", to_move_str);
     fprintf(fp, "\n");
-    write_cube_array(sym_table, LENGTH(sym_table), "sym_table", to_str);
+    write_cube_array(sym_table, 48, "sym_table", to_str);
     fprintf(fp, "\n");
-    write_cube_array(inv_sym_table, LENGTH(inv_sym_table), "inv_sym_table", to_str);
+    write_cube_array(inv_sym_table, 48, "inv_sym_table", to_str);
     fclose(fp);
 
     return 0;
