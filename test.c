@@ -62,6 +62,18 @@ static int cube_valid(cube x)
 
 int main(void)
 {
+    TEST("symmetries")
+    {
+        for (int i=0; i<99; ++i)
+        {
+            int moves[256], length=100;
+            make_scramble(moves, length);
+            cube x = apply_moves(new_cube(), moves, length);
+            for (int j=0; j<LENGTH(sym_table); ++j)
+                CHECK(cube_valid(apply_sim(x, j)), 1);
+        }
+    }
+
     TEST("invert co")
     {
         for (int i=0; i<10; ++i)

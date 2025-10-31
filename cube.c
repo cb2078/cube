@@ -1,4 +1,3 @@
-// TODO use struct/constant instead of function that returns one
 static cube new_cube(void)
 {
     cube x;
