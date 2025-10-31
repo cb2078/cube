@@ -311,16 +311,15 @@ int main(void)
     for (int i=0; i<n; ++i)
     {
         fprintf(fp,
-                "\n"
-               "static long long get_tw_g%d(cube x)\n"
-               "{\n"
-               "    long long result=0%s;\n"
-               "\n", i,
-               tw_coords[i].type==COMPOSITE && tw_coords[i].count>1 ? ", i=1" : "");
+                "static long long get_tw_g%d(cube x)\n"
+                "{\n"
+                "    long long result=0%s;\n"
+                "\n", i,
+                tw_coords[i].type==COMPOSITE && tw_coords[i].count>1 ? ", i=1" : "");
         max[i] = write_coord(tw_coords+i, GET);
         fprintf(fp,
                 "    return result;\n"
-               "}\n");
+                "}\n");
     }
 
     for (int i=0; i<n; ++i)
@@ -348,7 +347,7 @@ int main(void)
 
     fprintf(fp,
             "\n"
-            "static coord tw_coords[] = \n"
+            "static coord tw_coords[] =\n"
             "{\n");
     static const char *quater_turns[] = {
         "{1, 1, 1, 1, 1, 1}",

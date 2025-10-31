@@ -1,4 +1,3 @@
-
 static long long get_tw_g0(cube x)
 {
     long long result=0;
@@ -7,7 +6,6 @@ static long long get_tw_g0(cube x)
 
     return result;
 }
-
 static long long get_tw_g1(cube x)
 {
     long long result=0, i=1;
@@ -19,7 +17,6 @@ static long long get_tw_g1(cube x)
 
     return result;
 }
-
 static long long get_tw_g2(cube x)
 {
     long long result=0, i=1;
@@ -35,7 +32,6 @@ static long long get_tw_g2(cube x)
 
     return result;
 }
-
 static long long get_tw_g3(cube x)
 {
     long long result=0, i=1;
@@ -156,7 +152,7 @@ static int h_tw_g3(cube x)
     return table_get(tw_coords[3].table, tw_coords[3].get(x));
 }
 
-static coord tw_coords[] = 
+static coord tw_coords[] =
 {
     {.name="tw_g0", .get=get_tw_g0, .set=set_tw_g0, .h=h_tw_g0, .quater_turns={1, 1, 1, 1, 1, 1}, .order=2048},
     {.name="tw_g1", .get=get_tw_g1, .set=set_tw_g1, .h=h_tw_g1, .quater_turns={1, 1, 0, 1, 1, 0}, .order=1082565},
