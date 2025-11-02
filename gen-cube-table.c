@@ -31,8 +31,7 @@ static char *to_move_str(int x)
     return buf;
 }
 
-static void write_cube_array(cube *arr, int length,
-                             char *name, char *(*format)(int))
+static void write_cube_array(cube *x, int length, char *name, char *(*format)(int))
 {
     fprintf(fp,
             "static cube %s[] =\n"
@@ -46,8 +45,21 @@ static void write_cube_array(cube *arr, int length,
         char *s = format(i);
         fprintf(fp, "    [%s]%s = {{", s, strlen(s)==1?" ":"");
         for (int j=0; j<20; ++j)
-            fprintf(fp, "%s%3d", j?",":"", arr[i].cubies[j]);
+            fprintf(fp, "%s%3d", j?",":"", x[i].cubies[j]);
         fprintf(fp, "}},\n");
+    }
+    fprintf(fp, "};\n");
+}
+
+static void write_array(int *x, int length, char *name, char *(*format)(int))
+{
+    fprintf(fp,
+            "static int %s[] =\n"
+            "{\n", name);
+    for (int i=0; i<length; ++i)
+    {
+        char *s = format(i);
+        fprintf(fp, "    [%s]%s = %d,\n", s, strlen(s)==1?" ":"", x[i]);
     }
     fprintf(fp, "};\n");
 }
@@ -84,6 +96,8 @@ int main(void)
             {
                 inv_sym_table[i] = sym_table[j];
                 inv_sym_table[j] = sym_table[i];
+                inv_sym[i] = j;
+                inv_sym[j] = i;
                 break;
             }
 
@@ -94,6 +108,8 @@ int main(void)
     write_cube_array(sym_table, 48, "sym_table", to_str);
     fprintf(fp, "\n");
     write_cube_array(inv_sym_table, 48, "inv_sym_table", to_str);
+    fprintf(fp, "\n");
+    write_array(inv_sym, 48, "inv_sym", to_str);
     fclose(fp);
 
     return 0;

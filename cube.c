@@ -50,7 +50,7 @@ static cube compose_3(cube x, cube y, cube z)
     return compose(compose(x, y), z);
 }
 
-static cube apply_sim(cube x, int sym)
+static cube apply_sym(cube x, int sym)
 {
     x = compose_3(inv_sym_table[sym], x, sym_table[sym]);
     if (sym&1) x = invert_co(x);
@@ -194,6 +194,35 @@ static void solve(cube x, int *path, int *length, int (*h)(cube), int quater_tur
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static void init_sym(coord *c)
+{
+    if (!c->is_sym)
+        return;
+
+    // since we're only dealing with the symmetry part of the coordinate, rename some of its variables
+    long long *order = &c->sym_part_order;
+    long long *eqv_classes = &c->order;
+    long long (*get)(cube) = c->get_sym_part;
+    cube (*set)(long long) = c->set_sym_part;
+
+    for (long long i=0; i<*order; ++i)
+        c->coord_to_eqv_class[i] = *order;
+    for (long long i=0; i<*order; ++i)
+    {
+        if (c->coord_to_eqv_class[i]<*order)
+            continue;
+        cube x = set(i);
+        for (int j=0; j<c->num_syms; ++j)
+        {
+            cube y = apply_sym(x, j);
+            int k = get(y);
+            c->coord_to_eqv_class[k] = *eqv_classes;
+            c->coord_to_rep_sym[k] = inv_sym[j];
+        }
+        c->eqv_class_to_rep[(*eqv_classes)++] = i;
+    }
+}
+
 static void init_prune_table(coord *c)
 {
     if (table_read(c->table = table_new(c->order, 4, c->name)))
@@ -297,7 +326,10 @@ static void thistlethwaite(cube x, int *path, int *length)
     {
         init_tetrad_twist_table();
         for (int i=0; i<LENGTH(tw_coords); ++i)
+        {
+            init_sym(&tw_coords[i]);
             init_prune_table(&tw_coords[i]);
+        }
         initialised = 1;
     }
 

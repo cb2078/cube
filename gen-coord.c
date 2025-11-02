@@ -3,9 +3,6 @@
 #include "util.h"
 #include "util.c"
 
-#define unreachable() assert(0 && "unreachable")
-#define length(x) (sizeof(x)/sizeof(x[0]))
-
 static FILE *fp;
 
 #define NUM_CORNERS 8
@@ -25,6 +22,8 @@ struct coord
         SYM,
         COMPOSITE,
     } type;
+    char *name;
+    long long order; // this will be set when writing the coordinate
     union
     {
         struct
@@ -62,97 +61,16 @@ struct coord
     };
 };
 
+static int num_sym_coords = 0;
+static struct coord *sym_coords[256];
+
 struct cubie_subset
 {
     char *name;
     int start, end, length;
 };
 
-static const struct coord coord_eo = {
-    .type = RAW,
-    .indexer = ORIENTATION,
-    .subset = EDGES,
-};
-
-static const struct coord coord_co = {
-    .type = RAW,
-    .indexer = ORIENTATION,
-    .subset = CORNERS,
-};
-
-static const struct coord coord_ud_slice = {
-    .type = RAW,
-    .indexer = COMBINATION,
-    .subset = SLICE_UD,
-};
-
-static const struct coord tw_coords[4] = {
-    [0] = coord_eo,
-    [1] = {
-        .type = COMPOSITE,
-        .count = 2,
-        .coords = (struct coord[]){
-            [0] = coord_co,
-            [1] = coord_ud_slice,
-        },
-    },
-    [2] = {
-        .type = COMPOSITE,
-        .count = 3,
-        .coords = (struct coord[]){
-            [0] = {
-                .type = RAW,
-                .indexer = COMBINATION,
-                .subset = SLICE_RL,
-            },
-            [1] = {
-                .type = RAW,
-                .indexer = COMBINATION,
-                .subset = TETRAD_URF,
-            },
-            [2] = {
-                .type = RAW,
-                .indexer = TETRAD_TWIST,
-                .subset = TETRAD_URF,
-            },
-        },
-    },
-    [3] = {
-        .type = COMPOSITE,
-        .count = 5,
-        .coords = (struct coord[]){
-            [0] = {
-                .type = RAW,
-                .indexer = PERMUTATION,
-                .subset = TETRAD_URF,
-            },
-            [1] = {
-                .type = RAW,
-                .indexer = PERMUTATION,
-                .subset = SLICE_UD,
-            },
-            [2] = {
-                .type = RAW,
-                .indexer = PERMUTATION,
-                .subset = SLICE_RL,
-            },
-            [3] = {
-                .type = RAW,
-                .indexer = PARTIAL_PERMUTATION,
-                .subset = SLICE_FB,
-                .k = 2,
-            },
-            [4] = {
-                .type = RAW,
-                .indexer = PARTIAL_PERMUTATION,
-                .subset = TETRAD_URB,
-                .k = 1,
-            },
-        },
-    },
-};
-
-static const struct cubie_subset subsets[] = {
+static struct cubie_subset subsets[] = {
     [CORNERS] = {
         .name = "corners",
         .start = 0,
@@ -197,7 +115,7 @@ static const struct cubie_subset subsets[] = {
     },
 };
 
-static long long write_coord_rec(const struct coord *x, enum mode mode, int at_start, int at_end)
+static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int at_end)
 {
 #define S subsets[x->subset]
 
@@ -221,7 +139,7 @@ static long long write_coord_rec(const struct coord *x, enum mode mode, int at_s
             write_offset('+');
     }
 
-    long long max = 1;
+    x->order = 1;
     switch (x->type)
     {
         case RAW:
@@ -232,7 +150,7 @@ static long long write_coord_rec(const struct coord *x, enum mode mode, int at_s
                 case COMBINATION:
                     sprintf(expr, "combination(x.%s, %d, %d", S.name, S.end-S.start, S.length);
                     sprintf(amount, "choose(%d, %d)", S.end-S.start, S.length);
-                    max = choose(S.end-S.start, S.length);
+                    x->order = choose(S.end-S.start, S.length);
                     break;
                 case ORIENTATION:
                     switch (x->subset)
@@ -240,34 +158,34 @@ static long long write_coord_rec(const struct coord *x, enum mode mode, int at_s
                         case CORNERS:
                             sprintf(expr, "co(%s", mode==GET ? "x" : "&x");
                             sprintf(amount, "pow3[NUM_CORNERS-1]");
-                            max = pow3[NUM_CORNERS-1];
+                            x->order = pow3[NUM_CORNERS-1];
                             break;
                         case EDGES:
                             sprintf(expr, "eo(%s", mode==GET ? "x" : "&x");
                             sprintf(amount, "pow2[NUM_EDGES-1]");
-                            max = pow2[NUM_EDGES-1];
+                            x->order = pow2[NUM_EDGES-1];
                             break;
                         default:
-                            unreachable();
+                            UNREACHABLE();
                     }
                     break;
                 case PERMUTATION:
                     sprintf(expr, "permutation(x.%s, %d", S.name, S.length);
                     sprintf(amount, "fact[%d]", S.length);
-                    max = fact[S.length];
+                    x->order = fact[S.length];
                     break;
                 case PARTIAL_PERMUTATION:
                     sprintf(expr, "partial_permutation(x.%s, %d, %d", S.name, S.length, x->k);
                     sprintf(amount, "pick(%d, %d)", S.length, x->k);
-                    max = pick(S.length, x->k);
+                    x->order = pick(S.length, x->k);
                     break;
                 case TETRAD_TWIST:
                     sprintf(expr, "tetrad_twist(%s", mode==GET ? "x" : "&x");
                     sprintf(amount, "6");
-                    max = 6;
+                    x->order = 6;
                     break;
                 default:
-                    unreachable();
+                    UNREACHABLE();
             }
             if (mode == SET)
             {
@@ -287,83 +205,153 @@ static long long write_coord_rec(const struct coord *x, enum mode mode, int at_s
             fprintf(fp, "\n");
             break;
         case SYM:
-            exit(1);
+            if (mode == SET)
+            {
+                fprintf(fp, "    result = tw_g0_eqv_class_to_rep[result];\n");
+                fprintf(fp, "\n");
+            }
+            // TODO try using write_coord (without the 'ref' suffix)
+            write_coord_rec(x->ref, mode, at_start, at_end);
+            if (mode == GET)
+            {
+                if (!at_end)
+                    fprintf(fp, "    long long sym = tw_g0_coord_to_rep_sym[result];\n");
+                fprintf(fp, "    result = tw_g0_coord_to_eqv_class[result];\n");
+                fprintf(fp, "\n");
+            }
+            // since this function is ran twice for get and set, only do the following once
+            if (mode == GET)
+                sym_coords[num_sym_coords++] = x->ref;
+            break;
         case COMPOSITE:
             for (int i=0; i<x->count; ++i)
-                max *= write_coord_rec(&x->coords[i], mode, i==0, i==x->count-1);
+            {
+                write_coord_rec(&x->coords[i], mode, i==0, i==x->count-1);
+                x->order *= x->coords[i].order;
+            }
             break;
     }
-    return max;
 #undef S
 }
 
-static long long write_coord(const struct coord *x, enum mode mode)
+static void write_coord(struct coord *x, enum mode mode)
 {
-    return write_coord_rec(x, mode, 1, 1);
+    write_coord_rec(x, mode, 1, 1);
 }
 
-int main(void)
+static void write_coord_getter(struct coord *x, char *name)
 {
-    fp = fopen("coord.c", "w");
-    int n = length(tw_coords);
-    long long max[n];
-
-    for (int i=0; i<n; ++i)
-    {
-        fprintf(fp,
-                "static long long get_tw_g%d(cube x)\n"
-                "{\n"
-                "    long long result=0%s;\n"
-                "\n", i,
-                tw_coords[i].type==COMPOSITE && tw_coords[i].count>1 ? ", i=1" : "");
-        max[i] = write_coord(tw_coords+i, GET);
-        fprintf(fp,
-                "    return result;\n"
-                "}\n");
-    }
-
-    for (int i=0; i<n; ++i)
-    {
-        fprintf(fp,
-                "\n"
-               "static cube set_tw_g%d(long long result)\n"
-               "{\n"
-               "    cube x = new_cube();\n"
-               "    long long i;\n"
-               "\n", i);
-        (void)write_coord(tw_coords+i, SET);
-        fprintf(fp,
-                "    return x;\n"
-                "}\n");
-    }
-
-    for (int i=0; i<n; ++i)
-        fprintf(fp,
-                "\n"
-               "static int h_tw_g%d(cube x)\n"
-               "{\n"
-               "    return table_get(tw_coords[%d].table, tw_coords[%d].get(x));\n"
-               "}\n", i, i, i);
-
     fprintf(fp,
-            "\n"
-            "static coord tw_coords[] =\n"
-            "{\n");
-    static const char *quater_turns[] = {
+            "static long long get_%s(cube x)\n"
+            "{\n"
+            "    long long result=0%s;\n"
+            "\n",
+            name,
+            x->type==COMPOSITE && x->count>1 ? ", i=1" : "");
+    write_coord(x, GET);
+    fprintf(fp,
+            "    return result;\n"
+            "}\n"
+            "\n");
+}
+
+static void write_coord_setter(struct coord *x, char *name)
+{
+    fprintf(fp,
+            "static cube set_%s(long long result)\n"
+            "{\n"
+            "    cube x = new_cube();\n"
+            "    long long i;\n"
+            "\n",
+            name);
+    write_coord(x, SET);
+    fprintf(fp,
+            "    return x;\n"
+            "}\n"
+            "\n");
+}
+
+static void write_coords(struct coord *x, int n, char *name)
+{
+    char buf[256];
+
+    for (int i=0; i<n; ++i)
+    {
+        snprintf(buf, 256, "%s_g%d", name, i);
+        write_coord_getter(x+i, buf);
+    }
+
+    for (int i=0; i<n; ++i)
+    {
+        snprintf(buf, 256, "%s_g%d", name, i);
+        write_coord_setter(x+i, buf);
+    }
+
+    for (int i=0; i<num_sym_coords; ++i)
+    {
+        snprintf(buf, 256, "%s", sym_coords[i]->name);
+        write_coord_getter(sym_coords[i], buf);
+    }
+
+    for (int i=0; i<num_sym_coords; ++i)
+    {
+        snprintf(buf, 256, "%s", sym_coords[i]->name);
+        write_coord_setter(sym_coords[i], buf);
+    }
+
+    for (int i=0; i<n; ++i)
+        fprintf(fp,
+                "static int h_tw_g%d(cube x)\n"
+                "{\n"
+                "    return table_get(tw_coords[%d].table, tw_coords[%d].get(x));\n"
+                "}\n"
+                "\n", i, i, i);
+
+    static char *quater_turns[] = {
         "{1, 1, 1, 1, 1, 1}",
         "{1, 1, 0, 1, 1, 0}",
         "{1, 0, 0, 1, 0, 0}",
         "{0, 0, 0, 0, 0, 0}",
     };
-    for (int i=0; i<n; ++i)
+    fprintf(fp,
+            "static coord tw_coords[] =\n"
+            "{\n");
+    for (int i=0, j=0; i<n; ++i)
+    {
+        struct coord *sym = x[i].type==SYM ? &x[i]
+            : x[i].type==COMPOSITE && x[i].coords[0].type==SYM ? &x[i].coords[0]
+            : 0;
         fprintf(fp,
-                "    {.name=\"tw_g%d\", .get=get_tw_g%d, .set=set_tw_g%d, .h=h_tw_g%d, .quater_turns=%s, .order=%lld},\n",
-                i, i, i, i, quater_turns[i], max[i]);
+                "    {\n"
+                "        .name = \"tw_g%d\",\n"
+                "        .get = get_tw_g%d,\n"
+                "        .set = set_tw_g%d,\n"
+                "        .h = h_tw_g%d,\n"
+                "        .quater_turns = %s,\n",
+                i, i, i, i, quater_turns[i]);
+        if (!sym)
+            fprintf(fp,
+                    "        .order = %lld,\n",
+                    x[i].order);
+        else
+            fprintf(fp,
+                    "        .is_sym = 1,\n"
+                    "        .num_syms = 16,\n"
+                    "        .coord_to_rep_sym = tw_g%d_coord_to_rep_sym,\n"
+                    "        .coord_to_eqv_class = tw_g%d_coord_to_eqv_class,\n"
+                    "        .eqv_class_to_rep = tw_g%d_eqv_class_to_rep,\n"
+                    "        .get_sym_part = get_%s,\n"
+                    "        .set_sym_part = set_%s,\n"
+                    "        .sym_part_order = %lld,\n",
+                    i, i, i, sym->ref->name, sym->ref->name, sym->ref->order);
+        fprintf(fp,
+                "    },\n");
+    }
     fprintf(fp, "};\n");
 
     fclose(fp);
-    fp = fopen("coord.h", "w");
 
+    fp = fopen("coord.h", "w");
     fprintf(fp,
             "#ifndef COORD_H\n"
             "#define COORD_H\n"
@@ -380,15 +368,131 @@ int main(void)
             "    long long order;\n"
             "    table *table;\n"
             "    int quater_turns[6];\n"
-            "} coord;\n"
-            "\n"
-            "#endif\n");
-
+            "    // sym data\n"
+            "    int is_sym;\n"
+            "    long long sym_part_order;\n"
+            "    int num_syms;\n"
+            "    int *coord_to_rep_sym;\n"
+            "    int *coord_to_eqv_class;\n"
+            "    int *eqv_class_to_rep;\n"
+            "    long long (*get_sym_part)(cube);\n"
+            "    cube (*set_sym_part)(long long);\n"
+            "} coord;\n");
+    for (int i=0; i<num_sym_coords; ++i)
+        fprintf(fp,
+                "\n"
+                "static int tw_g%d_coord_to_rep_sym[%lld];\n"
+                "static int tw_g%d_coord_to_eqv_class[%lld];\n"
+                "static int tw_g%d_eqv_class_to_rep[%lld];\n",
+                0, sym_coords[i]->order,
+                0, sym_coords[i]->order,
+                0, sym_coords[i]->order);
     fprintf(fp,
             "\n"
             "static coord tw_coords[%d];\n", n);
-
+    fprintf(fp,
+            "\n"
+            "#endif\n");
     fclose(fp);
+}
 
+int main(void)
+{
+    struct coord coord_eo = {
+        .name = "flip",
+        .type = RAW,
+        .indexer = ORIENTATION,
+        .subset = EDGES,
+    };
+
+    struct coord coord_co = {
+        .name = "twist",
+        .type = RAW,
+        .indexer = ORIENTATION,
+        .subset = CORNERS,
+    };
+
+    struct coord coord_ud_slice = {
+        .name = "ud_slice",
+        .type = RAW,
+        .indexer = COMBINATION,
+        .subset = SLICE_UD,
+    };
+
+    struct coord tw_coords[4] = {
+#if 0
+        [0] = coord_eo,
+#else
+        [0] = {
+            .type = SYM,
+            .ref = &coord_eo,
+        },
+#endif
+        [1] = {
+            .type = COMPOSITE,
+            .count = 2,
+            .coords = (struct coord[]){
+                [0] = coord_co,
+                [1] = coord_ud_slice,
+            },
+        },
+        [2] = {
+            .type = COMPOSITE,
+            .count = 3,
+            .coords = (struct coord[]){
+                [0] = {
+                    .type = RAW,
+                    .indexer = COMBINATION,
+                    .subset = SLICE_RL,
+                },
+                [1] = {
+                    .type = RAW,
+                    .indexer = COMBINATION,
+                    .subset = TETRAD_URF,
+                },
+                [2] = {
+                    .type = RAW,
+                    .indexer = TETRAD_TWIST,
+                    .subset = TETRAD_URF,
+                },
+            },
+        },
+        [3] = {
+            .type = COMPOSITE,
+            .count = 5,
+            .coords = (struct coord[]){
+                [0] = {
+                    .type = RAW,
+                    .indexer = PERMUTATION,
+                    .subset = TETRAD_URF,
+                },
+                [1] = {
+                    .type = RAW,
+                    .indexer = PERMUTATION,
+                    .subset = SLICE_UD,
+                },
+                [2] = {
+                    .type = RAW,
+                    .indexer = PERMUTATION,
+                    .subset = SLICE_RL,
+                },
+                [3] = {
+                    .type = RAW,
+                    .indexer = PARTIAL_PERMUTATION,
+                    .subset = SLICE_FB,
+                    .k = 2,
+                },
+                [4] = {
+                    .type = RAW,
+                    .indexer = PARTIAL_PERMUTATION,
+                    .subset = TETRAD_URB,
+                    .k = 1,
+                },
+            },
+        },
+    };
+
+    fp = fopen("coord.c", "w");
+    write_coords(tw_coords, LENGTH(tw_coords), "tw");
     return 0;
 }

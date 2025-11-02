@@ -4,8 +4,11 @@ static long long get_tw_g0(cube x)
 
     result += get_eo(x);
 
+    result = tw_g0_coord_to_eqv_class[result];
+
     return result;
 }
+
 static long long get_tw_g1(cube x)
 {
     long long result=0, i=1;
@@ -17,6 +20,7 @@ static long long get_tw_g1(cube x)
 
     return result;
 }
+
 static long long get_tw_g2(cube x)
 {
     long long result=0, i=1;
@@ -32,6 +36,7 @@ static long long get_tw_g2(cube x)
 
     return result;
 }
+
 static long long get_tw_g3(cube x)
 {
     long long result=0, i=1;
@@ -60,6 +65,8 @@ static cube set_tw_g0(long long result)
 {
     cube x = new_cube();
     long long i;
+
+    result = tw_g0_eqv_class_to_rep[result];
 
     i = result;
     set_eo(&x, i);
@@ -132,6 +139,26 @@ static cube set_tw_g3(long long result)
     return x;
 }
 
+static long long get_flip(cube x)
+{
+    long long result=0;
+
+    result += get_eo(x);
+
+    return result;
+}
+
+static cube set_flip(long long result)
+{
+    cube x = new_cube();
+    long long i;
+
+    i = result;
+    set_eo(&x, i);
+
+    return x;
+}
+
 static int h_tw_g0(cube x)
 {
     return table_get(tw_coords[0].table, tw_coords[0].get(x));
@@ -154,8 +181,43 @@ static int h_tw_g3(cube x)
 
 static coord tw_coords[] =
 {
-    {.name="tw_g0", .get=get_tw_g0, .set=set_tw_g0, .h=h_tw_g0, .quater_turns={1, 1, 1, 1, 1, 1}, .order=2048},
-    {.name="tw_g1", .get=get_tw_g1, .set=set_tw_g1, .h=h_tw_g1, .quater_turns={1, 1, 0, 1, 1, 0}, .order=1082565},
-    {.name="tw_g2", .get=get_tw_g2, .set=set_tw_g2, .h=h_tw_g2, .quater_turns={1, 0, 0, 1, 0, 0}, .order=29400},
-    {.name="tw_g3", .get=get_tw_g3, .set=set_tw_g3, .h=h_tw_g3, .quater_turns={0, 0, 0, 0, 0, 0}, .order=663552},
+    {
+        .name = "tw_g0",
+        .get = get_tw_g0,
+        .set = set_tw_g0,
+        .h = h_tw_g0,
+        .quater_turns = {1, 1, 1, 1, 1, 1},
+        .is_sym = 1,
+        .num_syms = 16,
+        .coord_to_rep_sym = tw_g0_coord_to_rep_sym,
+        .coord_to_eqv_class = tw_g0_coord_to_eqv_class,
+        .eqv_class_to_rep = tw_g0_eqv_class_to_rep,
+        .get_sym_part = get_flip,
+        .set_sym_part = set_flip,
+        .sym_part_order = 2048,
+    },
+    {
+        .name = "tw_g1",
+        .get = get_tw_g1,
+        .set = set_tw_g1,
+        .h = h_tw_g1,
+        .quater_turns = {1, 1, 0, 1, 1, 0},
+        .order = 1082565,
+    },
+    {
+        .name = "tw_g2",
+        .get = get_tw_g2,
+        .set = set_tw_g2,
+        .h = h_tw_g2,
+        .quater_turns = {1, 0, 0, 1, 0, 0},
+        .order = 29400,
+    },
+    {
+        .name = "tw_g3",
+        .get = get_tw_g3,
+        .set = set_tw_g3,
+        .h = h_tw_g3,
+        .quater_turns = {0, 0, 0, 0, 0, 0},
+        .order = 663552,
+    },
 };
