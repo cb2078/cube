@@ -40,13 +40,16 @@ static int move_set[18] =
     U3, R3, F3, D3, L3, B3,
 };
 
-static int move_set[18];
-static int prune_move(int, int);
-static void possible_moves(int *, int *, int, int[6]);
-static void print_moves(int *, int);
-static void make_scramble(int *, int);
-static void read_moves(char *s, int *, int *);
-static int apply_cancellations(int *, int *);
-static void inverse_moves(int *, int);
+static int move_face(int x);
+static int move_axis(int x);
+static int move_side(int x);
+static int move_amount(int x);
+static void transform_moves(int *moves, int length, int sym);
+static void possible_moves(int *moves, int *length, int move, int quater_turns[6]);
+static void print_moves(int *moves, int length);
+static void make_scramble(int *moves, int length);
+static void read_moves(char *s, int *moves, int *length);
+static int apply_cancellations(int *moves, int *length);
+static void inverse_moves(int *moves, int length);
 
 #endif

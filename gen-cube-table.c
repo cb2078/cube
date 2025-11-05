@@ -69,10 +69,10 @@ int main(void)
     //              0   1   2   3   4   5   6   7  0   1   2   3   4   5   6   7   8    9  10  11
     //            URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     cube u    = {{  4,  5,  2,  3,  1,  0,  6,  7,  0,  1,  2,  3,  8,  9,  6,  7,  5,  4, 10, 11}};
-    cube urf3 = {{ 16, 19, 17, 18, 37, 38, 36, 39, 24, 25, 26, 27,  0,  2,  1,  3, 20, 22, 21, 23}};
+    cube rl2  = {{  5,  4,  7,  6,  1,  0,  3,  2,  2,  3,  0,  1,  4,  5,  6,  7,  9,  8, 11, 10}};
     cube f2   = {{  3,  2,  1,  0,  7,  6,  5,  4,  2,  3,  0,  1,  6,  7,  4,  5, 11, 10,  9,  8}};
     cube u4   = {{  4,  5,  7,  6,  1,  0,  2,  3, 17, 19, 16, 18,  8,  9, 10, 11,  5,  4,  7,  6}};
-    cube rl2  = {{  5,  4,  7,  6,  1,  0,  3,  2,  2,  3,  0,  1,  4,  5,  6,  7,  9,  8, 11, 10}};
+    cube urf3 = {{ 16, 19, 17, 18, 37, 38, 36, 39, 24, 25, 26, 27,  0,  2,  1,  3, 20, 22, 21, 23}};
     cube urf3_i = compose(urf3, urf3);
 
     move_table[0] = u;
@@ -84,15 +84,13 @@ int main(void)
 
     sym_table[0] = new_cube();
     sym_table[1] = rl2;
-    for (int i=2;  i<4;  ++i) sym_table[i] = compose(sym_table[i-2],  f2);
-    for (int i=4;  i<16; ++i) sym_table[i] = compose(sym_table[i-4],  u4);
-    for (int i=16; i<48; ++i) sym_table[i] = compose(sym_table[i-16], urf3);
+    for (int i=2;  i<4;  ++i) sym_table[i] = compose(f2,   sym_table[i-2]);
+    for (int i=4;  i<16; ++i) sym_table[i] = compose(u4,   sym_table[i-4]);
+    for (int i=16; i<48; ++i) sym_table[i] = compose(urf3, sym_table[i-16]);
 
     for (int i=0; i<48; ++i)
-        for (int j=i; j<48; ++j)
-            if (cube_eq(compose(sym_table[i],
-                                j&1 ? invert_co(sym_table[j]) : sym_table[j]),
-                        new_cube()))
+        for (int j=i; j<48; j+=2)
+            if (cube_eq(compose(sym_table[i], i&1 ? invert_co(sym_table[j]) : sym_table[j]), new_cube()))
             {
                 inv_sym_table[i] = sym_table[j];
                 inv_sym_table[j] = sym_table[i];

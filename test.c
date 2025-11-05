@@ -14,7 +14,7 @@
 #include "util.c"
 #include "table.c"
 
-#define TEST(x) for (assert(!name), assert(x), name=(x); name; name=0)
+#define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
 #define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
 
 static char *name;
@@ -62,7 +62,69 @@ static int cube_valid(cube x)
 
 int main(void)
 {
-    TEST("symmetries")
+    TEST("basic move transform")
+    {
+        enum sym
+        {
+            S_URF3=16, S_U4=4, S_F2=2, S_RL2=1,
+        };
+        int syms[] = {S_URF3, S_U4, S_F2, S_RL2};
+        for (int i=0; i<LENGTH(syms); ++i)
+        {
+            int moves[] = {R, U, R3, F3, R, U, R3, U3, R3, F, R2, U3, R3, U3};
+            int length = LENGTH(moves);
+            cube x = apply_sym(apply_moves(new_cube(), moves, length), syms[i]);
+            transform_moves(moves, length, syms[i]);
+            cube y = apply_moves(new_cube(), moves, length);
+#if 1
+            CHECK(cube_eq(x, y), 1);
+#else
+            print_moves(moves, length), putchar('\n');
+            gui_show_moves(moves, length);
+            gui_wait_for_close();
+#endif
+        }
+    }
+
+    TEST("move transform")
+    {
+        for (int length=0; length<=100; length+=100)
+            for (int i=0; i<99; ++i)
+            {
+                int moves[256];
+                make_scramble(moves, length);
+                cube x = apply_moves(new_cube(), moves, length);
+                for (int j=0; j<LENGTH(sym_table); ++j)
+                {
+                    cube y = apply_sym(x, j);
+                    int transformed_moves[256];
+                    memcpy(transformed_moves, moves, sizeof(moves));
+                    transform_moves(transformed_moves, length, j);
+                    cube z = apply_moves(new_cube(), transformed_moves, length);
+                    CHECK(cube_eq(y, z), 1);
+                }
+            }
+    }
+
+    TEST("superflip")
+    {
+        cube x = new_cube();
+        set_eo(&x, 2047);
+        for (int j=0; j<16; ++j)
+            CHECK(cube_eq(apply_sym(x, j), x), 1);
+    }
+
+    TEST("not superflip")
+    {
+        cube x = new_cube();
+        set_eo(&x, 1234);
+        int result = 1;
+        for (int j=0; j<16; ++j)
+            result &= cube_eq(apply_sym(x, j), x);
+        CHECK(result, 0);
+    }
+
+    TEST("symmetries are valid")
     {
         for (int i=0; i<99; ++i)
         {
@@ -70,7 +132,7 @@ int main(void)
             make_scramble(moves, length);
             cube x = apply_moves(new_cube(), moves, length);
             for (int j=0; j<LENGTH(sym_table); ++j)
-                CHECK(cube_valid(apply_sim(x, j)), 1);
+                CHECK(cube_valid(apply_sym(x, j)), 1);
         }
     }
 

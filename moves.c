@@ -8,14 +8,61 @@ static int move_axis(int x)
     return x%3;
 }
 
+static int move_side(int x)
+{
+    return move_face(x)/3;
+}
+
 static int move_amount(int x)
 {
     return x/U2+1;
 }
 
+static int make_move(int face, int amount)
+{
+    return face+U2*(amount-1);
+}
+
 static int inverse_move(int x)
 {
-    return move_face(x) + U2*(3-move_amount(x));
+    return make_move(move_face(x), 3-move_amount(x));
+}
+
+static int transform_move_rl2(int x)
+{
+    return make_move(move_face(move_axis(x)==R ? 3+x : x), 4-move_amount(x));
+}
+
+static int transform_move_f2(int x)
+{
+    return make_move(move_face(move_axis(x)==F ? x : x+3), move_amount(x));
+}
+
+static int transform_move_u4(int x)
+{
+    return make_move(move_face(move_axis(x)+x), move_amount(x));
+}
+
+static int transform_move_urf3(int x)
+{
+    return make_move(move_face(x)/3*3+move_axis(x+1), move_amount(x));
+}
+
+static int transform_move(int move, int sym)
+{
+
+    int (*transforms[4])(int) = {transform_move_urf3, transform_move_u4, transform_move_f2, transform_move_rl2};
+    int orders[4] = {16, 4, 2, 1};
+    for (int i=0; i<4; ++i)
+        for (; sym>=orders[i]; sym-=orders[i])
+            move = transforms[i](move);
+    return move;
+}
+
+static void transform_moves(int *moves, int length, int sym)
+{
+    for (int i=0; i<length; ++i)
+        moves[i] = transform_move(moves[i], sym);
 }
 
 static int prune_move(int x, int y)

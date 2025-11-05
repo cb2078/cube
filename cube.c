@@ -52,9 +52,15 @@ static cube compose_3(cube x, cube y, cube z)
 
 static cube apply_sym(cube x, int sym)
 {
-    x = compose_3(inv_sym_table[sym], x, sym_table[sym]);
-    if (sym&1) x = invert_co(x);
-    return x;
+    // TODO try creating a "mirroed compose" function to see if its faster than
+    // inverting the CO twice
+
+    cube maybe_invert_co(cube x)
+    {
+        return sym&1 ? invert_co(x) : x;
+    }
+
+    return compose_3(inv_sym_table[sym], maybe_invert_co(x), maybe_invert_co(sym_table[sym]));
 }
 
 static cube apply_move(cube x, int move)
