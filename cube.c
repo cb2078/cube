@@ -248,7 +248,7 @@ static void init_prune_table(coord *c)
 {
     void print(long long n, int depth, int backsearch)
     {
-        fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth+1, (double)n/c->order*100);
+        fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth, (double)n/c->order*100);
         if (backsearch)
             fprintf(stderr, " (backsearch)");
     }
@@ -263,7 +263,7 @@ static void init_prune_table(coord *c)
     long long n = 1;
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
-    for (int depth=0, t=0, backsearch=0; c->table->count<c->order && depth<c->table->mask; ++depth)
+    for (int depth=1, t=0, backsearch=0; c->table->count<c->order && depth<c->table->mask; ++depth)
     {
         long long m = c->table->count;
         for (long long i=0; i<c->order; ++i)
@@ -273,7 +273,7 @@ static void init_prune_table(coord *c)
                 i += c->table->divisor-1;
                 continue;
             }
-            else if (table_get(c->table, i) == (backsearch ? c->table->mask : depth))
+            else if (table_get(c->table, i) == (backsearch ? c->table->mask : depth-1))
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
@@ -283,7 +283,7 @@ static void init_prune_table(coord *c)
                     long long k = c->get(x);
                     if (!backsearch && table_get(c->table, k) == c->table->mask)
                     {
-                        table_set(c->table, k, depth+1);
+                        table_set(c->table, k, depth);
                         if (!c->is_sym)
                             continue;
                         for (int s=1; s<c->num_syms; ++s)
@@ -293,12 +293,12 @@ static void init_prune_table(coord *c)
                             cube y = apply_sym(x, s);
                             int l = c->get(y);
                             if (table_get(c->table, l) == c->table->mask)
-                                table_set(c->table, l, depth+1);
+                                table_set(c->table, l, depth);
                         }
                     }
-                    else if (backsearch && table_get(c->table, k) == depth)
+                    else if (backsearch && table_get(c->table, k) == depth-1)
                     {
-                        table_set(c->table, i, depth+1);
+                        table_set(c->table, i, depth);
                         break;
                     }
                 }
@@ -309,7 +309,7 @@ static void init_prune_table(coord *c)
         backsearch = c->table->count>c->order/2;
         print(c->table->count, depth, backsearch);
         clear();
-        printf("[%d]%s= %lld\n", depth+1, depth+1<10?"  ":" ", c->table->count-m);
+        printf("[%d]%s= %lld\n", depth, depth<10?"  ":" ", c->table->count-m);
     }
     clear();
     if (c->table->count!=c->order)

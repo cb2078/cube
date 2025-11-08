@@ -54,6 +54,7 @@ struct coord
                 SLICE_FB,
             } subset;
             int k;
+            int length;
         };
         struct
         {
@@ -127,12 +128,13 @@ static void write_coord(struct coord *x, enum mode mode);
 static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int at_end)
 {
 #define S subsets[x->subset]
+    int length;
 
     void write_offset(char op)
     {
         if (!S.start)
             return;
-        int n = x->indexer==PERMUTATION ? S.length : S.end-S.start;
+        int n = x->indexer==PERMUTATION ? length : S.end-S.start;
         fprintf(fp, "    for (int i=0; i<%d; ++i) *(x.%s+i) %c= %d;\n", n, S.name, op, S.start);
     }
 
@@ -153,7 +155,7 @@ static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int a
     {
         case RAW:
             char amount[256], expr[256];
-            write_get_offset();
+            length=x->length?:S.length, write_get_offset();
             switch (x->indexer)
             {
                 case COMBINATION:
@@ -179,9 +181,9 @@ static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int a
                     }
                     break;
                 case PERMUTATION:
-                    sprintf(expr, "permutation(x.%s, %d", S.name, S.length);
-                    sprintf(amount, "fact[%d]", S.length);
-                    x->order = fact[S.length];
+                    sprintf(expr, "permutation(x.%s, %d", S.name, length);
+                    sprintf(amount, "fact[%d]", length);
+                    x->order = fact[length];
                     break;
                 case PARTIAL_PERMUTATION:
                     sprintf(expr, "partial_permutation(x.%s, %d, %d", S.name, S.length, x->k);
@@ -460,14 +462,22 @@ int main(void)
         },
     };
 
+    struct coord coord_cp = {
+        .name = "cp",
+        .type = RAW,
+        .indexer = PERMUTATION,
+        .subset = CORNERS,
+    };
+
     struct coord *sym_coords[] = {
         &coord_flip_ud_slice,
+        &coord_cp,
     };
 
     struct coord tw_coords[] = {
 #if 0
-        coord_eo,
-        {
+        [0] = coord_eo,
+        [1] = {
             .type = COMPOSITE,
             .count = 2,
             .coords = (struct coord[]){
@@ -475,21 +485,7 @@ int main(void)
                 [1] = coord_ud_slice,
             },
         },
-#else
-        {
-            .type = COMPOSITE,
-            .count = 2,
-            .coords = (struct coord []) {
-                [0] = {
-                    .type = SYM,
-                    .eqv_classes = 64430,
-                    .ref = &coord_flip_ud_slice,
-                },
-                [1] = coord_co,
-            },
-        },
-#endif
-        {
+        [2] = {
             .type = COMPOSITE,
             .quater_turns = QT_DR,
             .count = 3,
@@ -511,7 +507,7 @@ int main(void)
                 },
             },
         },
-        {
+        [3] = {
             .type = COMPOSITE,
             .quater_turns = QT_HTR,
             .count = 5,
@@ -545,6 +541,38 @@ int main(void)
                 },
             },
         },
+#else
+        [0] = {
+            .type = COMPOSITE,
+            .count = 2,
+            .coords = (struct coord []) {
+                [0] = {
+                    .type = SYM,
+                    .eqv_classes = 64430,
+                    .ref = &coord_flip_ud_slice,
+                },
+                [1] = coord_co,
+            },
+        },
+        [1] = {
+            .type = COMPOSITE,
+            .quater_turns = QT_DR,
+            .count = 2,
+            .coords = (struct coord []) {
+                [0] = {
+                    .type = SYM,
+                    .eqv_classes = 2768,
+                    .ref = &coord_cp,
+                },
+                [1] = {
+                    .type = RAW,
+                    .indexer = PERMUTATION,
+                    .subset = SLICE_RL,
+                    .length = 8,
+                },
+            },
+        }
+#endif
     };
 
     fp = fopen("coord.c", "w");

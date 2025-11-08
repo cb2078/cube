@@ -33,6 +33,12 @@ static long long flip_ud_slice_coord_to_rep_sym[1013760];
 static long long flip_ud_slice_coord_to_eqv_class[1013760];
 static long long flip_ud_slice_eqv_class_to_rep[1013760];
 
-static coord tw_coords[3];
+static long long cp_self_syms[40320];
+static long long cp_coord_to_rep[40320];
+static long long cp_coord_to_rep_sym[40320];
+static long long cp_coord_to_eqv_class[40320];
+static long long cp_eqv_class_to_rep[40320];
+
+static coord tw_coords[2];
 
 #endif
