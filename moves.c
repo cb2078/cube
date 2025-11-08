@@ -70,12 +70,11 @@ static int prune_move(int x, int y)
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
 }
 
-static void possible_moves(int *moves, int *length, int move, int quater_turns[6])
+static void possible_moves(int *moves, int *length, int move, int move_mask)
 {
     *length = 0;
     for (int i=0; i<LENGTH(move_set); ++i)
-        if ((move==0xff || !prune_move(move, move_set[i])) &&
-            (quater_turns[move_face(move_set[i])] || move_amount(move_set[i])==2))
+        if ((move==0xff || !prune_move(move, move_set[i])) && ~move_mask>>i&1)
             moves[(*length)++] = move_set[i];
 }
 

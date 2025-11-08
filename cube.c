@@ -160,7 +160,7 @@ typedef struct
     int depth;
 } node;
 
-static int idA(cube x, int *path, int (*h)(cube), int quater_turns[6])
+static int idA(cube x, int *path, int (*h)(cube), int move_mask)
 {
     for (int max_depth=0;;)
     {
@@ -185,7 +185,7 @@ static int idA(cube x, int *path, int (*h)(cube), int quater_turns[6])
 
             int moves[18];
             int length;
-            possible_moves(moves, &length, cur.move, quater_turns);
+            possible_moves(moves, &length, cur.move, move_mask);
             for (int i=0; i<length; ++i)
                 PUSH(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
         }
@@ -193,9 +193,9 @@ static int idA(cube x, int *path, int (*h)(cube), int quater_turns[6])
     }
 }
 
-static void solve(cube x, int *path, int *length, int (*h)(cube), int quater_turns[6])
+static void solve(cube x, int *path, int *length, int (*h)(cube), int move_mask)
 {
-    *length = idA(x, path, h, quater_turns);
+    *length = idA(x, path, h, move_mask);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -276,7 +276,7 @@ static void init_prune_table(coord *c)
             else if (table_get(c->table, i) == (backsearch ? c->table->mask : depth-1))
             {
                 int moves[18], length;
-                possible_moves(moves, &length, 0xff, c->quater_turns);
+                possible_moves(moves, &length, 0xff, c->move_mask);
                 for (int j=0; j<length; ++j)
                 {
                     cube x = apply_move(c->set(i), moves[j]);
@@ -342,7 +342,7 @@ static void init_tetrad_twist_table(void)
         set_permutation(x.corners, NUM_CORNERS, i);
         x = separate_corners(x);
         int moves[64], length;
-        solve(x, moves, &length, h_cp5, (int []){0, 0, 0, 0, 0, 0}); // todo half turns
+        solve(x, moves, &length, h_cp5, HTR_MASK);
         x = apply_moves(x, moves, length);
         table_set(tetrad_twist_table, i, get_permutation(x.corners, 3));
         fprintf(stderr, "\rcompletion=%.2f%%", (float)i/n*100);
@@ -371,7 +371,7 @@ static void thistlethwaite(cube x, int *path, int *length)
     *length = 0;
     for (int i=0; i<LENGTH(tw_coords); ++i)
     {
-        int depth = idA(x, path+*length, tw_coords[i].h, tw_coords[i].quater_turns);
+        int depth = idA(x, path+*length, tw_coords[i].h, tw_coords[i].move_mask);
         x = apply_moves(x, path+*length, depth);
         printf("stage%d: ", i);
         print_moves(path+*length, depth);
@@ -408,7 +408,7 @@ static void optimal(cube x, int *path, int *length)
     }
 
     *length = 0;
-    solve(x, path, length, h3, (int []){1, 1, 1, 1, 1, 1});
+    solve(x, path, length, h3, 0);
     print_moves(path, *length);
     printf(" // %d move%s\n", *length, *length==1?"":"s");
 }

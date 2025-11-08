@@ -1,6 +1,13 @@
 #ifndef MOVES_H
 #define MOVES_H
 
+enum move_mask
+{
+    EO_MASK  = 147492,
+    DR_MASK  = 221238,
+    HTR_MASK = 258111,
+};
+
 enum move
 {
     U, R, F, D, L, B,
@@ -45,7 +52,7 @@ static int move_axis(int x);
 static int move_side(int x);
 static int move_amount(int x);
 static void transform_moves(int *moves, int length, int sym);
-static void possible_moves(int *moves, int *length, int move, int quater_turns[6]);
+static void possible_moves(int *moves, int *length, int move, int mask);
 static void print_moves(int *moves, int length);
 static void make_scramble(int *moves, int length);
 static void read_moves(char *s, int *moves, int *length);

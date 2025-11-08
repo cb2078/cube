@@ -12,7 +12,7 @@ typedef struct
     int (*h)(cube);
     long long order;
     table *table;
-    int quater_turns[6];
+    int move_mask;
     // sym data
     int is_sym;
     int num_syms;

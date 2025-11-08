@@ -24,13 +24,7 @@ struct coord
     } type;
     char *name;
     long long order; // this will be set when writing the coordinate
-    enum
-    {
-        QT_ANY,
-        QT_EO,
-        QT_DR,
-        QT_HTR,
-    } quater_turns;
+    char *move_mask;
     union
     {
         struct
@@ -320,12 +314,6 @@ static void write_coords(struct coord *x, int n, char *name)
                 "\n", name, i, i, i);
     }
 
-    static char *quater_turns[] = {
-        "{1, 1, 1, 1, 1, 1}",
-        "{1, 1, 0, 1, 1, 0}",
-        "{1, 0, 0, 1, 0, 0}",
-        "{0, 0, 0, 0, 0, 0}",
-    };
     fprintf(fp,
             "static coord %s_coords[] =\n"
             "{\n", name);
@@ -340,14 +328,14 @@ static void write_coords(struct coord *x, int n, char *name)
                 "        .get = get_%s_g%d,\n"
                 "        .set = set_%s_g%d,\n"
                 "        .h = h_%s_g%d,\n"
-                "        .quater_turns = %s,\n"
                 "        .order = %lld,\n",
                 name, i,
                 name, i,
                 name, i,
                 name, i,
-                quater_turns[x[i].quater_turns],
                 x[i].order);
+        if (x[i].move_mask)
+            fprintf(fp, "        .move_mask = %s,\n", x[i].move_mask);
         if (sym)
             fprintf(fp,
                     "        .is_sym = 1,\n"
@@ -393,7 +381,7 @@ static void write_coords(struct coord *x, int n, char *name)
             "    int (*h)(cube);\n"
             "    long long order;\n"
             "    table *table;\n"
-            "    int quater_turns[6];\n"
+            "    int move_mask;\n"
             "    // sym data\n"
             "    int is_sym;\n"
             "    int num_syms;\n"
@@ -487,7 +475,7 @@ int main(void)
         },
         [2] = {
             .type = COMPOSITE,
-            .quater_turns = QT_DR,
+            .move_mask = "DR_MASK",
             .count = 3,
             .coords = (struct coord[]){
                 [0] = {
@@ -509,7 +497,7 @@ int main(void)
         },
         [3] = {
             .type = COMPOSITE,
-            .quater_turns = QT_HTR,
+            .move_mask = "HTR_MASK",
             .count = 5,
             .coords = (struct coord[]){
                 [0] = {
@@ -556,7 +544,7 @@ int main(void)
         },
         [1] = {
             .type = COMPOSITE,
-            .quater_turns = QT_DR,
+            .move_mask = "DR_MASK",
             .count = 2,
             .coords = (struct coord []) {
                 [0] = {
