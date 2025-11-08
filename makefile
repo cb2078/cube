@@ -15,6 +15,9 @@ debug: main
 release: CFLAGS += -O3
 release: main
 
+run:
+	./main
+
 main: LDFLAGS += -lSDL3 -lGL -lm
 
 $(EXE): %: %.c
@@ -23,6 +26,6 @@ $(EXE): %: %.c
 $(GEN): %.c: gen-%
 	./$^
 
-.PHONY: default clean debug release
+.PHONY: default clean debug release run
 
 -include $(DEP)
