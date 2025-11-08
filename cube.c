@@ -150,45 +150,45 @@ static cube invert_co(cube x)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define STACK_SIZE 2048
-#define PUSH(cube, move, depth) (assert(top-stack<STACK_SIZE), *top++ = (node){(cube), (move), (depth)})
-
-typedef struct
-{
-    cube cube;
-    int move;
-    int depth;
-} node;
-
 static int idA(cube x, int *path, int (*h)(cube), int move_mask)
 {
+    typedef struct
+    {
+        cube cube;
+        int move;
+        int depth;
+    } node;
+
     for (int max_depth=0;;)
     {
         int min = INT_MAX;
-        node stack[STACK_SIZE];
+        node stack[20*15];
         node *top = stack;
-        PUSH(x, 0xff, 0);
+
+        void push(cube x, int move, int depth)
+        {
+            int f = h(x) + depth;
+            if (f > max_depth)
+                min = MIN(min, f);
+            else
+                *top++ = (node){x, move, depth};
+        }
+
+        push(x, 0xff, 0);
         while (top>stack)
         {
             node cur = *--top;
-
-            int f = h(cur.cube) + cur.depth;
-            if (f > max_depth)
-            {
-                min = f<min ? f : min;
-                continue;
-            }
             if (cur.depth)
                 path[cur.depth-1] = cur.move;
             if (0 == h(cur.cube))
                 return cur.depth;
 
-            int moves[18];
-            int length;
+            int moves[18], length;
             possible_moves(moves, &length, cur.move, move_mask);
             for (int i=0; i<length; ++i)
-                PUSH(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
+                push(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
         }
+
         max_depth = min;
     }
 }
