@@ -17,14 +17,6 @@ enum cubie_type
     CENTRE,
 };
 
-enum move_type
-{
-    FACE_TURN,
-    WIDE_MOVE,
-    ROTATION,
-    SLICE_MOVE,
-};
-
 static SDL_Condition *condition;
 static SDL_Mutex *mutex;
 static SDL_Thread *thread;
@@ -34,27 +26,16 @@ static vec3 cubie_offsets[NUM_CUBIES];
 static vec4 current_transforms[NUM_CUBIES];
 static vec4 desired_transforms[NUM_CUBIES];
 
-static int get_move_type(int move)
-{
-    move%=U2;
-    if (move>=E)
-        return SLICE_MOVE;
-    if (move>=Y)
-        return ROTATION;
-    if (move>=UW)
-        return WIDE_MOVE;
-    return FACE_TURN;
-}
-
 static int on_face(vec3 cubie, int face)
 {
     return round(cubie[face%3])==(int)(face/3)*2-1;
 }
 
-static int can_move_cubie(vec3 cubie, int face, int type)
+static int can_move_cubie(vec3 cubie, int move)
 {
-    int opposite_face=(face+3)%6;
-    switch (type)
+    int face = move_face(move);
+    int opposite_face = move_opposite_face(move);
+    switch (move_type(move))
     {
         case FACE_TURN:
             return on_face(cubie, face);
@@ -76,22 +57,16 @@ static void get_cubie_position(int i, vec3 v)
 
 static void move(int move)
 {
-    int face=move%6;
-    int type=get_move_type(move);
-    int dim=face%3;
-    int amount=move/U2+1;
-    int sign=1-face/3*2;
-
     SDL_LockMutex(mutex);
     for (int i=0; i<NUM_CUBIES; ++i)
     {
         vec3 v;
         get_cubie_position(i, v);
-        if (!can_move_cubie(v, face, type)) continue;
+        if (!can_move_cubie(v, move)) continue;
         glm_vec3_zero(v);
-        v[dim]=1;
+        v[move_axis(move)]=1;
         vec4 q;
-        glm_quatv(q, sign*amount*glm_rad(90), v);
+        glm_quatv(q, (1-move_side(move)*2)*move_amount(move)*glm_rad(90), v);
         glm_quat_mul(q, desired_transforms[i], desired_transforms[i]);
     }
     SDL_UnlockMutex(mutex);

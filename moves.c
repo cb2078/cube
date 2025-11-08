@@ -1,11 +1,31 @@
-static int move_face(int x)
+static int move_type(int x)
 {
-    return x%6;
+    switch (x/UW)
+    {
+        case 0:
+            return FACE_TURN;
+        case 1:
+            return WIDE_MOVE;
+        case 2:
+            return move_face(x)<3 ? ROTATION : SLICE_MOVE;
+        default:
+            UNREACHABLE();
+    }
 }
 
 static int move_axis(int x)
 {
     return x%3;
+}
+
+static int move_face(int x)
+{
+    return x%6;
+}
+
+static int move_opposite_face(int x)
+{
+    return move_face(x+3);
 }
 
 static int move_side(int x)
@@ -15,7 +35,7 @@ static int move_side(int x)
 
 static int move_amount(int x)
 {
-    return x/U2+1;
+    return x%UW/6+1;
 }
 
 static int make_move(int face, int amount)
@@ -73,20 +93,21 @@ static int prune_move(int x, int y)
 static void possible_moves(int *moves, int *length, int move, int move_mask)
 {
     *length = 0;
-    for (int i=0; i<LENGTH(move_set); ++i)
-        if ((move==0xff || !prune_move(move, move_set[i])) && ~move_mask>>i&1)
-            moves[(*length)++] = move_set[i];
+    for (int m=0; m<NUM_FACE_TURNS; ++m)
+        if ((move==0xff || !prune_move(move, m)) && ~move_mask>>m&1)
+            moves[(*length)++] = m;
 }
 
 static void print_moves(int *moves, int length)
 {
-    for (int i=0; i<length; ++i) printf("%s%s", i?" ":"", move_str[moves[i]]);
+    for (int i=0; i<length; ++i)
+        printf("%s%s", i?" ":"", move_str[moves[i]]);
 }
 
 static void make_scramble(int *moves, int length)
 {
     for (int i=0; i<length; i+=i==0||!prune_move(moves[i-1], moves[i]))
-        moves[i]=move_set[rand()%LENGTH(move_set)];
+        moves[i]=rand()%NUM_FACE_TURNS;
 }
 
 static void read_moves(char *s, int *moves, int *length)

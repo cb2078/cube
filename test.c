@@ -92,9 +92,9 @@ int main(void)
             long long a = tw_coords[0].h(x);
             if (a==0) continue;
             int result = 0;
-            for (int i=0; i<LENGTH(move_set); ++i)
+            for (int m=0; m<NUM_FACE_TURNS; ++m)
             {
-                long long b = tw_coords[0].h(apply_move(x, move_set[i]));
+                long long b = tw_coords[0].h(apply_move(x, m));
                 if (b<a) CHECK(a-b, 1), result = 1;
             }
             CHECK(result, 1);
@@ -192,9 +192,9 @@ int main(void)
     TEST("valid cube")
     {
         cube x;
-        for (int i=0; i<LENGTH(move_set); ++i)
+        for (int m=0; m<NUM_FACE_TURNS; ++m)
         {
-            x = apply_move(new_cube(), move_set[i]);
+            x = apply_move(new_cube(), m);
             // print_cube(x);
             CHECK(cube_valid(x), 1);
         }
