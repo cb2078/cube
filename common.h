@@ -9,6 +9,8 @@
 
 #define ABS(x) ((x)<0 ? -(x) : x)
 #define LENGTH(x) (long signed int)(sizeof(x)/sizeof(x[0]))
+#define MAX(x, y) ({ typeof(x) a=(x), b=(y); a>b ? a : b; })
+#define MIN(x, y) ({ typeof(x) a=(x), b=(y); a<b ? a : b; })
 #define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
 #define UNREACHABLE() assert(0 && "unreachable")
 

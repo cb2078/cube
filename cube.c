@@ -383,3 +383,32 @@ static void thistlethwaite(cube x, int *path, int *length)
     print_moves(path, *length);
     printf(" // %d move%s\n", *length, *length==1?"":"s");
 }
+
+static int h3(cube x)
+{
+    int result = 0;
+    result = MAX(result, tw_coords[0].h(x));
+    result = MAX(result, tw_coords[0].h(apply_sym(x, 16)));
+    result = MAX(result, tw_coords[0].h(apply_sym(x, 32)));
+    return result ?: !cube_eq(x, new_cube());
+}
+
+static void optimal(cube x, int *path, int *length)
+{
+    static int initialised = 0;
+    if (!initialised)
+    {
+        init_tetrad_twist_table();
+        for (int i=0; i<LENGTH(tw_coords); ++i)
+        {
+            init_sym(&tw_coords[i]);
+            init_prune_table(&tw_coords[i]);
+        }
+        initialised = 1;
+    }
+
+    *length = 0;
+    solve(x, path, length, h3, (int []){1, 1, 1, 1, 1, 1});
+    print_moves(path, *length);
+    printf(" // %d move%s\n", *length, *length==1?"":"s");
+}
