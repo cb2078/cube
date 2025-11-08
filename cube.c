@@ -205,86 +205,115 @@ static void init_sym(coord *c)
     if (!c->is_sym)
         return;
 
-    // since we're only dealing with the symmetry part of the coordinate, rename some of its variables
-    long long *order = &c->sym_part_order;
-    long long *eqv_classes = &c->order;
-    long long (*get)(cube) = c->get_sym_part;
-    cube (*set)(long long) = c->set_sym_part;
-
-    for (long long i=0; i<*order; ++i)
-        c->coord_to_eqv_class[i] = *order;
-    for (long long i=0; i<*order; ++i)
+    for (long long i=0; i<c->sym_part_order; ++i)
     {
-        if (c->coord_to_eqv_class[i]<*order)
-            continue;
-        cube x = set(i);
-        for (int j=0; j<c->num_syms; ++j)
+        cube x = c->set_sym_part(i);
+        for (int s=0; s<c->num_syms; ++s)
         {
-            cube y = apply_sym(x, j);
-            int k = get(y);
-            c->coord_to_eqv_class[k] = *eqv_classes;
-            c->coord_to_rep_sym[k] = inv_sym[j];
+            cube y = apply_sym(x, s);
+            int k = c->get_sym_part(y);
+            c->self_syms[i] |= (i==k)<<s;
         }
-        c->eqv_class_to_rep[(*eqv_classes)++] = i;
+    }
+
+    long long eqv_classes = 0;
+    memset(c->coord_to_eqv_class, 0xff, c->sym_part_order*sizeof(c->coord_to_eqv_class[0]));
+    for (long long i=0; i<c->sym_part_order; ++i)
+    {
+        if ((unsigned long long)c->coord_to_eqv_class[i] != -1ull)
+            continue;
+        cube x = c->set_sym_part(i);
+        for (int s=0; s<c->num_syms; ++s)
+        {
+            cube y = apply_sym(x, s);
+            int k = c->get_sym_part(y);
+            c->coord_to_eqv_class[k] = eqv_classes;
+            c->coord_to_rep[k] = i;
+            c->coord_to_rep_sym[k] = inv_sym[s];
+        }
+        c->eqv_class_to_rep[eqv_classes++] = i;
+    }
+    if (!c->eqv_classes)
+    {
+        printf("num eqv classes = %lld\n", eqv_classes);
+        c->order *= eqv_classes;
+    }
+    else
+    {
+        assert(eqv_classes == c->eqv_classes);
     }
 }
 
 static void init_prune_table(coord *c)
 {
-    if (table_read(c->table = table_new(c->order, 4, c->name)))
-        return;
-
-    void print(long long n, int depth, int reverse)
+    void print(long long n, int depth, int backsearch)
     {
-        fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth, (double)n/c->order*100);
-        if (reverse)
+        fprintf(stderr, "\rdepth=%d comletion=%.2f%%", depth+1, (double)n/c->order*100);
+        if (backsearch)
             fprintf(stderr, " (backsearch)");
     }
 
-    long long distribution[20] = {1};
+    void clear(void)
+    {
+        fprintf(stderr, "\r                                           \r");
+    }
+
+    if (table_read(c->table = table_new(c->order, 4, c->name)))
+        return;
+    long long n = 1;
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
-    long long n = 1;
-    for (int depth=0, x=0, reverse=0; n<c->order && depth<c->table->mask; ++depth)
+    for (int depth=0, t=0, backsearch=0; c->table->count<c->order && depth<c->table->mask; ++depth)
     {
-        long long m = n;
+        long long m = c->table->count;
         for (long long i=0; i<c->order; ++i)
-            if (!reverse && c->table->data[i/c->table->divisor] == UINT_MAX)
+        {
+            if (!backsearch && c->table->data[i/c->table->divisor] == UINT_MAX)
             {
                 i += c->table->divisor-1;
                 continue;
             }
-            else if (table_get(c->table, i) == (reverse ? c->table->mask : depth))
+            else if (table_get(c->table, i) == (backsearch ? c->table->mask : depth))
             {
                 int moves[18], length;
                 possible_moves(moves, &length, 0xff, c->quater_turns);
                 for (int j=0; j<length; ++j)
                 {
-                    long long k = c->get(apply_move(c->set(i), moves[j]));
-                    if (!reverse && table_get(c->table, k) == c->table->mask)
+                    cube x = apply_move(c->set(i), moves[j]);
+                    long long k = c->get(x);
+                    if (!backsearch && table_get(c->table, k) == c->table->mask)
+                    {
                         table_set(c->table, k, depth+1);
-                    else if (reverse && table_get(c->table, k) == depth)
+                        if (!c->is_sym)
+                            continue;
+                        for (int s=1; s<c->num_syms; ++s)
+                        {
+                            if (~c->self_syms[c->get_sym_part(x)]>>s&1)
+                                continue;
+                            cube y = apply_sym(x, s);
+                            int l = c->get(y);
+                            if (table_get(c->table, l) == c->table->mask)
+                                table_set(c->table, l, depth+1);
+                        }
+                    }
+                    else if (backsearch && table_get(c->table, k) == depth)
+                    {
                         table_set(c->table, i, depth+1);
-                    else
-                        continue;
-                    if (++n*10000/c->order > x)
-                        print(n, depth, reverse), ++x;
-                    if (reverse)
                         break;
+                    }
                 }
             }
-        reverse = n>c->order/2;
-        print(n, depth, reverse);
-        distribution[depth+1] = n-m;
+            if (c->table->count*10000/c->order > t)
+                print(c->table->count, depth, backsearch), ++t;
+        }
+        backsearch = c->table->count>c->order/2;
+        print(c->table->count, depth, backsearch);
+        clear();
+        printf("[%d]%s= %lld\n", depth+1, depth+1<10?"  ":" ", c->table->count-m);
     }
-    fprintf(stderr, "\r                                           \r");
-    if (n!=c->order)
+    clear();
+    if (c->table->count!=c->order)
         printf("skpped %lld entries\n", c->order-n);
-    printf("%s distribution:\n", c->name);
-    for (int i=0; i<LENGTH(distribution); ++i)
-        if (distribution[i])
-            printf("%s[%d] = %lld\n", i<10?" ":"", i, distribution[i]);
-
     table_write(c->table);
 }
 
@@ -313,7 +342,7 @@ static void init_tetrad_twist_table(void)
         set_permutation(x.corners, NUM_CORNERS, i);
         x = separate_corners(x);
         int moves[64], length;
-        solve(x, moves, &length, h_cp5, tw_coords[LENGTH(tw_coords)-1].quater_turns); // todo half turns
+        solve(x, moves, &length, h_cp5, (int []){0, 0, 0, 0, 0, 0}); // todo half turns
         x = apply_moves(x, moves, length);
         table_set(tetrad_twist_table, i, get_permutation(x.corners, 3));
         fprintf(stderr, "\rcompletion=%.2f%%", (float)i/n*100);

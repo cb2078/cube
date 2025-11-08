@@ -15,19 +15,24 @@ typedef struct
     int quater_turns[6];
     // sym data
     int is_sym;
-    long long sym_part_order;
     int num_syms;
-    int *coord_to_rep_sym;
-    int *coord_to_eqv_class;
-    int *eqv_class_to_rep;
+    long long eqv_classes;
+    long long sym_part_order;
+    long long *self_syms;
+    long long *coord_to_rep;
+    long long *coord_to_rep_sym;
+    long long *coord_to_eqv_class;
+    long long *eqv_class_to_rep;
     long long (*get_sym_part)(cube);
     cube (*set_sym_part)(long long);
 } coord;
 
-static int tw_g0_coord_to_rep_sym[2048];
-static int tw_g0_coord_to_eqv_class[2048];
-static int tw_g0_eqv_class_to_rep[2048];
+static long long flip_ud_slice_self_syms[1013760];
+static long long flip_ud_slice_coord_to_rep[1013760];
+static long long flip_ud_slice_coord_to_rep_sym[1013760];
+static long long flip_ud_slice_coord_to_eqv_class[1013760];
+static long long flip_ud_slice_eqv_class_to_rep[1013760];
 
-static coord tw_coords[4];
+static coord tw_coords[3];
 
 #endif

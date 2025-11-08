@@ -69,6 +69,7 @@ static void print_cube(cube);
 static int cube_eq(cube, cube);
 static cube compose(cube, cube);
 static cube compose_3(cube, cube, cube);
+static cube apply_sym(cube, int);
 static cube apply_move(cube, int);
 static cube apply_moves(cube, int *, int);
 static cube invert_co(cube);

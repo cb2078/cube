@@ -1,27 +1,71 @@
-static long long get_tw_g0(cube x)
-{
-    long long result=0;
-
-    result += get_eo(x);
-
-    result = tw_g0_coord_to_eqv_class[result];
-
-    return result;
-}
-
-static long long get_tw_g1(cube x)
+static long long get_flip_ud_slice(cube x)
 {
     long long result=0, i=1;
 
-    result += get_co(x);
-    i *= pow3[NUM_CORNERS-1];
+    result += get_eo(x);
+    i *= pow2[NUM_EDGES-1];
+
+    for (int i=0; i<20; ++i) x.cubies[i] &= 0x0f;
 
     result += get_combination(x.slices[SLICE_UD], 12, 4) * i;
 
     return result;
 }
 
-static long long get_tw_g2(cube x)
+static cube set_flip_ud_slice(long long result)
+{
+    cube x = new_cube();
+    long long i;
+
+    i = result%pow2[NUM_EDGES-1];
+    set_eo(&x, i);
+    result /= pow2[NUM_EDGES-1];
+
+    cube y = x;
+    x = new_cube();
+
+    i = result;
+    set_combination(x.slices[SLICE_UD], 12, 4, i);
+
+    x = compose(x, y);
+    return x;
+}
+
+static long long get_tw_g0(cube x)
+{
+    long long result=0, i=1;
+
+    result = get_flip_ud_slice(x);
+    x = apply_sym(x, flip_ud_slice_coord_to_rep_sym[result]);
+    result = flip_ud_slice_coord_to_eqv_class[result];
+    i *= 64430;
+
+    result += get_co(x) * i;
+
+    return result;
+}
+
+static cube set_tw_g0(long long result)
+{
+    cube x = new_cube();
+    long long i;
+
+    i = flip_ud_slice_eqv_class_to_rep[result%64430];
+    x = set_flip_ud_slice(i);
+    result /= 64430;
+
+    i = result;
+    set_co(&x, i);
+
+    return x;
+}
+
+static int h_tw_g0(cube x)
+{
+    return table_get(tw_coords[0].table, tw_coords[0].get(x));
+}
+
+static long long get_tw_g1(cube x)
 {
     long long result=0, i=1;
 
@@ -37,7 +81,32 @@ static long long get_tw_g2(cube x)
     return result;
 }
 
-static long long get_tw_g3(cube x)
+static cube set_tw_g1(long long result)
+{
+    cube x = new_cube();
+    long long i;
+
+    i = result%choose(8, 4);
+    set_combination(x.slices[SLICE_RL], 8, 4, i);
+    for (int i=0; i<8; ++i) *(x.slices[SLICE_RL]+i) += 4;
+    result /= choose(8, 4);
+
+    i = result%choose(8, 4);
+    set_combination(x.tetrads[TETRAD_URF], 8, 4, i);
+    result /= choose(8, 4);
+
+    i = result;
+    set_tetrad_twist(&x, i);
+
+    return x;
+}
+
+static int h_tw_g1(cube x)
+{
+    return table_get(tw_coords[1].table, tw_coords[1].get(x));
+}
+
+static long long get_tw_g2(cube x)
 {
     long long result=0, i=1;
 
@@ -61,55 +130,7 @@ static long long get_tw_g3(cube x)
     return result;
 }
 
-static cube set_tw_g0(long long result)
-{
-    cube x = new_cube();
-    long long i;
-
-    result = tw_g0_eqv_class_to_rep[result];
-
-    i = result;
-    set_eo(&x, i);
-
-    return x;
-}
-
-static cube set_tw_g1(long long result)
-{
-    cube x = new_cube();
-    long long i;
-
-    i = result%pow3[NUM_CORNERS-1];
-    set_co(&x, i);
-    result /= pow3[NUM_CORNERS-1];
-
-    i = result;
-    set_combination(x.slices[SLICE_UD], 12, 4, i);
-
-    return x;
-}
-
 static cube set_tw_g2(long long result)
-{
-    cube x = new_cube();
-    long long i;
-
-    i = result%choose(8, 4);
-    set_combination(x.slices[SLICE_RL], 8, 4, i);
-    for (int i=0; i<8; ++i) *(x.slices[SLICE_RL]+i) += 4;
-    result /= choose(8, 4);
-
-    i = result%choose(8, 4);
-    set_combination(x.tetrads[TETRAD_URF], 8, 4, i);
-    result /= choose(8, 4);
-
-    i = result;
-    set_tetrad_twist(&x, i);
-
-    return x;
-}
-
-static cube set_tw_g3(long long result)
 {
     cube x = new_cube();
     long long i;
@@ -139,44 +160,9 @@ static cube set_tw_g3(long long result)
     return x;
 }
 
-static long long get_flip(cube x)
-{
-    long long result=0;
-
-    result += get_eo(x);
-
-    return result;
-}
-
-static cube set_flip(long long result)
-{
-    cube x = new_cube();
-    long long i;
-
-    i = result;
-    set_eo(&x, i);
-
-    return x;
-}
-
-static int h_tw_g0(cube x)
-{
-    return table_get(tw_coords[0].table, tw_coords[0].get(x));
-}
-
-static int h_tw_g1(cube x)
-{
-    return table_get(tw_coords[1].table, tw_coords[1].get(x));
-}
-
 static int h_tw_g2(cube x)
 {
     return table_get(tw_coords[2].table, tw_coords[2].get(x));
-}
-
-static int h_tw_g3(cube x)
-{
-    return table_get(tw_coords[3].table, tw_coords[3].get(x));
 }
 
 static coord tw_coords[] =
@@ -187,36 +173,32 @@ static coord tw_coords[] =
         .set = set_tw_g0,
         .h = h_tw_g0,
         .quater_turns = {1, 1, 1, 1, 1, 1},
+        .order = 140908410,
         .is_sym = 1,
         .num_syms = 16,
-        .coord_to_rep_sym = tw_g0_coord_to_rep_sym,
-        .coord_to_eqv_class = tw_g0_coord_to_eqv_class,
-        .eqv_class_to_rep = tw_g0_eqv_class_to_rep,
-        .get_sym_part = get_flip,
-        .set_sym_part = set_flip,
-        .sym_part_order = 2048,
+        .eqv_classes = 64430,
+        .self_syms = flip_ud_slice_self_syms,
+        .coord_to_rep = flip_ud_slice_coord_to_rep,
+        .coord_to_rep_sym = flip_ud_slice_coord_to_rep_sym,
+        .coord_to_eqv_class = flip_ud_slice_coord_to_eqv_class,
+        .eqv_class_to_rep = flip_ud_slice_eqv_class_to_rep,
+        .get_sym_part = get_flip_ud_slice,
+        .set_sym_part = set_flip_ud_slice,
+        .sym_part_order = 1013760,
     },
     {
         .name = "tw_g1",
         .get = get_tw_g1,
         .set = set_tw_g1,
         .h = h_tw_g1,
-        .quater_turns = {1, 1, 0, 1, 1, 0},
-        .order = 1082565,
+        .quater_turns = {1, 0, 0, 1, 0, 0},
+        .order = 29400,
     },
     {
         .name = "tw_g2",
         .get = get_tw_g2,
         .set = set_tw_g2,
         .h = h_tw_g2,
-        .quater_turns = {1, 0, 0, 1, 0, 0},
-        .order = 29400,
-    },
-    {
-        .name = "tw_g3",
-        .get = get_tw_g3,
-        .set = set_tw_g3,
-        .h = h_tw_g3,
         .quater_turns = {0, 0, 0, 0, 0, 0},
         .order = 663552,
     },

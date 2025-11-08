@@ -24,6 +24,13 @@ struct coord
     } type;
     char *name;
     long long order; // this will be set when writing the coordinate
+    enum
+    {
+        QT_ANY,
+        QT_EO,
+        QT_DR,
+        QT_HTR,
+    } quater_turns;
     union
     {
         struct
@@ -39,9 +46,9 @@ struct coord
             enum
             {
                 CORNERS,
-                EDGES,
                 TETRAD_URF,
                 TETRAD_URB,
+                EDGES,
                 SLICE_UD,
                 SLICE_RL,
                 SLICE_FB,
@@ -52,6 +59,7 @@ struct coord
         {
             struct coord *ref;
             int symmetries[4];
+            long long eqv_classes;
         };
         struct
         {
@@ -115,6 +123,7 @@ static struct cubie_subset subsets[] = {
     },
 };
 
+static void write_coord(struct coord *x, enum mode mode);
 static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int at_end)
 {
 #define S subsets[x->subset]
@@ -205,30 +214,58 @@ static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int a
             fprintf(fp, "\n");
             break;
         case SYM:
-            if (mode == SET)
-            {
-                fprintf(fp, "    result = tw_g0_eqv_class_to_rep[result];\n");
-                fprintf(fp, "\n");
-            }
-            // TODO try using write_coord (without the 'ref' suffix)
-            write_coord_rec(x->ref, mode, at_start, at_end);
+            assert(at_start);
+            x->order = x->eqv_classes ?: x->ref->order;
             if (mode == GET)
             {
+                fprintf(fp, "    result = get_%s(x);\n", x->ref->name);
                 if (!at_end)
-                    fprintf(fp, "    long long sym = tw_g0_coord_to_rep_sym[result];\n");
-                fprintf(fp, "    result = tw_g0_coord_to_eqv_class[result];\n");
-                fprintf(fp, "\n");
+                    fprintf(fp, "    x = apply_sym(x, %s_coord_to_rep_sym[result]);\n", x->ref->name);
+                fprintf(fp, "    result = %s_coord_to_eqv_class[result];\n", x->ref->name);
             }
+            else
+            {
+                fprintf(fp, "    i = %s_eqv_class_to_rep[result", x->ref->name);
+                if (!at_end)
+                    fprintf(fp, "%%%lld", x->eqv_classes);
+                fprintf(fp, "];\n    x = set_%s(i);\n", x->ref->name);
+            }
+            if (!at_end)
+                fprintf(fp,
+                        "    %s= %lld;\n"
+                        "\n", mode==GET ? "i *" : "result /",x->eqv_classes);
             // since this function is ran twice for get and set, only do the following once
             if (mode == GET)
+            {
+                assert(x->ref->order);
                 sym_coords[num_sym_coords++] = x->ref;
+            }
             break;
         case COMPOSITE:
+            assert(x->count>1);
+            // data[i][j] i=0 for corner, i=1 for edge, j=0 for permutation, j=1 for orientation
+            int data[2][2] = {0};
+            int conflict = 0;
             for (int i=0; i<x->count; ++i)
             {
+                data[x->coords[i].subset >= EDGES][x->coords[i].indexer == ORIENTATION]++;
+                if (conflict |= (data[0][0] && data[0][1]==1) || (data[1][0] && data[1][1]==1))
+                {
+                    if (mode == GET)
+                        fprintf(fp,
+                                "    for (int i=0; i<20; ++i) x.cubies[i] &= 0x0f;\n"
+                                "\n");
+                    else
+                        fprintf(fp,
+                                "    cube y = x;\n"
+                                "    x = new_cube();\n"
+                                "\n");
+                }
                 write_coord_rec(&x->coords[i], mode, i==0, i==x->count-1);
                 x->order *= x->coords[i].order;
             }
+            if (mode == SET && conflict)
+                fprintf(fp, "    x = compose(x, y);\n");
             break;
     }
 #undef S
@@ -239,7 +276,7 @@ static void write_coord(struct coord *x, enum mode mode)
     write_coord_rec(x, mode, 1, 1);
 }
 
-static void write_coord_getter(struct coord *x, char *name)
+static void write_coord_getter_and_setter(struct coord *x, char *name)
 {
     fprintf(fp,
             "static long long get_%s(cube x)\n"
@@ -247,17 +284,12 @@ static void write_coord_getter(struct coord *x, char *name)
             "    long long result=0%s;\n"
             "\n",
             name,
-            x->type==COMPOSITE && x->count>1 ? ", i=1" : "");
+            x->type==COMPOSITE || (x->type==SYM && x->ref->type==COMPOSITE) ? ", i=1" : "");
     write_coord(x, GET);
     fprintf(fp,
             "    return result;\n"
             "}\n"
-            "\n");
-}
-
-static void write_coord_setter(struct coord *x, char *name)
-{
-    fprintf(fp,
+            "\n"
             "static cube set_%s(long long result)\n"
             "{\n"
             "    cube x = new_cube();\n"
@@ -273,39 +305,18 @@ static void write_coord_setter(struct coord *x, char *name)
 
 static void write_coords(struct coord *x, int n, char *name)
 {
-    char buf[256];
-
     for (int i=0; i<n; ++i)
     {
+        char buf[256];
         snprintf(buf, 256, "%s_g%d", name, i);
-        write_coord_getter(x+i, buf);
-    }
-
-    for (int i=0; i<n; ++i)
-    {
-        snprintf(buf, 256, "%s_g%d", name, i);
-        write_coord_setter(x+i, buf);
-    }
-
-    for (int i=0; i<num_sym_coords; ++i)
-    {
-        snprintf(buf, 256, "%s", sym_coords[i]->name);
-        write_coord_getter(sym_coords[i], buf);
-    }
-
-    for (int i=0; i<num_sym_coords; ++i)
-    {
-        snprintf(buf, 256, "%s", sym_coords[i]->name);
-        write_coord_setter(sym_coords[i], buf);
-    }
-
-    for (int i=0; i<n; ++i)
+        write_coord_getter_and_setter(x+i, buf);
         fprintf(fp,
-                "static int h_tw_g%d(cube x)\n"
+                "static int h_%s_g%d(cube x)\n"
                 "{\n"
                 "    return table_get(tw_coords[%d].table, tw_coords[%d].get(x));\n"
                 "}\n"
-                "\n", i, i, i);
+                "\n", name, i, i, i);
+    }
 
     static char *quater_turns[] = {
         "{1, 1, 1, 1, 1, 1}",
@@ -314,8 +325,8 @@ static void write_coords(struct coord *x, int n, char *name)
         "{0, 0, 0, 0, 0, 0}",
     };
     fprintf(fp,
-            "static coord tw_coords[] =\n"
-            "{\n");
+            "static coord %s_coords[] =\n"
+            "{\n", name);
     for (int i=0, j=0; i<n; ++i)
     {
         struct coord *sym = x[i].type==SYM ? &x[i]
@@ -323,27 +334,40 @@ static void write_coords(struct coord *x, int n, char *name)
             : 0;
         fprintf(fp,
                 "    {\n"
-                "        .name = \"tw_g%d\",\n"
-                "        .get = get_tw_g%d,\n"
-                "        .set = set_tw_g%d,\n"
-                "        .h = h_tw_g%d,\n"
-                "        .quater_turns = %s,\n",
-                i, i, i, i, quater_turns[i]);
-        if (!sym)
-            fprintf(fp,
-                    "        .order = %lld,\n",
-                    x[i].order);
-        else
+                "        .name = \"%s_g%d\",\n"
+                "        .get = get_%s_g%d,\n"
+                "        .set = set_%s_g%d,\n"
+                "        .h = h_%s_g%d,\n"
+                "        .quater_turns = %s,\n"
+                "        .order = %lld,\n",
+                name, i,
+                name, i,
+                name, i,
+                name, i,
+                quater_turns[x[i].quater_turns],
+                x[i].order);
+        if (sym)
             fprintf(fp,
                     "        .is_sym = 1,\n"
                     "        .num_syms = 16,\n"
-                    "        .coord_to_rep_sym = tw_g%d_coord_to_rep_sym,\n"
-                    "        .coord_to_eqv_class = tw_g%d_coord_to_eqv_class,\n"
-                    "        .eqv_class_to_rep = tw_g%d_eqv_class_to_rep,\n"
+                    "        .eqv_classes = %lld,\n"
+                    "        .self_syms = %s_self_syms,\n"
+                    "        .coord_to_rep = %s_coord_to_rep,\n"
+                    "        .coord_to_rep_sym = %s_coord_to_rep_sym,\n"
+                    "        .coord_to_eqv_class = %s_coord_to_eqv_class,\n"
+                    "        .eqv_class_to_rep = %s_eqv_class_to_rep,\n"
                     "        .get_sym_part = get_%s,\n"
                     "        .set_sym_part = set_%s,\n"
                     "        .sym_part_order = %lld,\n",
-                    i, i, i, sym->ref->name, sym->ref->name, sym->ref->order);
+                    sym->eqv_classes,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->name,
+                    sym->ref->order);
         fprintf(fp,
                 "    },\n");
     }
@@ -370,23 +394,30 @@ static void write_coords(struct coord *x, int n, char *name)
             "    int quater_turns[6];\n"
             "    // sym data\n"
             "    int is_sym;\n"
-            "    long long sym_part_order;\n"
             "    int num_syms;\n"
-            "    int *coord_to_rep_sym;\n"
-            "    int *coord_to_eqv_class;\n"
-            "    int *eqv_class_to_rep;\n"
+            "    long long eqv_classes;\n"
+            "    long long sym_part_order;\n"
+            "    long long *self_syms;\n"
+            "    long long *coord_to_rep;\n"
+            "    long long *coord_to_rep_sym;\n"
+            "    long long *coord_to_eqv_class;\n"
+            "    long long *eqv_class_to_rep;\n"
             "    long long (*get_sym_part)(cube);\n"
             "    cube (*set_sym_part)(long long);\n"
             "} coord;\n");
     for (int i=0; i<num_sym_coords; ++i)
         fprintf(fp,
                 "\n"
-                "static int tw_g%d_coord_to_rep_sym[%lld];\n"
-                "static int tw_g%d_coord_to_eqv_class[%lld];\n"
-                "static int tw_g%d_eqv_class_to_rep[%lld];\n",
-                0, sym_coords[i]->order,
-                0, sym_coords[i]->order,
-                0, sym_coords[i]->order);
+                "static long long %s_self_syms[%lld];\n"
+                "static long long %s_coord_to_rep[%lld];\n"
+                "static long long %s_coord_to_rep_sym[%lld];\n"
+                "static long long %s_coord_to_eqv_class[%lld];\n"
+                "static long long %s_eqv_class_to_rep[%lld];\n",
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order);
     fprintf(fp,
             "\n"
             "static coord tw_coords[%d];\n", n);
@@ -419,16 +450,24 @@ int main(void)
         .subset = SLICE_UD,
     };
 
-    struct coord tw_coords[4] = {
-#if 0
-        [0] = coord_eo,
-#else
-        [0] = {
-            .type = SYM,
-            .ref = &coord_eo,
+    struct coord coord_flip_ud_slice = {
+        .name = "flip_ud_slice",
+        .type = COMPOSITE,
+        .count = 2,
+        .coords = (struct coord[]){
+            [0] = coord_eo,
+            [1] = coord_ud_slice,
         },
-#endif
-        [1] = {
+    };
+
+    struct coord *sym_coords[] = {
+        &coord_flip_ud_slice,
+    };
+
+    struct coord tw_coords[] = {
+#if 0
+        coord_eo,
+        {
             .type = COMPOSITE,
             .count = 2,
             .coords = (struct coord[]){
@@ -436,8 +475,23 @@ int main(void)
                 [1] = coord_ud_slice,
             },
         },
-        [2] = {
+#else
+        {
             .type = COMPOSITE,
+            .count = 2,
+            .coords = (struct coord []) {
+                [0] = {
+                    .type = SYM,
+                    .eqv_classes = 64430,
+                    .ref = &coord_flip_ud_slice,
+                },
+                [1] = coord_co,
+            },
+        },
+#endif
+        {
+            .type = COMPOSITE,
+            .quater_turns = QT_DR,
             .count = 3,
             .coords = (struct coord[]){
                 [0] = {
@@ -457,8 +511,9 @@ int main(void)
                 },
             },
         },
-        [3] = {
+        {
             .type = COMPOSITE,
+            .quater_turns = QT_HTR,
             .count = 5,
             .coords = (struct coord[]){
                 [0] = {
@@ -493,6 +548,8 @@ int main(void)
     };
 
     fp = fopen("coord.c", "w");
+    for (int i=0; i<LENGTH(sym_coords); ++i)
+        write_coord_getter_and_setter(sym_coords[i], sym_coords[i]->name);
     write_coords(tw_coords, LENGTH(tw_coords), "tw");
     return 0;
 }

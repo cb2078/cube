@@ -4,6 +4,7 @@
 typedef struct
 {
     long long size; // size in bytes
+    long long count;
     int bits; // bits per entry
     int mask; // (1<<bits)-1
     int divisor; // sizeof(data[0])/bits

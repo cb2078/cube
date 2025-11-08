@@ -62,6 +62,45 @@ static int cube_valid(cube x)
 
 int main(void)
 {
+    // check that the sym part of the phase 1 coordinate matches its raw equivalent
+    TEST("phase1 sym")
+    {
+        init_sym(&tw_coords[0]);
+        int moves[256];
+        for (int length=0; length<LENGTH(moves); ++length)
+        {
+            make_scramble(moves, length);
+            cube x = apply_moves(new_cube(), moves, length);
+            x = apply_move(new_cube(), R);
+            long long eqv_class = get_tw_g0(x)%tw_coords[0].eqv_classes;
+            CHECK(tw_coords[0].eqv_class_to_rep[eqv_class],
+                  tw_coords[0].coord_to_rep[get_flip_ud_slice(x)]);
+            CHECK(tw_coords[0].eqv_class_to_rep[eqv_class],
+                  get_flip_ud_slice(apply_sym(x, tw_coords[0].coord_to_rep_sym[get_flip_ud_slice(x)])));
+        }
+    }
+
+    TEST("phase1 prune")
+    {
+        init_sym(&tw_coords[0]);
+        init_prune_table(&tw_coords[0]);
+        int moves[256];
+        for (int length=0; length<LENGTH(moves); ++length)
+        {
+            make_scramble(moves, length);
+            cube x = apply_moves(new_cube(), moves, length);
+            long long a = tw_coords[0].h(x);
+            if (a==0) continue;
+            int result = 0;
+            for (int i=0; i<LENGTH(move_set); ++i)
+            {
+                long long b = tw_coords[0].h(apply_move(x, move_set[i]));
+                if (b<a) CHECK(a-b, 1), result = 1;
+            }
+            CHECK(result, 1);
+        }
+    }
+
     TEST("basic move transform")
     {
         enum sym
@@ -88,22 +127,21 @@ int main(void)
 
     TEST("move transform")
     {
-        for (int length=0; length<=100; length+=100)
-            for (int i=0; i<99; ++i)
+        int moves[256];
+        for (int length=0; length<LENGTH(moves); ++length)
+        {
+            make_scramble(moves, length);
+            cube x = apply_moves(new_cube(), moves, length);
+            for (int j=0; j<LENGTH(sym_table); ++j)
             {
-                int moves[256];
-                make_scramble(moves, length);
-                cube x = apply_moves(new_cube(), moves, length);
-                for (int j=0; j<LENGTH(sym_table); ++j)
-                {
-                    cube y = apply_sym(x, j);
-                    int transformed_moves[256];
-                    memcpy(transformed_moves, moves, sizeof(moves));
-                    transform_moves(transformed_moves, length, j);
-                    cube z = apply_moves(new_cube(), transformed_moves, length);
-                    CHECK(cube_eq(y, z), 1);
-                }
+                cube y = apply_sym(x, j);
+                int transformed_moves[256];
+                memcpy(transformed_moves, moves, sizeof(moves));
+                transform_moves(transformed_moves, length, j);
+                cube z = apply_moves(new_cube(), transformed_moves, length);
+                CHECK(cube_eq(y, z), 1);
             }
+        }
     }
 
     TEST("superflip")
