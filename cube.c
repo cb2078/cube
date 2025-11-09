@@ -352,28 +352,27 @@ static void init_tetrad_twist_table(void)
     table_write(tetrad_twist_table); // todo error handling
 }
 
+static void init_coords(coord *coords, int n)
+{
+    for (int i=0; i<n; ++i)
+    {
+        init_sym(&coords[i]);
+        init_prune_table(&coords[i]);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-static void thistlethwaite(cube x, int *path, int *length)
+static void n_phase(cube x, int *path, int *length, coord *coords, int n)
 {
-    static int initialised = 0;
-    if (!initialised)
-    {
-        init_tetrad_twist_table();
-        for (int i=0; i<LENGTH(tw_coords); ++i)
-        {
-            init_sym(&tw_coords[i]);
-            init_prune_table(&tw_coords[i]);
-        }
-        initialised = 1;
-    }
+    init_coords(coords, n);
 
     *length = 0;
-    for (int i=0; i<LENGTH(tw_coords); ++i)
+    for (int i=0; i<n; ++i)
     {
-        int depth = idA(x, path+*length, tw_coords[i].h, tw_coords[i].move_mask);
+        int depth = idA(x, path+*length, coords[i].h, coords[i].move_mask);
         x = apply_moves(x, path+*length, depth);
-        printf("stage%d: ", i);
+        printf("phase%d: ", i);
         print_moves(path+*length, depth);
         printf(" // %d move%s\n", depth, depth==1?"":"s");
         *length += depth;
@@ -384,28 +383,30 @@ static void thistlethwaite(cube x, int *path, int *length)
     printf(" // %d move%s\n", *length, *length==1?"":"s");
 }
 
+static void thistlethwaite(cube x, int *path, int *length)
+{
+    init_tetrad_twist_table();
+    n_phase(x, path, length, tw_coords, LENGTH(tw_coords));
+}
+
+static void two_phase(cube x, int *path, int *length)
+{
+    init_tetrad_twist_table();
+    n_phase(x, path, length, ko_coords, LENGTH(ko_coords));
+}
+
 static int h3(cube x)
 {
     int result = 0;
-    result = MAX(result, tw_coords[0].h(x));
-    result = MAX(result, tw_coords[0].h(apply_sym(x, 16)));
-    result = MAX(result, tw_coords[0].h(apply_sym(x, 32)));
+    result = MAX(result, ko_coords[0].h(x));
+    result = MAX(result, ko_coords[0].h(apply_sym(x, 16)));
+    result = MAX(result, ko_coords[0].h(apply_sym(x, 32)));
     return result ?: !cube_eq(x, new_cube());
 }
 
 static void optimal(cube x, int *path, int *length)
 {
-    static int initialised = 0;
-    if (!initialised)
-    {
-        init_tetrad_twist_table();
-        for (int i=0; i<LENGTH(tw_coords); ++i)
-        {
-            init_sym(&tw_coords[i]);
-            init_prune_table(&tw_coords[i]);
-        }
-        initialised = 1;
-    }
+    init_coords(ko_coords, 1);
 
     *length = 0;
     solve(x, path, length, h3, 0);

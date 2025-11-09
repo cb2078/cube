@@ -81,6 +81,8 @@ static void set_eo(cube *, long long);
 static int get_tetrad_twist(cube);
 static void set_tetrad_twist(cube *, int);
 
-static void thistlethwaite(cube x, int *path, int *length);
+static void thistlethwaite(cube, int *, int *);
+static void two_phase(cube, int *, int *);
+static void optimal(cube, int *, int *);
 
 #endif

@@ -65,36 +65,36 @@ int main(void)
     // check that the sym part of the phase 1 coordinate matches its raw equivalent
     TEST("phase1 sym")
     {
-        init_sym(&tw_coords[0]);
+        init_sym(&ko_coords[0]);
         int moves[256];
         for (int length=0; length<LENGTH(moves); ++length)
         {
             make_scramble(moves, length);
             cube x = apply_moves(new_cube(), moves, length);
             x = apply_move(new_cube(), R);
-            long long eqv_class = get_tw_g0(x)%tw_coords[0].eqv_classes;
-            CHECK(tw_coords[0].eqv_class_to_rep[eqv_class],
-                  tw_coords[0].coord_to_rep[get_flip_ud_slice(x)]);
-            CHECK(tw_coords[0].eqv_class_to_rep[eqv_class],
-                  get_flip_ud_slice(apply_sym(x, tw_coords[0].coord_to_rep_sym[get_flip_ud_slice(x)])));
+            long long eqv_class = get_ko_g0(x)%ko_coords[0].eqv_classes;
+            CHECK(ko_coords[0].eqv_class_to_rep[eqv_class],
+                  ko_coords[0].coord_to_rep[get_flip_ud_slice(x)]);
+            CHECK(ko_coords[0].eqv_class_to_rep[eqv_class],
+                  get_flip_ud_slice(apply_sym(x, ko_coords[0].coord_to_rep_sym[get_flip_ud_slice(x)])));
         }
     }
 
     TEST("phase1 prune")
     {
-        init_sym(&tw_coords[0]);
-        init_prune_table(&tw_coords[0]);
+        init_sym(&ko_coords[0]);
+        init_prune_table(&ko_coords[0]);
         int moves[256];
         for (int length=0; length<LENGTH(moves); ++length)
         {
             make_scramble(moves, length);
             cube x = apply_moves(new_cube(), moves, length);
-            long long a = tw_coords[0].h(x);
+            long long a = ko_coords[0].h(x);
             if (a==0) continue;
             int result = 0;
             for (int m=0; m<NUM_FACE_TURNS; ++m)
             {
-                long long b = tw_coords[0].h(apply_move(x, m));
+                long long b = ko_coords[0].h(apply_move(x, m));
                 if (b<a) CHECK(a-b, 1), result = 1;
             }
             CHECK(result, 1);
@@ -244,13 +244,16 @@ int main(void)
     TEST("Thistlethwaite coords")
     {
         init_tetrad_twist_table();
-        for (int k=0; k<4; ++k)
+        for (int k=0; k<LENGTH(tw_coords); ++k)
+        {
+            init_sym(&tw_coords[k]);
             for (int i=0; i<tw_coords[k].order; ++i)
             {
                 cube x = tw_coords[k].set(i);
                 CHECK(cube_valid(x), 1);
                 CHECK(tw_coords[k].get(x), i);
             }
+        }
     }
 
     printf("all tests passed\n");

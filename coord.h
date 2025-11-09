@@ -39,6 +39,7 @@ static long long cp_coord_to_rep_sym[40320];
 static long long cp_coord_to_eqv_class[40320];
 static long long cp_eqv_class_to_rep[40320];
 
-static coord tw_coords[2];
+static coord tw_coords[4];
+static coord ko_coords[2];
 
 #endif

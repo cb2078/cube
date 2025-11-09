@@ -118,6 +118,11 @@ static struct cubie_subset subsets[] = {
     },
 };
 
+static void write_separator(void)
+{
+    fprintf(fp, "////////////////////////////////////////////////////////////////////////////////\n\n");
+}
+
 static void write_coord(struct coord *x, enum mode mode);
 static void write_coord_rec(struct coord *x, enum mode mode, int at_start, int at_end)
 {
@@ -309,9 +314,12 @@ static void write_coords(struct coord *x, int n, char *name)
         fprintf(fp,
                 "static int h_%s_g%d(cube x)\n"
                 "{\n"
-                "    return table_get(tw_coords[%d].table, tw_coords[%d].get(x));\n"
+                "    return table_get(%s_coords[%d].table, %s_coords[%d].get(x));\n"
                 "}\n"
-                "\n", name, i, i, i);
+                "\n",
+                name, i,
+                name, i,
+                name, i);
     }
 
     fprintf(fp,
@@ -362,59 +370,6 @@ static void write_coords(struct coord *x, int n, char *name)
                 "    },\n");
     }
     fprintf(fp, "};\n");
-
-    fclose(fp);
-
-    fp = fopen("coord.h", "w");
-    fprintf(fp,
-            "#ifndef COORD_H\n"
-            "#define COORD_H\n"
-            "\n"
-            "#include \"cube.h\"\n"
-            "#include \"table.h\"\n"
-            "\n"
-            "typedef struct\n"
-            "{\n"
-            "    char *name;\n"
-            "    long long (*get)(cube);\n"
-            "    cube (*set)(long long);\n"
-            "    int (*h)(cube);\n"
-            "    long long order;\n"
-            "    table *table;\n"
-            "    int move_mask;\n"
-            "    // sym data\n"
-            "    int is_sym;\n"
-            "    int num_syms;\n"
-            "    long long eqv_classes;\n"
-            "    long long sym_part_order;\n"
-            "    long long *self_syms;\n"
-            "    long long *coord_to_rep;\n"
-            "    long long *coord_to_rep_sym;\n"
-            "    long long *coord_to_eqv_class;\n"
-            "    long long *eqv_class_to_rep;\n"
-            "    long long (*get_sym_part)(cube);\n"
-            "    cube (*set_sym_part)(long long);\n"
-            "} coord;\n");
-    for (int i=0; i<num_sym_coords; ++i)
-        fprintf(fp,
-                "\n"
-                "static long long %s_self_syms[%lld];\n"
-                "static long long %s_coord_to_rep[%lld];\n"
-                "static long long %s_coord_to_rep_sym[%lld];\n"
-                "static long long %s_coord_to_eqv_class[%lld];\n"
-                "static long long %s_eqv_class_to_rep[%lld];\n",
-                sym_coords[i]->name, sym_coords[i]->order,
-                sym_coords[i]->name, sym_coords[i]->order,
-                sym_coords[i]->name, sym_coords[i]->order,
-                sym_coords[i]->name, sym_coords[i]->order,
-                sym_coords[i]->name, sym_coords[i]->order);
-    fprintf(fp,
-            "\n"
-            "static coord tw_coords[%d];\n", n);
-    fprintf(fp,
-            "\n"
-            "#endif\n");
-    fclose(fp);
 }
 
 int main(void)
@@ -463,10 +418,10 @@ int main(void)
     };
 
     struct coord tw_coords[] = {
-#if 0
         [0] = coord_eo,
         [1] = {
             .type = COMPOSITE,
+            .move_mask = "EO_MASK",
             .count = 2,
             .coords = (struct coord[]){
                 [0] = coord_co,
@@ -529,7 +484,9 @@ int main(void)
                 },
             },
         },
-#else
+    };
+
+    struct coord ko_coords[] = {
         [0] = {
             .type = COMPOSITE,
             .count = 2,
@@ -560,12 +517,66 @@ int main(void)
                 },
             },
         }
-#endif
     };
 
-    fp = fopen("coord.c", "w");
+    fp=fopen("coord.c", "w");
     for (int i=0; i<LENGTH(sym_coords); ++i)
         write_coord_getter_and_setter(sym_coords[i], sym_coords[i]->name);
+    write_separator();
     write_coords(tw_coords, LENGTH(tw_coords), "tw");
+    fputc('\n', fp), write_separator();
+    write_coords(ko_coords, LENGTH(ko_coords), "ko");
+
+    fp = freopen("coord.h", "w", fp);
+    fprintf(fp,
+            "#ifndef COORD_H\n"
+            "#define COORD_H\n"
+            "\n"
+            "#include \"cube.h\"\n"
+            "#include \"table.h\"\n"
+            "\n"
+            "typedef struct\n"
+            "{\n"
+            "    char *name;\n"
+            "    long long (*get)(cube);\n"
+            "    cube (*set)(long long);\n"
+            "    int (*h)(cube);\n"
+            "    long long order;\n"
+            "    table *table;\n"
+            "    int move_mask;\n"
+            "    // sym data\n"
+            "    int is_sym;\n"
+            "    int num_syms;\n"
+            "    long long eqv_classes;\n"
+            "    long long sym_part_order;\n"
+            "    long long *self_syms;\n"
+            "    long long *coord_to_rep;\n"
+            "    long long *coord_to_rep_sym;\n"
+            "    long long *coord_to_eqv_class;\n"
+            "    long long *eqv_class_to_rep;\n"
+            "    long long (*get_sym_part)(cube);\n"
+            "    cube (*set_sym_part)(long long);\n"
+            "} coord;\n");
+    for (int i=0; i<num_sym_coords; ++i)
+        fprintf(fp,
+                "\n"
+                "static long long %s_self_syms[%lld];\n"
+                "static long long %s_coord_to_rep[%lld];\n"
+                "static long long %s_coord_to_rep_sym[%lld];\n"
+                "static long long %s_coord_to_eqv_class[%lld];\n"
+                "static long long %s_eqv_class_to_rep[%lld];\n",
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order,
+                sym_coords[i]->name, sym_coords[i]->order);
+    fprintf(fp,
+            "\n"
+            "static coord tw_coords[%d];\n"
+            "static coord ko_coords[%d];\n"
+            "\n"
+            "#endif\n", (int)LENGTH(tw_coords), (int)LENGTH(ko_coords));
+    fclose(fp);
+
     return 0;
 }
