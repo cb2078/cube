@@ -13,9 +13,11 @@ typedef struct
 } table;
 
 static table *table_new(long long size, int bits, char *filename);
+
 static int table_read(table *t);
 static int table_write(table *t);
-static void table_set(table *t, long long i, int x);
+
 static int table_get(table *t, long long i);
+static void table_set(table *t, long long i, int x);
 
 #endif

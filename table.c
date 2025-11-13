@@ -27,33 +27,30 @@ static void table_destroy(table *t)
 
 static int table_read(table *t)
 {
-    FILE *f = fopen(t->filename, "r");
+    FILE *f = fopen(t->filename, "rb");
     if (f)
     {
         fread(t->data, t->size, 1, f);
         fclose(f);
-        printf("read '%s'\n", t->filename);
+        fprintf(stderr, "read '%s'\n", t->filename);
         return 1;
     }
-    else
-    {
-        return 0;
-    }
+    return 0;
 }
 
 static int table_write(table *t)
 {
-    FILE *f = fopen(t->filename, "w");
+    FILE *f = fopen(t->filename, "wb");
     if (f)
     {
         fwrite(t->data, t->size, 1, f);
         fclose(f);
-        printf("wrote '%s'\n", t->filename);
+        fprintf(stderr, "wrote '%s'\n", t->filename);
         return 1;
     }
     else
     {
-        printf("couldn't write '%s'\n", t->filename);
+        fprintf(stderr, "couldn't write '%s'\n", t->filename);
         return 0;
     }
 }

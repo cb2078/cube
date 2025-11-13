@@ -25,12 +25,11 @@ typedef union
     };
     struct
     {
-        char tetrads[2][4];
-        char slices[3][4];
-    };
-    struct
-    {
-        char orbits[5][4];
+        char urf_tetrad[4];
+        char urb_tetrad[4];
+        char ud_slice[4];
+        char rl_slice[4];
+        char fb_slice[4];
     };
 } cube;
 
@@ -80,9 +79,5 @@ static void set_co(cube *, long long);
 static void set_eo(cube *, long long);
 static int get_tetrad_twist(cube);
 static void set_tetrad_twist(cube *, int);
-
-static void thistlethwaite(cube, int *, int *);
-static void two_phase(cube, int *, int *);
-static void optimal(cube, int *, int *);
 
 #endif

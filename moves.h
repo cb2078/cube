@@ -56,7 +56,6 @@ static int move_face(int x);
 static int move_opposite_face(int x);
 static int move_side(int x);
 static int move_amount(int x);
-static void transform_moves(int *moves, int length, int sym);
 static void possible_moves(int *moves, int *length, int move, int mask);
 static void print_moves(int *moves, int length);
 static void make_scramble(int *moves, int length);
