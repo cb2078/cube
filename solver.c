@@ -1,5 +1,5 @@
 #define H(name)\
-    static int h_##name(cube x)\
+    static int h_##name(cube_t x)\
     {\
         return table_get(coord_##name.table, coord_get(&coord_##name, x));\
     }
@@ -11,11 +11,11 @@ H(phase1);
 H(phase2);
 H(optimal);
 
-static int idA(cube x, int *path, int (*h)(cube), int move_mask)
+static int idA(cube_t x, int *path, int (*h)(cube_t), int move_mask)
 {
     typedef struct
     {
-        cube cube;
+        cube_t cube;
         int move;
         int depth;
     } node;
@@ -26,7 +26,7 @@ static int idA(cube x, int *path, int (*h)(cube), int move_mask)
         node stack[20*15];
         node *top = stack;
 
-        void push(cube x, int move, int depth)
+        void push(cube_t x, int move, int depth)
         {
             int f = h(x) + depth;
             if (f > max_depth)
@@ -54,7 +54,7 @@ static int idA(cube x, int *path, int (*h)(cube), int move_mask)
     }
 }
 
-static void solve(cube x, int *path, int *length, int (*h)(cube), int move_mask)
+static void solve(cube_t x, int *path, int *length, int (*h)(cube_t), int move_mask)
 {
     *length = idA(x, path, h, move_mask);
 }
@@ -62,10 +62,10 @@ static void solve(cube x, int *path, int *length, int (*h)(cube), int move_mask)
 struct stage
 {
     struct coord *coord;
-    int (*h)(cube);
+    int (*h)(cube_t);
 };
 
-static void n_stage(cube x, int *path, int *length, struct stage *stages, int n)
+static void n_stage(cube_t x, int *path, int *length, struct stage *stages, int n)
 {
     for (int i=0; i<n; ++i)
     {
@@ -89,7 +89,7 @@ static void n_stage(cube x, int *path, int *length, struct stage *stages, int n)
     printf(" // %d move%s\n", *length, *length==1?"":"s");
 }
 
-static void thistlethwaite(cube x, int *path, int *length)
+static void thistlethwaite(cube_t x, int *path, int *length)
 {
     static struct stage stages[] =
     {
@@ -102,7 +102,7 @@ static void thistlethwaite(cube x, int *path, int *length)
     n_stage(x, path, length, stages, LENGTH(stages));
 }
 
-static void kociemba(cube x, int *path, int *length)
+static void kociemba(cube_t x, int *path, int *length)
 {
     static struct stage stages[] =
     {
@@ -112,7 +112,7 @@ static void kociemba(cube x, int *path, int *length)
     n_stage(x, path, length, stages, LENGTH(stages));
 }
 
-static void optimal(cube x, int *path, int *length)
+static void optimal(cube_t x, int *path, int *length)
 {
     static struct stage stages[] =
     {

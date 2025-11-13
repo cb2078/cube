@@ -1,4 +1,4 @@
-static char *get_pieces(struct coord *c, cube *x)
+static char *get_pieces(struct coord *c, cube_t *x)
 {
     char *table[] =
     {
@@ -44,7 +44,7 @@ static void sub_offset(struct coord *c, char *pieces)
     offset(c, pieces, -1);
 }
 
-static long long coord_get(struct coord *c, cube x)
+static long long coord_get(struct coord *c, cube_t x)
 {
     ASSERT(c->max);
     long long r = 0;
@@ -99,10 +99,10 @@ static long long coord_get(struct coord *c, cube x)
     }
 }
 
-static cube coord_set(struct coord *c, long long r)
+static cube_t coord_set(struct coord *c, long long r)
 {
     ASSERT(c->max);
-    cube x = new_cube();
+    cube_t x = new_cube();
     switch (c->type)
     {
         case RAW:
@@ -224,10 +224,10 @@ static void init_sym(struct coord *c)
     struct coord *b = &c->coords[0];
     for (long long i=0; i<b->max; ++i)
     {
-        cube x = coord_set(b, i);
+        cube_t x = coord_set(b, i);
         for (int s=0; s<c->num_syms; ++s)
         {
-            cube y = apply_sym(x, s);
+            cube_t y = apply_sym(x, s);
             int k = coord_get(b, y);
             c->self_syms[i] |= (i==k)<<s;
         }
@@ -239,10 +239,10 @@ static void init_sym(struct coord *c)
     {
         if (c->coord_info[i].class != 0xffff) // TODO change "class" to just "class"
             continue;
-        cube x = coord_set(b, i);
+        cube_t x = coord_set(b, i);
         for (int s=0; s<c->num_syms; ++s)
         {
-            cube y = apply_sym(x, s);
+            cube_t y = apply_sym(x, s);
             int k = coord_get(b, y);
             c->coord_info[k].class = class;
             c->coord_info[k].sym = inv_sym[s];

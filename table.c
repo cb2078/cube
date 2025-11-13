@@ -1,8 +1,8 @@
-static table *table_new(long long entries, int bits, char *filename)
+static struct table *table_new(long long entries, int bits, char *filename)
 {
     assert(bits==1 || bits==2 || bits==4 || bits==8);
     long long size = (entries*bits+7)/8;
-    table *t = calloc(1, sizeof(table)+size);
+    struct table *t = calloc(1, sizeof(struct table)+size);
     if (!t)
     {
         fprintf(stderr, "failed to allocate table: %s\n", filename);
@@ -20,12 +20,12 @@ static table *table_new(long long entries, int bits, char *filename)
     return t;
 }
 
-static void table_destroy(table *t)
+static void table_destroy(struct table *t)
 {
     free(t);
 }
 
-static int table_read(table *t)
+static int table_read(struct table *t)
 {
     FILE *f = fopen(t->filename, "rb");
     if (f)
@@ -38,7 +38,7 @@ static int table_read(table *t)
     return 0;
 }
 
-static int table_write(table *t)
+static int table_write(struct table *t)
 {
     FILE *f = fopen(t->filename, "wb");
     if (f)
@@ -55,7 +55,7 @@ static int table_write(table *t)
     }
 }
 
-static void table_set(table *t, long long i, int x)
+static void table_set(struct table *t, long long i, int x)
 {
     assert(x<=t->mask);
     int shift = (int)(i&(t->divisor-1))*t->bits;
@@ -63,7 +63,7 @@ static void table_set(table *t, long long i, int x)
     t->count++;
 }
 
-static int table_get(table *t, long long i)
+static int table_get(struct table *t, long long i)
 {
     int shift = (int)(i&(t->divisor-1))*t->bits;
     return (t->data[i/t->divisor]>>shift)&t->mask;

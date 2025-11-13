@@ -1,4 +1,4 @@
-static cube move_cubes[] =
+static cube_t move_cubes[] =
 {
     //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     [U]  = {{  4,  5,  2,  3,  1,  0,  6,  7,  0,  1,  2,  3,  8,  9,  6,  7,  5,  4, 10, 11}},
@@ -73,7 +73,7 @@ static int sym_moves[48][18] =
     [47] = { R3, D3, B3, L3, U3, F3, R2, D2, B2, L2, U2, F2,  R,  D,  B,  L,  U,  F},
 };
 
-static cube sym_cubes[] =
+static cube_t sym_cubes[] =
 {
     //       URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     [0]  = {{  0,  1,  2,  3,  4,  5,  6,  7,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11}},

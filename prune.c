@@ -32,7 +32,7 @@ static void init_prune_table(struct coord *c)
                 possible_moves(moves, &length, 0xff, c->move_mask);
                 for (int j=0; j<length; ++j)
                 {
-                    cube x = apply_move(coord_set(c, i), moves[j]);
+                    cube_t x = apply_move(coord_set(c, i), moves[j]);
                     long long k = coord_get(c, x);
                     if (!backsearch && table_get(c->table, k) == c->table->mask)
                     {
@@ -44,7 +44,7 @@ static void init_prune_table(struct coord *c)
                         {
                             if (~c->self_syms[coord_get(b, x)]>>s&1)
                                 continue;
-                            cube y = apply_sym(x, s);
+                            cube_t y = apply_sym(x, s);
                             int l = coord_get(c, y);
                             if (table_get(c->table, l) == c->table->mask)
                                 table_set(c->table, l, depth);
@@ -73,9 +73,9 @@ static void init_prune_table(struct coord *c)
 
 static void init_tetrad_twist_table(void)
 {
-    cube separate_corners(cube x)
+    cube_t separate_corners(cube_t x)
     {
-        cube result = x;
+        cube_t result = x;
         int j=0, k=0;
         for (int i=0; i<NUM_CORNERS; ++i)
             if (x.corners[i]<4)
@@ -92,7 +92,7 @@ static void init_tetrad_twist_table(void)
 
     for (int i=0; i<n; ++i)
     {
-        cube x = new_cube();
+        cube_t x = new_cube();
         set_permutation(x.corners, NUM_CORNERS, i);
         x = separate_corners(x);
         int moves[64], length;

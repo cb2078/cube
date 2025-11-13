@@ -31,7 +31,7 @@ typedef union
         char rl_slice[4];
         char fb_slice[4];
     };
-} cube;
+} cube_t;
 
 enum cubies
 {
@@ -63,21 +63,21 @@ enum slice
     SLICE_FB,
 };
 
-static cube new_cube(void);
-static void print_cube(cube);
-static int cube_eq(cube, cube);
-static cube compose(cube, cube);
-static cube compose_3(cube, cube, cube);
-static cube apply_sym(cube, int);
-static cube apply_move(cube, int);
-static cube apply_moves(cube, int *, int);
-static cube invert_co(cube);
+static cube_t new_cube(void);
+static void print_cube(cube_t);
+static int cube_eq(cube_t, cube_t);
+static cube_t compose(cube_t, cube_t);
+static cube_t compose_3(cube_t, cube_t, cube_t);
+static cube_t apply_sym(cube_t, int);
+static cube_t apply_move(cube_t, int);
+static cube_t apply_moves(cube_t, int *, int);
+static cube_t invert_co(cube_t);
 
-static int get_co(cube);
-static int get_eo(cube);
-static void set_co(cube *, long long);
-static void set_eo(cube *, long long);
-static int get_tetrad_twist(cube);
-static void set_tetrad_twist(cube *, int);
+static int get_co(cube_t);
+static int get_eo(cube_t);
+static void set_co(cube_t *, long long);
+static void set_eo(cube_t *, long long);
+static int get_tetrad_twist(cube_t);
+static void set_tetrad_twist(cube_t *, int);
 
 #endif

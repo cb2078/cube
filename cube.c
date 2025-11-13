@@ -1,12 +1,12 @@
-static cube new_cube(void)
+static cube_t new_cube(void)
 {
-    cube x;
+    cube_t x;
     for (int i=0; i<NUM_CORNERS; ++i) x.corners[i]=i;
     for (int i=0; i<NUM_EDGES; ++i) x.edges[i]=i;
     return x;
 }
 
-static void print_cube(cube x)
+static void print_cube(cube_t x)
 {
     #define PRINT(x, ...) \
         printf("%2s ", x); \
@@ -19,14 +19,14 @@ static void print_cube(cube x)
     #undef PRINT
 }
 
-static int cube_eq(cube x, cube y)
+static int cube_eq(cube_t x, cube_t y)
 {
-    return 0==memcmp(&x, &y, sizeof(cube));
+    return 0==memcmp(&x, &y, sizeof(cube_t));
 }
 
-static cube compose(cube x, cube y)
+static cube_t compose(cube_t x, cube_t y)
 {
-    cube result;
+    cube_t result;
 
     for (int i=0; i<NUM_CORNERS; ++i)
     {
@@ -45,17 +45,17 @@ static cube compose(cube x, cube y)
     return result;
 }
 
-static cube compose_3(cube x, cube y, cube z)
+static cube_t compose_3(cube_t x, cube_t y, cube_t z)
 {
     return compose(compose(x, y), z);
 }
 
-static cube apply_sym(cube x, int sym)
+static cube_t apply_sym(cube_t x, int sym)
 {
     // TODO try creating a "mirroed compose" function to see if its faster than
     // inverting the CO twice
 
-    cube maybe_invert_co(cube x)
+    cube_t maybe_invert_co(cube_t x)
     {
         return sym&1 ? invert_co(x) : x;
     }
@@ -63,14 +63,14 @@ static cube apply_sym(cube x, int sym)
     return compose_3(sym_cubes[inv_sym[sym]], maybe_invert_co(x), maybe_invert_co(sym_cubes[sym]));
 }
 
-static cube apply_move(cube x, int move)
+static cube_t apply_move(cube_t x, int move)
 {
     return compose(x, move_cubes[move]);
 }
 
-static cube apply_moves(cube x, int *moves, int length)
+static cube_t apply_moves(cube_t x, int *moves, int length)
 {
-    cube result=x;
+    cube_t result=x;
     for (int i=0; i<length; ++i) result=apply_move(result, moves[i]);
     return result;
 }
@@ -81,7 +81,7 @@ static void orient(char *x, int orientation)
     *x = (*x&0x0f) | (orientation<<4);
 }
 
-static int get_eo(cube x)
+static int get_eo(cube_t x)
 {
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
@@ -89,7 +89,7 @@ static int get_eo(cube x)
     return result;
 }
 
-static void set_eo(cube *x, long long r)
+static void set_eo(cube_t *x, long long r)
 {
     int parity = 0;
     for (int i=0, y; i<NUM_EDGES-1; ++i, r>>=1)
@@ -97,7 +97,7 @@ static void set_eo(cube *x, long long r)
     orient(x->edges+NUM_EDGES-1, parity);
 }
 
-static int get_co(cube x)
+static int get_co(cube_t x)
 {
     int result = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
@@ -105,7 +105,7 @@ static int get_co(cube x)
     return result;
 }
 
-static void set_co(cube *x, long long r)
+static void set_co(cube_t *x, long long r)
 {
     int parity = 0;
     for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
@@ -113,13 +113,13 @@ static void set_co(cube *x, long long r)
     orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
 }
 
-static table *tetrad_twist_table;
-static int get_tetrad_twist(cube x)
+static struct table *tetrad_twist_table;
+static int get_tetrad_twist(cube_t x)
 {
     return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
 }
 
-static void set_tetrad_twist(cube *x, int r)
+static void set_tetrad_twist(cube_t *x, int r)
 {
     char perm[3];
     set_permutation(perm, 3, r);
@@ -128,7 +128,7 @@ static void set_tetrad_twist(cube *x, int r)
             x->corners[i] = perm[(int)x->corners[i]];
 }
 
-static int h_cp5(cube x)
+static int h_cp5(cube_t x)
 {
     for (int i=3; i<NUM_CORNERS; ++i)
         if (x.corners[i]!=i)
@@ -136,7 +136,7 @@ static int h_cp5(cube x)
     return 0;
 }
 
-static cube invert_co(cube x)
+static cube_t invert_co(cube_t x)
 {
     for (int i=0; i<NUM_CORNERS; ++i)
     {

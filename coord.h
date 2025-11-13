@@ -55,7 +55,7 @@ struct coord
     long long *self_syms;
 
     // pruning table
-    table *table;
+    struct table *table;
     int move_mask;
 };
 
@@ -246,8 +246,8 @@ static struct coord coord_optimal =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline long long coord_get(struct coord *, cube);
-static inline cube coord_set(struct coord *, long long);
+static inline long long coord_get(struct coord *, cube_t);
+static inline cube_t coord_set(struct coord *, long long);
 
 static int coord_read(struct coord *);
 static int coord_write(struct coord *);

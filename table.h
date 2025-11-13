@@ -1,7 +1,7 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-typedef struct
+struct table
 {
     long long size; // size in bytes
     long long count;
@@ -10,14 +10,14 @@ typedef struct
     int divisor; // sizeof(data[0])/bits
     char filename[256];
     unsigned data[];
-} table;
+};
 
-static table *table_new(long long size, int bits, char *filename);
+static struct table *table_new(long long size, int bits, char *filename);
 
-static int table_read(table *t);
-static int table_write(table *t);
+static int table_read(struct table *t);
+static int table_write(struct table *t);
 
-static int table_get(table *t, long long i);
-static void table_set(table *t, long long i, int x);
+static int table_get(struct table *t, long long i);
+static void table_set(struct table *t, long long i, int x);
 
 #endif
