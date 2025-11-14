@@ -32,7 +32,7 @@ int main(void)
     make_scramble(moves, length);
     printf("scramble: "), print_moves(moves, length), putchar('\n');
     cube_t x = apply_moves(new_cube(), moves, length);
-    // thistlethwaite(x, moves, &length);
+    thistlethwaite(x, moves, &length);
     kociemba(x, moves, &length);
     // optimal(x, moves, &length);
 

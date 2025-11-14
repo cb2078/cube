@@ -163,9 +163,6 @@ static cube_t coord_set(struct coord *c, long long r)
 #define COORD_SELF_SYMS_SIZE(c) (c->coords[0].max * sizeof(c->self_syms[0]))
 #define COORD_SIZE(c) (CLASS_TO_REP_SIZE(c) + COORD_INFO_SIZE(c) + COORD_SELF_SYMS_SIZE(c))
 
-#define COORD_EXTENSION ".sym_info.bin"
-#define COORD_HAS_EXTENSION(c) strstr(c->name, COORD_EXTENSION)
-
 static int coord_read(struct coord *c)
 {
     ASSERT(!c->rep);
@@ -174,15 +171,14 @@ static int coord_read(struct coord *c)
     c->coord_info      = mem + CLASS_TO_REP_SIZE(c);
     c->self_syms = mem + CLASS_TO_REP_SIZE(c) + COORD_INFO_SIZE(c);
 
-    ASSERT(c->name);
-    ASSERT(!COORD_HAS_EXTENSION(c));
-    strcat(c->name, COORD_EXTENSION);
-    FILE *f = fopen(c->name, "rb");
+    char buf[256];
+    sprintf(buf, "%s.sym.bin", c->name);
+    FILE *f = fopen(buf, "rb");
     if (f)
     {
         fread(mem, COORD_SIZE(c), 1, f);
         fclose(f);
-        fprintf(stderr, "read '%s'\n", c->name);
+        fprintf(stderr, "read '%s'\n", buf);
         return 1;
     }
     else
@@ -196,19 +192,19 @@ static int coord_write(struct coord *c)
     ASSERT(c->rep);
     void *mem = c->rep;
 
-    ASSERT(c->name);
-    ASSERT(COORD_HAS_EXTENSION(c));
-    FILE *f = fopen(c->name, "wb"); // TODO filename for tablers is wrong
+    char buf[256];
+    sprintf(buf, "%s.sym.bin", c->name);
+    FILE *f = fopen(buf, "wb"); // TODO filename for tablers is wrong
     if (f)
     {
         fwrite(mem, COORD_SIZE(c), 1, f);
         fclose(f);
-        fprintf(stderr, "wrote '%s'\n", c->name);
+        fprintf(stderr, "wrote '%s'\n", buf);
         return 1;
     }
     else
     {
-        fprintf(stderr, "couldn't write '%s'\n", c->name);
+        fprintf(stderr, "couldn't write '%s'\n", buf);
         return 0;
     }
 }

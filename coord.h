@@ -8,7 +8,7 @@
 
 struct coord
 {
-    char name[256];
+    char *name;
     enum
     {
         RAW,

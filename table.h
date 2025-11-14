@@ -8,11 +8,11 @@ struct table
     int bits; // bits per entry
     int mask; // (1<<bits)-1
     int divisor; // sizeof(data[0])/bits
-    char filename[256];
+    char *name;
     unsigned data[];
 };
 
-static struct table *table_new(long long size, int bits, char *filename);
+static struct table *table_new(long long size, int bits, char *name);
 
 static int table_read(struct table *t);
 static int table_write(struct table *t);
