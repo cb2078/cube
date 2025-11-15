@@ -1,252 +1,427 @@
-static char *get_pieces(struct coord *c, cube_t *x)
+static long long get_flip(cube_t x)
 {
-    char *table[] =
-    {
-        [CORNERS] = x->corners,
-        [URF_TETRAD] = x->urf_tetrad,
-        [URB_TETRAD] = x->urb_tetrad,
-        [EDGES] = x->edges,
-        [UD_SLICE] = x->ud_slice,
-        [RL_SLICE] = x->rl_slice,
-        [FB_SLICE] = x->fb_slice,
-    };
-    return table[c->pieces] + c->offset;
-}
-
-static int end_index(struct coord *c)
-{
-    return (c->pieces==CORNERS ? 8 : c->pieces==EDGES ? 12 : 4) - c->offset;
-}
-
-static void offset(struct coord *c, char *pieces, int sign)
-{
-    int table[] =
-    {
-        [CORNERS] = 0,
-        [URF_TETRAD] = 0,
-        [URB_TETRAD] = 4,
-        [EDGES] = 0,
-        [UD_SLICE] = 0,
-        [RL_SLICE] = 4,
-        [FB_SLICE] = 8,
-    };
-    for (int i=0; i<end_index(c); ++i)
-        pieces[i] += sign*(c->offset+table[c->pieces]);
-}
-
-static void add_offset(struct coord *c, char *pieces)
-{
-    offset(c, pieces, +1);
-}
-
-static void sub_offset(struct coord *c, char *pieces)
-{
-    offset(c, pieces, -1);
-}
-
-static long long coord_get(struct coord *c, cube_t x)
-{
-    ASSERT(c->max);
     long long r = 0;
-    switch (c->type)
-    {
-        case RAW:
-            if (c->indexer==ORIENTATION)
-            {
-                switch (c->pieces)
-                {
-                    case EDGES:
-                        return get_eo(x);
-                    case CORNERS:
-                        return get_co(x);
-                    default:
-                        UNREACHABLE();
-                }
-            }
-            else
-            {
-                // TODO when optimising see if this is repeated more than once
-                for (int i=0; i<LENGTH(x.cubies); ++i)
-                    x.cubies[i] &= 0x0f;
-                char *pieces = get_pieces(c, &x);
-                sub_offset(c, pieces);
-                switch (c->indexer)
-                {
-                    case PERMUTATION:
-                        return get_permutation(pieces, end_index(c));
-                    case PARTIAL_PERMUTATION:
-                        return get_partial_permutation(pieces, end_index(c), c->length);
-                    case COMBINATION:
-                        return get_combination(pieces, end_index(c), c->length);
-                    default:
-                        UNREACHABLE();
-                }
-            }
-        case COMP:
-            for (int i=0; i<c->count; ++i)
-            {
-                r *= c->coords[i].max;
-                r += coord_get(&c->coords[i], x);
-            }
-            return r;
-        case SYM_COMP:
-            r = coord_get(&c->coords[0], x);
-            x = apply_sym(x, c->coord_info[r].sym);
-            r = c->coord_info[r].class;
-            return r * c->coords[1].max + coord_get(&c->coords[1], x);
-        default:
-            UNREACHABLE();
-    }
+
+    r += get_eo(x);
+
+    return r;
 }
 
-static cube_t coord_set(struct coord *c, long long r)
+static cube_t set_flip(long long r)
 {
-    ASSERT(c->max);
     cube_t x = new_cube();
-    switch (c->type)
-    {
-        case RAW:
-            if (c->indexer==ORIENTATION)
-            {
-                switch (c->pieces)
-                {
-                    case CORNERS:
-                        set_co(&x, r);
-                        break;
-                    case EDGES:
-                        set_eo(&x, r);
-                        break;
-                    default:
-                        UNREACHABLE();
-                }
-                return x;
-            }
-            else
-            {
-                char *pieces = get_pieces(c, &x);
-                switch (c->indexer)
-                {
-                    case PERMUTATION:
-                        set_permutation(pieces, end_index(c), r);
-                        break;
-                    case PARTIAL_PERMUTATION:
-                        set_partial_permutation(pieces, end_index(c), c->length, r);
-                        break;
-                    case COMBINATION:
-                        set_combination(pieces, end_index(c), c->length, r);
-                        break;
-                    default:
-                        UNREACHABLE();
-                }
-                add_offset(c, pieces);
-                return x;
-            }
-        case COMP:
-            for (int i=c->count; i-->0;)
-            {
-                x = compose(x, coord_set(&c->coords[i], r%c->coords[i].max));
-                r /= c->coords[i].max;
-            }
-            ASSERT(!r);
-            return x;
-        case SYM_COMP:
-            x = compose(x, coord_set(&c->coords[0], c->rep[r/c->coords[1].max]));
-            x = compose(x, coord_set(&c->coords[1], r%c->coords[1].max));
-            return x;
-        default:
-            UNREACHABLE();
-    }
+
+    set_eo(&x, r);
+
+    return x;
 }
 
-#define CLASS_TO_REP_SIZE(c) (c->classes * sizeof(c->rep[0]))
-#define COORD_INFO_SIZE(c) (c->coords[0].max * sizeof(c->coord_info[0]))
-#define COORD_SELF_SYMS_SIZE(c) (c->coords[0].max * sizeof(c->self_syms[0]))
-#define COORD_SIZE(c) (CLASS_TO_REP_SIZE(c) + COORD_INFO_SIZE(c) + COORD_SELF_SYMS_SIZE(c))
-
-static int coord_read(struct coord *c)
+static int h_flip(cube_t x)
 {
-    ASSERT(!c->rep);
-    void *mem = calloc(COORD_SIZE(c), 1);
-    c->rep    = mem;
-    c->coord_info      = mem + CLASS_TO_REP_SIZE(c);
-    c->self_syms = mem + CLASS_TO_REP_SIZE(c) + COORD_INFO_SIZE(c);
-
-    char buf[256];
-    sprintf(buf, "%s.sym.bin", c->name);
-    FILE *f = fopen(buf, "rb");
-    if (f)
-    {
-        fread(mem, COORD_SIZE(c), 1, f);
-        fclose(f);
-        fprintf(stderr, "read '%s'\n", buf);
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
+    return table_get(thistlethwaite_coords[0].table, thistlethwaite_coords[0].get(x));
 }
 
-static int coord_write(struct coord *c)
+static long long get_stage2(cube_t x)
 {
-    ASSERT(c->rep);
-    void *mem = c->rep;
+    long long r = 0;
 
-    char buf[256];
-    sprintf(buf, "%s.sym.bin", c->name);
-    FILE *f = fopen(buf, "wb"); // TODO filename for tablers is wrong
-    if (f)
-    {
-        fwrite(mem, COORD_SIZE(c), 1, f);
-        fclose(f);
-        fprintf(stderr, "wrote '%s'\n", buf);
-        return 1;
-    }
-    else
-    {
-        fprintf(stderr, "couldn't write '%s'\n", buf);
-        return 0;
-    }
+    r += get_co(x);
+
+    r *= choose[12][4];
+    r += get_combination(x.edges, 12, 4);
+
+    return r;
 }
 
-// TODO maybe move this to another file
-static void init_sym(struct coord *c)
+static cube_t set_stage2(long long r)
 {
-    if (c->type!=SYM_COMP)
-        return;
-    if (coord_read(c))
-        return;
+    cube_t x = new_cube();
 
-    struct coord *b = &c->coords[0];
-    for (long long i=0; i<b->max; ++i)
+    set_combination(x.edges, 12, 4, r%choose[12][4]);
+    r /= choose[12][4];
+
+    set_co(&x, r);
+
+    return x;
+}
+
+static int h_stage2(cube_t x)
+{
+    return table_get(thistlethwaite_coords[1].table, thistlethwaite_coords[1].get(x));
+}
+
+static long long get_stage3(cube_t x)
+{
+    long long r = 0;
+
+    for (int i=4; i<12; ++i) x.edges[i] -= 4;
+    r += get_combination(x.edges+4, 8, 4);
+
+    r *= choose[8][4];
+    r += get_combination(x.corners, 8, 4);
+
+    return r;
+}
+
+static cube_t set_stage3(long long r)
+{
+    cube_t x = new_cube();
+
+    set_combination(x.corners, 8, 4, r%choose[8][4]);
+    r /= choose[8][4];
+
+    set_combination(x.edges+4, 8, 4, r);
+    for (int i=4; i<12; ++i) x.edges[i] += 4;
+
+    return x;
+}
+
+static int h_stage3(cube_t x)
+{
+    return table_get(thistlethwaite_coords[2].table, thistlethwaite_coords[2].get(x));
+}
+
+static long long get_stage4(cube_t x)
+{
+    long long r = 0;
+
+    r += get_permutation(x.urf_tetrad, 4);
+
+    for (int i=0; i<4; ++i) x.urb_tetrad[i] -= 4;
+    r *= pick[4][1];
+    r += get_partial_permutation(x.urb_tetrad, 4, 1);
+
+    r *= fact[4];
+    r += get_permutation(x.ud_slice, 4);
+
+    for (int i=0; i<4; ++i) x.rl_slice[i] -= 4;
+    r *= fact[4];
+    r += get_permutation(x.rl_slice, 4);
+
+    for (int i=0; i<4; ++i) x.fb_slice[i] -= 8;
+    r *= pick[4][2];
+    r += get_partial_permutation(x.fb_slice, 4, 2);
+
+    return r;
+}
+
+static cube_t set_stage4(long long r)
+{
+    cube_t x = new_cube();
+
+    set_partial_permutation(x.fb_slice, 4, 2, r%pick[4][2]);
+    r /= pick[4][2];
+    for (int i=0; i<4; ++i) x.fb_slice[i] += 8;
+
+    set_permutation(x.rl_slice, 4, r%fact[4]);
+    r /= fact[4];
+    for (int i=0; i<4; ++i) x.rl_slice[i] += 4;
+
+    set_permutation(x.ud_slice, 4, r%fact[4]);
+    r /= fact[4];
+
+    set_partial_permutation(x.urb_tetrad, 4, 1, r%pick[4][1]);
+    r /= pick[4][1];
+    for (int i=0; i<4; ++i) x.urb_tetrad[i] += 4;
+
+    set_permutation(x.urf_tetrad, 4, r);
+
+    return x;
+}
+
+static int h_stage4(cube_t x)
+{
+    return table_get(thistlethwaite_coords[3].table, thistlethwaite_coords[3].get(x));
+}
+
+static struct coord thistlethwaite_coords[] =
+{
     {
-        cube_t x = coord_set(b, i);
-        for (int s=0; s<c->num_syms; ++s)
+        .name = "flip",
+        .get = get_flip,
+        .set = set_flip,
+        .max = 2048,
+        .h = h_flip,
+    },
+    {
+        .name = "stage2",
+        .get = get_stage2,
+        .set = set_stage2,
+        .max = 1082565,
+        .h = h_stage2,
+        .move_mask = EO_MASK,
+    },
+    {
+        .name = "stage3",
+        .get = get_stage3,
+        .set = set_stage3,
+        .max = 4900,
+        .h = h_stage3,
+        .move_mask = DR_MASK,
+    },
+    {
+        .name = "stage4",
+        .get = get_stage4,
+        .set = set_stage4,
+        .max = 663552,
+        .h = h_stage4,
+        .move_mask = HTR_MASK,
+    },
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO read/write these to disk
+static int flip_ud_slice_to_rep[64430];
+static int flip_ud_slice_to_class[1013760];
+static int flip_ud_slice_to_sym[1013760];
+static int flip_ud_slice_self_syms[1013760];
+
+static long long get_flip_ud_slice(cube_t x)
+{
+    long long r = 0;
+
+    r += get_eo(x);
+
+    set_eo(&x, 0);
+    r *= choose[12][4];
+    r += get_combination(x.edges, 12, 4);
+
+    return r;
+}
+
+static cube_t set_flip_ud_slice(long long r)
+{
+    cube_t x = new_cube();
+
+    set_combination(x.edges, 12, 4, r%choose[12][4]);
+    r /= choose[12][4];
+
+    set_eo(&x, r);
+
+    return x;
+}
+
+static long long get_phase1(cube_t x)
+{
+    long long r = 0;
+
+    r += get_flip_ud_slice(x);
+    x = apply_sym(x, flip_ud_slice_to_sym[r]);
+    r = flip_ud_slice_to_class[r];
+
+    r *= pow3[7];
+    r += get_co(x);
+
+    return r;
+}
+
+static cube_t set_phase1(long long r)
+{
+    cube_t x;
+
+    x = set_flip_ud_slice(flip_ud_slice_to_rep[r/2187]);
+    r %= 2187;
+
+    set_co(&x, r);
+
+    return x;
+}
+
+static int h_phase1(cube_t x)
+{
+    return table_get(kociemba_coords[0].table, kociemba_coords[0].get(x));
+}
+
+// TODO read/write these to disk
+static int corner_perm_to_rep[2768];
+static int corner_perm_to_class[40320];
+static int corner_perm_to_sym[40320];
+static int corner_perm_self_syms[40320];
+
+static long long get_corner_perm(cube_t x)
+{
+    long long r = 0;
+
+    r += get_permutation(x.corners, 8);
+
+    return r;
+}
+
+static cube_t set_corner_perm(long long r)
+{
+    cube_t x = new_cube();
+
+    set_permutation(x.corners, 8, r);
+
+    return x;
+}
+
+static long long get_phase2(cube_t x)
+{
+    long long r = 0;
+
+    r += get_corner_perm(x);
+    x = apply_sym(x, corner_perm_to_sym[r]);
+    r = corner_perm_to_class[r];
+
+    for (int i=4; i<12; ++i) x.edges[i] -= 4;
+    r *= fact[8];
+    r += get_permutation(x.edges+4, 8);
+
+    return r;
+}
+
+static cube_t set_phase2(long long r)
+{
+    cube_t x;
+
+    x = set_corner_perm(corner_perm_to_rep[r/40320]);
+    r %= 40320;
+
+    set_permutation(x.edges+4, 8, r);
+    for (int i=4; i<12; ++i) x.edges[i] += 4;
+
+    return x;
+}
+
+static int h_phase2(cube_t x)
+{
+    return table_get(kociemba_coords[1].table, kociemba_coords[1].get(x));
+}
+
+static struct coord kociemba_coords[] =
+{
+    {
+        .name = "phase1",
+        .get = get_phase1,
+        .set = set_phase1,
+        .max = 140908410,
+        //
+        .num_syms = 16,
+        .classes = 64430,
+        .to_rep = flip_ud_slice_to_rep,
+        .to_class = flip_ud_slice_to_class,
+        .to_sym = flip_ud_slice_to_sym,
+        .self_syms = flip_ud_slice_self_syms,
+        .base = &(struct coord)
         {
-            cube_t y = apply_sym(x, s);
-            int k = coord_get(b, y);
-            c->self_syms[i] |= (i==k)<<s;
-        }
-    }
-
-    int class = 0;
-    memset(c->coord_info, 0xff, COORD_INFO_SIZE(c));
-    for (long long i=0; i<b->max; ++i)
+            .name = "flip_ud_slice",
+            .get = get_flip_ud_slice,
+            .set = set_flip_ud_slice,
+            .max = 1013760,
+        },
+        .h = h_phase1,
+    },
     {
-        if (c->coord_info[i].class != 0xffff) // TODO change "class" to just "class"
-            continue;
-        cube_t x = coord_set(b, i);
-        for (int s=0; s<c->num_syms; ++s)
+        .name = "phase2",
+        .get = get_phase2,
+        .set = set_phase2,
+        .max = 111605760,
+        //
+        .num_syms = 16,
+        .classes = 2768,
+        .to_rep = corner_perm_to_rep,
+        .to_class = corner_perm_to_class,
+        .to_sym = corner_perm_to_sym,
+        .self_syms = corner_perm_self_syms,
+        .base = &(struct coord)
         {
-            cube_t y = apply_sym(x, s);
-            int k = coord_get(b, y);
-            c->coord_info[k].class = class;
-            c->coord_info[k].sym = inv_sym[s];
-        }
-        c->rep[class++] = i;
-    }
-    ASSERT(class == c->classes);
-    ASSERT(class*c->coords[1].max == c->max);
+            .name = "corner_perm",
+            .get = get_corner_perm,
+            .set = set_corner_perm,
+            .max = 40320,
+        },
+        .h = h_phase2,
+        .move_mask = DR_MASK,
+    },
+};
 
-    coord_write(c);
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO read/write these to disk
+static int ud_slice_sorted_to_rep[788];
+static int ud_slice_sorted_to_class[11880];
+static int ud_slice_sorted_to_sym[11880];
+static int ud_slice_sorted_self_syms[11880];
+
+static long long get_ud_slice_sorted(cube_t x)
+{
+    long long r = 0;
+
+    set_eo(&x, 0);
+    r += get_partial_permutation(x.edges, 12, 4);
+
+    return r;
 }
+
+static cube_t set_ud_slice_sorted(long long r)
+{
+    cube_t x = new_cube();
+
+    set_partial_permutation(x.edges, 12, 4, r);
+
+    return x;
+}
+
+static long long get_optimal(cube_t x)
+{
+    long long r = 0;
+
+    r += get_ud_slice_sorted(x);
+    x = apply_sym(x, ud_slice_sorted_to_sym[r]);
+    r = ud_slice_sorted_to_class[r];
+
+    r *= pow2[11];
+    r += get_eo(x);
+
+    r *= pow3[7];
+    r += get_co(x);
+
+    return r;
+}
+
+static cube_t set_optimal(long long r)
+{
+    cube_t x;
+
+    x = set_ud_slice_sorted(ud_slice_sorted_to_rep[r/4478976]);
+    r %= 4478976;
+
+    set_co(&x, r%pow3[7]);
+    r /= pow3[7];
+
+    set_eo(&x, r);
+
+    return x;
+}
+
+static int h_optimal(cube_t x)
+{
+    return table_get(optimal_coords[0].table, optimal_coords[0].get(x));
+}
+
+static struct coord optimal_coords[] =
+{
+    {
+        .name = "optimal",
+        .get = get_optimal,
+        .set = set_optimal,
+        .max = 3529433088,
+        //
+        .num_syms = 16,
+        .classes = 788,
+        .to_rep = ud_slice_sorted_to_rep,
+        .to_class = ud_slice_sorted_to_class,
+        .to_sym = ud_slice_sorted_to_sym,
+        .self_syms = ud_slice_sorted_self_syms,
+        .base = &(struct coord)
+        {
+            .name = "ud_slice_sorted",
+            .get = get_ud_slice_sorted,
+            .set = set_ud_slice_sorted,
+            .max = 11880,
+        },
+        .h = h_optimal,
+    },
+};

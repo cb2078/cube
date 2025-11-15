@@ -3,7 +3,9 @@ scripts/
 *.bin
 *.d
 .project.gf
+todo.md
+
+gen-coord
 gen-data
 main
 test
-todo.md

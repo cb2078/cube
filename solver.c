@@ -1,16 +1,3 @@
-#define H(name)\
-    static int h_##name(cube_t x)\
-    {\
-        return table_get(coord_##name.table, coord_get(&coord_##name, x));\
-    }
-H(stage1);
-H(stage2);
-H(stage3);
-H(stage4);
-H(phase1);
-H(phase2);
-H(optimal);
-
 static int idA(cube_t x, int *path, int (*h)(cube_t), int move_mask)
 {
     typedef struct
@@ -59,24 +46,18 @@ static void solve(cube_t x, int *path, int *length, int (*h)(cube_t), int move_m
     *length = idA(x, path, h, move_mask);
 }
 
-struct stage
-{
-    struct coord *coord;
-    int (*h)(cube_t);
-};
-
-static void n_stage(cube_t x, int *path, int *length, struct stage *stages, int n)
+static void n_phase(cube_t x, int *path, int *length, struct coord *coords, int n)
 {
     for (int i=0; i<n; ++i)
     {
-        init_sym(stages[i].coord);
-        init_prune_table(stages[i].coord);
+        init_sym(&coords[i]);
+        init_prune_table(&coords[i]);
     }
 
     *length = 0;
     for (int i=0; i<n; ++i)
     {
-        int depth = idA(x, path+*length, stages[i].h, stages[i].coord->move_mask);
+        int depth = idA(x, path+*length, coords[i].h, coords[i].move_mask);
         x = apply_moves(x, path+*length, depth);
         printf("phase%d: ", i);
         print_moves(path+*length, depth);
@@ -91,32 +72,28 @@ static void n_stage(cube_t x, int *path, int *length, struct stage *stages, int 
 
 static void thistlethwaite(cube_t x, int *path, int *length)
 {
-    static struct stage stages[] =
-    {
-        {&coord_stage1, h_stage1},
-        {&coord_stage2, h_stage2},
-        {&coord_stage3, h_stage3},
-        {&coord_stage4, h_stage4},
-    };
     init_tetrad_twist_table();
-    n_stage(x, path, length, stages, LENGTH(stages));
+    n_phase(x, path, length, thistlethwaite_coords, LENGTH(thistlethwaite_coords));
 }
 
 static void kociemba(cube_t x, int *path, int *length)
 {
-    static struct stage stages[] =
-    {
-        {&coord_phase1, h_phase1},
-        {&coord_phase2, h_phase2},
-    };
-    n_stage(x, path, length, stages, LENGTH(stages));
+    n_phase(x, path, length, kociemba_coords, LENGTH(kociemba_coords));
+}
+
+static int hh(cube_t x)
+{
+    int result = 0;
+    result = MAX(result, h_optimal(x));
+    result = MAX(result, h_optimal(apply_sym(x, 16)));
+    result = MAX(result, h_optimal(apply_sym(x, 32)));
+    return result ?: !cube_eq(x, new_cube());
 }
 
 static void optimal(cube_t x, int *path, int *length)
 {
-    static struct stage stages[] =
-    {
-        {&coord_optimal, h_optimal},
-    };
-    n_stage(x, path, length, stages, LENGTH(stages));
+    init_sym(&optimal_coords[0]);
+    init_prune_table(&optimal_coords[0]);
+    solve(x, path, length, hh, 0);
+    printf("solution: "), print_moves(path, *length), printf(" (%d move%s)\n", *length, *length==1?"":"s");
 }

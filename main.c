@@ -34,7 +34,7 @@ int main(void)
     cube_t x = apply_moves(new_cube(), moves, length);
     thistlethwaite(x, moves, &length);
     kociemba(x, moves, &length);
-    // optimal(x, moves, &length);
+    optimal(x, moves, &length);
 
     return 0;
 }

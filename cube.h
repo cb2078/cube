@@ -77,6 +77,9 @@ static int get_co(cube_t);
 static int get_eo(cube_t);
 static void set_co(cube_t *, long long);
 static void set_eo(cube_t *, long long);
+
+static int h_cp5(cube_t);
+static struct table *tetrad_twist_table;
 static int get_tetrad_twist(cube_t);
 static void set_tetrad_twist(cube_t *, int);
 

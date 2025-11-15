@@ -113,7 +113,6 @@ static void set_co(cube_t *x, long long r)
     orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
 }
 
-static struct table *tetrad_twist_table;
 static int get_tetrad_twist(cube_t x)
 {
     return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
@@ -145,6 +144,3 @@ static cube_t invert_co(cube_t x)
     }
     return x;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
