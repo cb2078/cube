@@ -1,17 +1,21 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable
-# CFLAGS += -g3 -fsanitize=undefined
-CFLAGS += -O3
+LDFLAGS := -lSDL3 -lGL -lm
+
 GEN := coord.c data.c
 EXE := $(GEN:%.c=gen-%) main test
 DEP := $(EXE:%=%.d)
 
-all: main
+debug: CFLAGS += -g3 -fsanitize=undefined
+debug: all
+
+release: CFLAGS := $(CFLAGS) -O3
+release: all
+
+all: main test
 
 clean:
 	rm -f $(EXE) $(GEN) $(wildcard *.bin)
-
-main: LDFLAGS += -lSDL3 -lGL -lm
 
 $(EXE): %: %.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -MMD -o $@ $<
@@ -19,6 +23,6 @@ $(EXE): %: %.c
 $(GEN): %.c: gen-%
 	./$^
 
-.PHONY: all clean
+.PHONY: all clean debug release
 
 -include $(DEP)
