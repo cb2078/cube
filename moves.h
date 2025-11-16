@@ -39,15 +39,15 @@ static char *move_str[NUM_MOVES] =
 {
     "U",  "R",  "F",  "D",  "L",  "B",
     "U2", "R2", "F2", "D2", "L2", "B2",
-    "U'", "R'", "F'", "D'", "L'", "B'",
+    "U3", "R3", "F3", "D3", "L3", "B3",
 
     "UW",  "RW",  "FW",  "DW",  "LW",  "BW",
     "UW2", "RW2", "FW2", "DW2", "LW2", "BW2",
-    "UW'", "RW'", "FW'", "DW'", "LW'", "BW'",
+    "UW3", "RW3", "FW3", "DW3", "LW3", "BW3",
 
     "Y",  "X",  "Z",  "E",  "M",  "S",
     "Y2", "X2", "Z2", "E2", "M2", "S2",
-    "Y'", "X'", "Z'", "E'", "M'", "S'",
+    "Y3", "X3", "Z3", "E3", "M3", "S3",
 };
 
 static int move_type(int x);
