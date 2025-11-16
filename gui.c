@@ -46,7 +46,7 @@ static int can_move_cubie(vec3 cubie, int move)
         case SLICE_MOVE:
             return !on_face(cubie, face) && !on_face(cubie, opposite_face);
         default:
-            exit(1);
+            UNREACHABLE();
     }
 }
 
@@ -101,7 +101,8 @@ static GLuint new_shader(char *filename, GLuint type)
 
     int success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
+    if (!success)
+    {
         glGetShaderInfoLog(shader, 512, NULL, buf);
         fprintf(stderr, "shader compilation error:\n%s\n", buf);
         exit(1);

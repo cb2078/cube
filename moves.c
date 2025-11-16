@@ -79,9 +79,7 @@ static int read_move(char *s)
     for (; m<NUM_MOVES; ++m)
         if (0 == strcmp(s, move_str[m]))
             return m;
-    // TODO better error handling
-    fprintf(stderr, "invalid move -- '%s'\n", s);
-    exit(1);
+    ERROR("invalid move -- '%s'\n", s);
 }
 
 static void read_moves(char *s, int *moves, int *length)

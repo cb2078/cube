@@ -4,10 +4,7 @@ static struct table *table_new(long long entries, int bits, char *name)
     long long size = (entries*bits+7)/8;
     struct table *t = calloc(1, sizeof(struct table)+size);
     if (!t)
-    {
-        fprintf(stderr, "failed to allocate table: %s\n", name);
-        exit(1);
-    }
+        ERROR("failed to allocate memory for '%s' table\n", name);
     t->bits = bits;
     t->size = size;
     t->mask = (1<<t->bits)-1;

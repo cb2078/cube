@@ -7,8 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ASSERT(cond) ((cond) ? (void)0 : UNREACHABLE())
 #define ABS(x) ({ typeof(x) a=(x); a>0 ? a : -a; })
+#define ASSERT(cond) ((cond) ? (void)0 : UNREACHABLE())
+#define ERROR(fmt, ...) (fprintf(stderr, "cube: " fmt, __VA_ARGS__), exit(1))
 #define LENGTH(x) (long long)(sizeof(x)/sizeof(x[0]))
 #define MAX(x, y) ({ typeof(x) a=(x), b=(y); a>b ? a : b; })
 #define MIN(x, y) ({ typeof(x) a=(x), b=(y); a<b ? a : b; })

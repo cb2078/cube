@@ -34,6 +34,7 @@ enum state
 int main(int argc, char **argv)
 {
     cube_t x = new_cube();
+    int moves[256], length;
     int i = 1;
     void (*solver)(cube_t, int *, int *) = optimal;
     srand(time(0));
@@ -91,7 +92,6 @@ int main(int argc, char **argv)
                 break;
 
             case STATE_SOLVE:
-                int moves[256], length;
                 solver(x, moves, &length);
                 print_moves(moves, length), putchar('\n');
                 return 0;
