@@ -73,24 +73,28 @@ static void make_scramble(int *moves, int length)
         moves[i]=rand()%NUM_FACE_TURNS;
 }
 
+static int read_move(char *s)
+{
+    int m = 0;
+    for (; m<NUM_MOVES; ++m)
+        if (0 == strcmp(s, move_str[m]))
+            return m;
+    // TODO better error handling
+    fprintf(stderr, "invalid move -- '%s'\n", s);
+    exit(1);
+}
+
 static void read_moves(char *s, int *moves, int *length)
 {
     *length=0;
     for (int i=0; i<(int)strlen(s);)
     {
-        int n=0;
-        while (s[i+n]!=' ' && s[i+n]!='\0')
-            ++n;
-        int j=0;
-        for (; j<NUM_MOVES; ++j)
-            if (0 == strncmp(s+i, move_str[j], n))
-                break;
-        if (j==NUM_MOVES)
-        {
-            printf("invalid scramble\n%d\n%s\n", i, s+i);
-            exit(1);
-        }
-        moves[(*length)++] = j;
+        char buf[256];
+        int n;
+        for (n=0; s[i+n]!=' ' && s[i+n]!='\0'; ++n)
+            buf[n] = s[i+n];
+        buf[n] = '\0';
+        moves[(*length)++] = read_move(buf);
         i += 1+n;
     }
 }

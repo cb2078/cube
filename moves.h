@@ -59,6 +59,7 @@ static int move_amount(int x);
 static void possible_moves(int *moves, int *length, int move, int mask);
 static void print_moves(int *moves, int length);
 static void make_scramble(int *moves, int length);
+static int read_move(char *s);
 static void read_moves(char *s, int *moves, int *length);
 static int apply_cancellations(int *moves, int *length);
 static void inverse_moves(int *moves, int length);

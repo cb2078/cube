@@ -59,15 +59,15 @@ static void n_phase(cube_t x, int *path, int *length, struct coord *coords, int 
     {
         int depth = idA(x, path+*length, coords[i].h, coords[i].move_mask);
         x = apply_moves(x, path+*length, depth);
-        printf("phase%d: ", i);
-        print_moves(path+*length, depth);
-        printf(" // %d move%s\n", depth, depth==1?"":"s");
+        // printf("phase%d: ", i);
+        // print_moves(path+*length, depth);
+        // printf(" // %d move%s\n", depth, depth==1?"":"s");
         *length += depth;
     }
     apply_cancellations(path, length);
-    printf("full: ");
-    print_moves(path, *length);
-    printf(" // %d move%s\n", *length, *length==1?"":"s");
+    // printf("full: ");
+    // print_moves(path, *length);
+    // printf(" // %d move%s\n", *length, *length==1?"":"s");
 }
 
 static void thistlethwaite(cube_t x, int *path, int *length)
@@ -95,5 +95,4 @@ static void optimal(cube_t x, int *path, int *length)
     init_sym(&optimal_coords[0]);
     init_prune_table(&optimal_coords[0]);
     solve(x, path, length, hh, 0);
-    printf("solution: "), print_moves(path, *length), printf(" (%d move%s)\n", *length, *length==1?"":"s");
 }

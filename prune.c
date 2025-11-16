@@ -16,6 +16,7 @@ static void init_sym(struct coord *c)
     if (!c->num_syms)
         return;
 
+    // TODO put this in its own function
     struct coord *b = c->base;
     ASSERT(b->max);
     for (long long i=0; i<b->max; ++i)
