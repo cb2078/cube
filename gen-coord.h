@@ -7,6 +7,7 @@ struct coord
     char *move_mask;
     enum
     {
+        TETRAD_TWIST,
         RAW,
         COMP,
         SYM_COMP,
@@ -123,7 +124,7 @@ static const struct coord thistlethwaite[] =
     {
         .name = "stage3",
         .type = COMP,
-        .count = 2,
+        .count = 3,
         .coords = (struct coord [])
         {
             {
@@ -133,6 +134,9 @@ static const struct coord thistlethwaite[] =
                 .offset = 4,
                 .length = 4,
                 .max = choose[8][4],
+            },
+            {
+                .type = TETRAD_TWIST,
             },
             {
                 .type = RAW,

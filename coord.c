@@ -57,6 +57,9 @@ static long long get_stage3(cube_t x)
     for (int i=4; i<12; ++i) x.edges[i] -= 4;
     r += get_combination(x.edges+4, 8, 4);
 
+    r *= 6;
+    r += get_tetrad_twist(x);
+
     r *= choose[8][4];
     r += get_combination(x.corners, 8, 4);
 
@@ -69,6 +72,9 @@ static cube_t set_stage3(long long r)
 
     set_combination(x.corners, 8, 4, r%choose[8][4]);
     r /= choose[8][4];
+
+    set_tetrad_twist(&x, r%6);
+    r /= 6;
 
     set_combination(x.edges+4, 8, 4, r);
     for (int i=4; i<12; ++i) x.edges[i] += 4;
@@ -155,7 +161,7 @@ static struct coord thistlethwaite_coords[] =
         .name = "stage3",
         .get = get_stage3,
         .set = set_stage3,
-        .max = 4900,
+        .max = 29400,
         .h = h_stage3,
         .move_mask = DR_MASK,
     },

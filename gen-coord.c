@@ -10,6 +10,8 @@ static long long coord_max(const struct coord *c)
         case RAW:
             ASSERT(c->max);
             return c->max;
+        case TETRAD_TWIST:
+            return 6;
         case COMP:
             long long max = 1;
             for (int i=0; i<(c->count?:2); ++i)
@@ -117,6 +119,17 @@ static void write_coord_rec(const struct coord *c, int mode, int at_start, int a
             set_result();
             fprintf(fp, "    %s_%s(%s%s);\n", mode==GET ? "r += get" : "set", name, args, result);
             if (mode==SET) shift_result(), offset();
+            break;
+        case TETRAD_TWIST:
+            sprintf(amount, "6");
+            fprintf(fp, "\n");
+            if (mode==GET) shift_result();
+            set_result();
+            fprintf(fp, "    %s_tetrad_twist(%s%s);\n",
+                    mode==GET ? "r += get" : "set",
+                    mode==GET ? "x" : "&x",
+                    result);
+            if (mode==SET) shift_result();
             break;
         case COMP:
             for (int i=0; i<c->count; ++i)
