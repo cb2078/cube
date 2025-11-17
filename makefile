@@ -6,7 +6,7 @@ GEN := coord.c data.c
 EXE := $(GEN:%.c=gen-%) main test
 DEP := $(EXE:%=%.d)
 
-debug: CFLAGS += -g3 -fsanitize=undefined
+debug: CFLAGS += -g3 -fsanitize=undefined -DDEBUG
 debug: all
 
 release: CFLAGS := $(CFLAGS) -O3

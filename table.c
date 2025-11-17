@@ -27,7 +27,7 @@ static int table_read(struct table *t)
     {
         fread(t->data, t->size, 1, f);
         fclose(f);
-        fprintf(stderr, "read '%s'\n", buf);
+        LOG("read '%s'\n", buf);
         return 1;
     }
     return 0;
@@ -42,12 +42,12 @@ static int table_write(struct table *t)
     {
         fwrite(t->data, t->size, 1, f);
         fclose(f);
-        fprintf(stderr, "wrote '%s'\n", buf);
+        LOG("wrote '%s'\n", buf);
         return 1;
     }
     else
     {
-        fprintf(stderr, "couldn't write '%s'\n", buf);
+        LOG("couldn't write '%s'\n", buf);
         return 0;
     }
 }

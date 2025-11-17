@@ -114,11 +114,11 @@ static void init_prune_table(struct coord *c)
         backsearch = c->table->count>c->max/2;
         print(c->table->count, depth, backsearch);
         clear_stderr();
-        printf("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
+        LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
     }
     clear_stderr();
     if (c->table->count!=c->max)
-        printf("skpped %lld entries\n", c->max-c->table->count);
+        LOG("skpped %lld entries\n", c->max-c->table->count);
     table_write(c->table);
 }
 

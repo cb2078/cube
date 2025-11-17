@@ -16,6 +16,12 @@
 #define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
 #define UNREACHABLE() (debugbreak(), __builtin_unreachable())
 
+#ifdef DEBUG
+#define LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
+#else
+#define LOG(...)
+#endif
+
 static inline void debugbreak(void)
 {
     __asm__ volatile("int $0x03");
