@@ -18,40 +18,6 @@ static void table_destroy(struct table *t)
     free(t);
 }
 
-static int table_read(struct table *t)
-{
-    char buf[256];
-    sprintf(buf, "%s.prune.bin", t->name);
-    FILE *f = fopen(buf, "rb");
-    if (f)
-    {
-        fread(t->data, t->size, 1, f);
-        fclose(f);
-        LOG("read '%s'\n", buf);
-        return 1;
-    }
-    return 0;
-}
-
-static int table_write(struct table *t)
-{
-    char buf[256];
-    sprintf(buf, "%s.prune.bin", t->name);
-    FILE *f = fopen(buf, "wb");
-    if (f)
-    {
-        fwrite(t->data, t->size, 1, f);
-        fclose(f);
-        LOG("wrote '%s'\n", buf);
-        return 1;
-    }
-    else
-    {
-        LOG("couldn't write '%s'\n", buf);
-        return 0;
-    }
-}
-
 static void table_set(struct table *t, long long i, int x)
 {
     assert(x<=t->mask);

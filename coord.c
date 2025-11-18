@@ -182,12 +182,8 @@ static void init_sym(struct coord *c)
     if (!c->num_syms)
         return;
 
-    // allocate memory
-    c->to_rep    = malloc(sizeof(int) * c->sym.classes);
-    c->to_class  = malloc(sizeof(int) * c->sym.max);
-    c->to_sym    = malloc(sizeof(int) * c->sym.max);
-    c->self_syms = malloc(sizeof(int) * c->sym.max);
-
+    ASSERT(!c->self_syms);
+    c->self_syms = malloc(sizeof(int)*c->sym.max);
     for (long long i=0; i<c->sym.max; ++i)
     {
         cube_t x = c->sym.set(i);
@@ -232,8 +228,6 @@ static void init_prune_table(struct coord *c)
             fprintf(stderr, " (backsearch)");
     }
 
-    if (table_read(c->table = table_new(c->max, 4, c->name)))
-        return;
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1, t=0, backsearch=0; c->table->count<c->max && depth<c->table->mask; ++depth)
@@ -287,11 +281,37 @@ static void init_prune_table(struct coord *c)
     clear_stderr();
     if (c->table->count!=c->max)
         LOG("skpped %lld entries\n", c->max-c->table->count);
-    table_write(c->table);
 }
 
 static void init_coord(struct coord *c)
 {
-    init_sym(c);
-    init_prune_table(c);
+    FILE *fp;
+    c->to_rep   = malloc(sizeof(int)*c->sym.classes);
+    c->to_class = malloc(sizeof(int)*c->sym.max);
+    c->to_sym   = malloc(sizeof(int)*c->sym.max);
+    c->table    = table_new(c->max, 4, c->name);
+
+    if ((fp = fopen(c->name, "rb")))
+    {
+        fread(c->to_rep,      sizeof(int)*c->sym.classes, 1, fp);
+        fread(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
+        fread(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
+        fread(c->table->data, c->table->size,             1, fp);
+        LOG("read '%s'\n", c->name);
+    }
+    else if ((fp = fopen(c->name, "wb")))
+    {
+        init_sym(c);
+        init_prune_table(c);
+        fwrite(c->to_rep,      sizeof(int)*c->sym.classes, 1, fp);
+        fwrite(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
+        fwrite(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
+        fwrite(c->table->data, c->table->size,             1, fp);
+        LOG("wrote '%s'\n", c->name);
+    }
+    else
+    {
+        ERROR("couldn't write '%s'\n", c->name);
+    }
+    fclose(fp);
 }
