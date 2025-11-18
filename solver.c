@@ -46,18 +46,14 @@ static void solve(cube_t x, int *path, int *length, int (*h)(cube_t), int move_m
     *length = idA(x, path, h, move_mask);
 }
 
-static void n_phase(cube_t x, int *path, int *length, struct coord *coords, int n)
+static void kociemba(cube_t x, int *path, int *length)
 {
-    for (int i=0; i<n; ++i)
-    {
-        init_sym(&coords[i]);
-        init_prune_table(&coords[i]);
-    }
-
+    static struct coord *coords[] = {&coord_phase1, &coord_phase2};
     *length = 0;
-    for (int i=0; i<n; ++i)
+    for (int i=0; i<LENGTH(coords); ++i)
     {
-        int depth = idA(x, path+*length, coords[i].h, coords[i].move_mask);
+        init_coord(coords[i]);
+        int depth = idA(x, path+*length, coords[i]->h, coords[i]->move_mask);
         x = apply_moves(x, path+*length, depth);
         // printf("phase%d: ", i);
         // print_moves(path+*length, depth);
@@ -68,17 +64,6 @@ static void n_phase(cube_t x, int *path, int *length, struct coord *coords, int 
     // printf("full: ");
     // print_moves(path, *length);
     // printf(" // %d move%s\n", *length, *length==1?"":"s");
-}
-
-static void thistlethwaite(cube_t x, int *path, int *length)
-{
-    init_tetrad_twist_table();
-    n_phase(x, path, length, thistlethwaite_coords, LENGTH(thistlethwaite_coords));
-}
-
-static void kociemba(cube_t x, int *path, int *length)
-{
-    n_phase(x, path, length, kociemba_coords, LENGTH(kociemba_coords));
 }
 
 static int hh(cube_t x)
@@ -92,7 +77,6 @@ static int hh(cube_t x)
 
 static void optimal(cube_t x, int *path, int *length)
 {
-    init_sym(&optimal_coords[0]);
-    init_prune_table(&optimal_coords[0]);
-    solve(x, path, length, hh, 0);
+    init_coord(&coord_optimal);
+    solve(x, path, length, hh, coord_optimal.move_mask);
 }

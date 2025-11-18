@@ -354,7 +354,7 @@ static void gui_show_cube(cube_t x)
     gui();
     int moves[64];
     int length;
-    thistlethwaite(x, moves, &length);
+    kociemba(x, moves, &length);
     reset();
     for (int i=0; i<length; ++i) move(moves[i]);
 }

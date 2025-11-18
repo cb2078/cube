@@ -5,7 +5,6 @@
 #include "data.h"
 #include "gui.h"
 #include "moves.h"
-#include "prune.h"
 #include "solver.h"
 #include "table.h"
 #include "util.h"
@@ -15,7 +14,6 @@
 #include "data.c"
 #include "gui.c"
 #include "moves.c"
-#include "prune.c"
 #include "solver.c"
 #include "table.c"
 #include "util.c"
@@ -55,10 +53,9 @@ int main(int argc, char **argv)
                         "Solvers:\n"
                         "  --optimal   \tuse Cube Explorer's huge optimal solver (default)\n"
                         "  --two-phase \tuse Kociemba's two-phase algorithm\n"
-                        "  --four-phase\tuse Thistlethwaite's algorithm\n"
                         "\n"
                         "Each solver uses pruning tables for improved performance; these can take between\n"
-                        "1 second (for Thistlethwaite's algorithm) and 1 hour (for the optimal solver) to\n"
+                        "10 minutes (for Kociemba's algorithm) and 1 hour (for the optimal solver) to\n"
                         "generate; once generated, they will be writeen to disk and reused on successive\n"
                         "runs.\n");
                 return 0;
@@ -74,8 +71,6 @@ int main(int argc, char **argv)
                     state = STATE_READ_SCRAMBLE;
                 else if (0 == strcmp(argv[i], "--help"))
                     state = STATE_HELP;
-                else if (0 == strcmp(argv[i], "--four-phase"))
-                    solver = thistlethwaite, ++i;
                 else if (0 == strcmp(argv[i], "--two-phase"))
                     solver = kociemba, ++i;
                 else if (0 == strcmp(argv[i], "--optimal"))

@@ -73,8 +73,8 @@ static cube_t apply_move(cube_t, int);
 static cube_t apply_moves(cube_t, int *, int);
 static cube_t invert_co(cube_t);
 
-static int get_co(cube_t);
-static int get_eo(cube_t);
+static long long get_co(cube_t);
+static long long get_eo(cube_t);
 static void set_co(cube_t *, long long);
 static void set_eo(cube_t *, long long);
 

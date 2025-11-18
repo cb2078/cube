@@ -81,7 +81,7 @@ static void orient(char *x, int orientation)
     *x = (*x&0x0f) | (orientation<<4);
 }
 
-static int get_eo(cube_t x)
+static long long get_eo(cube_t x)
 {
     int result = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
@@ -97,7 +97,7 @@ static void set_eo(cube_t *x, long long r)
     orient(x->edges+NUM_EDGES-1, parity);
 }
 
-static int get_co(cube_t x)
+static long long get_co(cube_t x)
 {
     int result = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
@@ -111,28 +111,6 @@ static void set_co(cube_t *x, long long r)
     for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
         orient(x->corners+i, y=r%3), parity+=y;
     orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
-}
-
-static int get_tetrad_twist(cube_t x)
-{
-    return table_get(tetrad_twist_table, get_permutation(x.corners, NUM_CORNERS));
-}
-
-static void set_tetrad_twist(cube_t *x, int r)
-{
-    char perm[3];
-    set_permutation(perm, 3, r);
-    for (int i=0; i<NUM_CORNERS; ++i)
-        if (x->corners[i] < 3)
-            x->corners[i] = perm[(int)x->corners[i]];
-}
-
-static int h_cp5(cube_t x)
-{
-    for (int i=3; i<NUM_CORNERS; ++i)
-        if (x.corners[i]!=i)
-            return 1;
-    return 0;
 }
 
 static cube_t invert_co(cube_t x)

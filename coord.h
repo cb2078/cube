@@ -11,20 +11,36 @@ struct coord
     cube_t (*set)(long long);
     int (*h)(cube_t);
     long long max;
-    int move_mask;
-    struct table *table;
-    //
+    unsigned move_mask;
+    // symmetric composite coordinates
     int num_syms;
-    int classes;
+    struct
+    {
+        long long (*get)(cube_t);
+        cube_t (*set)(long long);
+        long long max;
+        long long classes;
+    } sym;
+    struct
+    {
+        long long (*get)(cube_t);
+        cube_t (*set)(long long);
+        long long max;
+    } raw;
+    // data
+    struct table *table;
+    // TODO write these to disk
+    // TODO combine this with the table info so that there is only one file per coordinate
     int *to_rep;
     int *to_class;
     int *to_sym;
     int *self_syms;
-    struct coord *base;
 };
 
-static struct coord thistlethwaite_coords[];
-static struct coord kociemba_coords[];
-static struct coord optimal_coords[];
+static struct coord coord_phase1;
+static struct coord coord_phase2;
+static struct coord coord_optimal;
+
+static void init_coord(struct coord *c);
 
 #endif
