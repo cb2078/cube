@@ -19,7 +19,7 @@
 #ifdef DEBUG
 #define LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG(...)
+#define LOG(...) (void)0
 #endif
 
 static inline void debugbreak(void)
