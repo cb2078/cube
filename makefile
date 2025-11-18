@@ -1,6 +1,7 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable
 LDFLAGS := -lSDL3 -lGL -lm
+MAKEFLAGS += --jobs=$(shell nproc)
 EXE := main test
 DEP := $(EXE:%=%.d)
 
