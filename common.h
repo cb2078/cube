@@ -3,9 +3,11 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 #define ABS(x) ({ typeof(x) a=(x); a>0 ? a : -a; })
 #define ASSERT(cond) ((cond) ? (void)0 : UNREACHABLE())

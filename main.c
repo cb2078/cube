@@ -56,9 +56,8 @@ int main(int argc, char **argv)
                         "--two-phase   \tuse Kociemba's two-phase algorithm\n"
                         "\n"
                         "Each solver uses pruning tables for improved performance; these can take between\n"
-                        "10 minutes (for Kociemba's algorithm) and 1 hour (for the optimal solver) to\n"
-                        "generate; once generated, they will be writeen to disk and reused on successive\n"
-                        "runs.\n");
+                        "5 (Kociemba's algorithm) and 30 minutes (the optimal solver) to generate; once\n"
+                        "generated, they will be writeen to disk and reused on successive runs.\n");
                 return 0;
 
             case STATE_INVALID_ARG:

@@ -218,67 +218,84 @@ static void init_sym(struct coord *c)
     ASSERT(class == c->sym.classes);
 }
 
+struct init_prune_table_arg
+{
+    struct coord *c;
+    int depth;
+    int backsearch;
+    long long start;
+    long long end;
+};
+
+// NOTE using atomics here is faster than a mutex up to four threads, however
+// this should be tested with a larger number of threads
+static int init_prune_table_thread(void *__arg)
+{
+    struct init_prune_table_arg *arg = __arg;
+    for (long long i=arg->start; i<arg->end; ++i)
+        if (table_get(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
+        {
+            int moves[18], length;
+            possible_moves(moves, &length, 0xff, arg->c->move_mask);
+            for (int j=0; j<length; ++j)
+            {
+                cube_t x = apply_move(arg->c->set(i), moves[j]);
+                long long k = arg->c->get(x);
+                if (!arg->backsearch && table_get_atomic(arg->c->table, k) == arg->c->table->mask)
+                {
+                    table_set_atomic(arg->c->table, k, arg->depth);
+                    if (!arg->c->num_syms)
+                        continue;
+                    for (int s=1; s<arg->c->num_syms; ++s)
+                    {
+                        if (~arg->c->self_syms[arg->c->sym.get(x)]>>s&1)
+                            continue;
+                        cube_t y = apply_sym(x, s);
+                        long long l = arg->c->get(y);
+                        if (table_get_atomic(arg->c->table, l) == arg->c->table->mask)
+                            table_set_atomic(arg->c->table, l, arg->depth);
+                    }
+                }
+                else if (arg->backsearch && table_get_atomic(arg->c->table, k) == arg->depth-1)
+                {
+                    table_set_atomic(arg->c->table, i, arg->depth);
+                    break;
+                }
+            }
+        }
+    return 0;
+}
+
+static void init_prune_table_parallel(struct coord *c, int depth, int backsearch)
+{
+    thrd_t threads[THREADS];
+    struct init_prune_table_arg args[THREADS] = {0};
+    for (int i=0; i<THREADS; ++i)
+    {
+        args[i].c = c;
+        args[i].depth = depth;
+        args[i].backsearch = backsearch;
+        args[i].start = i*c->max/THREADS;
+        args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
+        thrd_create(&threads[i], init_prune_table_thread, &args[i]);
+    }
+    for (int i=0; i<THREADS; ++i)
+    {
+        thrd_join(threads[i], NULL);
+    }
+}
+
 static void init_prune_table(struct coord *c)
 {
-    void print(long long n, int depth, int backsearch)
-    {
-        print_completion(n, c->max);
-        fprintf(stderr, " depth=%d", depth);
-        if (backsearch)
-            fprintf(stderr, " (backsearch)");
-    }
-
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1, t=0, backsearch=0; c->table->count<c->max && depth<c->table->mask; ++depth)
     {
         long long m = c->table->count;
-        for (long long i=0; i<c->max; ++i)
-        {
-            if (!backsearch && c->table->data[i/c->table->divisor] == UINT_MAX)
-            {
-                i += c->table->divisor-1;
-                continue;
-            }
-            else if (table_get(c->table, i) == (backsearch ? c->table->mask : depth-1))
-            {
-                int moves[18], length;
-                possible_moves(moves, &length, 0xff, c->move_mask);
-                for (int j=0; j<length; ++j)
-                {
-                    cube_t x = apply_move(c->set(i), moves[j]);
-                    long long k = c->get(x);
-                    if (!backsearch && table_get(c->table, k) == c->table->mask)
-                    {
-                        table_set(c->table, k, depth);
-                        if (!c->num_syms)
-                            continue;
-                        for (int s=1; s<c->num_syms; ++s)
-                        {
-                            if (~c->self_syms[c->sym.get(x)]>>s&1)
-                                continue;
-                            cube_t y = apply_sym(x, s);
-                            long long l = c->get(y);
-                            if (table_get(c->table, l) == c->table->mask)
-                                table_set(c->table, l, depth);
-                        }
-                    }
-                    else if (backsearch && table_get(c->table, k) == depth-1)
-                    {
-                        table_set(c->table, i, depth);
-                        break;
-                    }
-                }
-            }
-            if (c->table->count*10000/c->max > t)
-                print(c->table->count, depth, backsearch), ++t;
-        }
+        init_prune_table_parallel(c, depth, backsearch);
         backsearch = c->table->count>c->max/2;
-        print(c->table->count, depth, backsearch);
-        clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
     }
-    clear_stderr();
     if (c->table->count!=c->max)
         LOG("skpped %lld entries\n", c->max-c->table->count);
 }

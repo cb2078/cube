@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable
+CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -DTHREADS=$(shell nproc)
 LDFLAGS := -lSDL3 -lGL -lm
 MAKEFLAGS += --jobs=$(shell nproc)
 EXE := main test
