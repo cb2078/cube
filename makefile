@@ -1,17 +1,19 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -DTHREADS=$(shell nproc)
 LDFLAGS := -lSDL3 -lGL -lm
-MAKEFLAGS += --jobs=$(shell nproc)
+MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
 EXE := main test
 DEP := $(EXE:%=%.d)
 
-debug: CFLAGS += -g3 -fsanitize=undefined -DDEBUG
-debug: all
+all: debug
+
+debug: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -DDEBUG
+debug: main
 
 release: CFLAGS := $(CFLAGS) -O3
-release: all
+release: main
 
-all: $(EXE)
+test: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -DDEBUG
 
 clean:
 	rm -f $(EXE) $(wildcard *.bin)
