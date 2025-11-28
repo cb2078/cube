@@ -1,6 +1,5 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -DTHREADS=$(shell nproc)
-LDFLAGS := -lSDL3 -lGL -lm
 MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
 EXE := main test
 DEP := $(EXE:%=%.d)
@@ -19,7 +18,7 @@ clean:
 	rm -f $(EXE) $(wildcard *.bin)
 
 $(EXE): %: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -MMD -o $@ $<
+	$(CC) $(CFLAGS) -MMD -o $@ $<
 
 .PHONY: all clean debug release
 
