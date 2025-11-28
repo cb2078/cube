@@ -4,16 +4,10 @@
 #define NUM_CORNERS 8
 #define NUM_EDGES 12
 
+#define CUBE(...) (cube_t){.cubies={__VA_ARGS__}}
+
 typedef union
 {
-    struct
-    {
-        char urf, ulb, drb, dlf;
-        char urb, ulf, drl, dlb;
-        char rf, rb, lf, lb;
-        char uf, ub, df, db;
-        char ur, ul, dr, dl;
-    };
     struct
     {
         char corners[NUM_CORNERS];
@@ -22,14 +16,6 @@ typedef union
     struct
     {
         char cubies[NUM_CORNERS+NUM_EDGES];
-    };
-    struct
-    {
-        char urf_tetrad[4];
-        char urb_tetrad[4];
-        char ud_slice[4];
-        char rl_slice[4];
-        char fb_slice[4];
     };
 } cube_t;
 
@@ -49,18 +35,6 @@ static char *cubie_str[] =
     "RF",  "RB",  "LF",  "LB",
     "UF",  "UB",  "DF",  "DB",
     "UR",  "UL",  "DR",  "DL",
-};
-enum tetrad
-{
-    TETRAD_URF,
-    TETRAD_URB,
-};
-
-enum slice
-{
-    SLICE_UD,
-    SLICE_RL,
-    SLICE_FB,
 };
 
 static cube_t new_cube(void);
