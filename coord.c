@@ -137,6 +137,8 @@ static void init_sym(struct coord *c)
 
 struct init_prune_table_arg
 {
+    int thread_id;
+    int t;
     struct coord *c;
     int depth;
     int backsearch;
@@ -144,12 +146,11 @@ struct init_prune_table_arg
     long long end;
 };
 
-// NOTE using atomics here is faster than a mutex up to four threads, however
-// this should be tested with a larger number of threads
 static int init_prune_table_thread(void *__arg)
 {
     struct init_prune_table_arg *arg = __arg;
     for (long long i=arg->start; i<arg->end; ++i)
+    {
         if (table_get(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
         {
             int moves[18], length;
@@ -180,6 +181,14 @@ static int init_prune_table_thread(void *__arg)
                 }
             }
         }
+        if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
+        {
+            print_completion(arg->c->table->count, arg->c->max);
+            fprintf(stderr, " depth=%d%s", arg->depth, arg->backsearch?" (backsearch)":"");
+            // fprintf(stderr, " t=%d", arg->t);
+            arg->t++;
+        }
+    }
     return 0;
 }
 
@@ -189,6 +198,8 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     struct init_prune_table_arg args[THREADS] = {0};
     for (int i=0; i<THREADS; ++i)
     {
+        args[i].thread_id = i;
+        args[i].t = 0;
         args[i].c = c;
         args[i].depth = depth;
         args[i].backsearch = backsearch;
@@ -210,11 +221,16 @@ static void init_prune_table(struct coord *c)
     {
         long long m = c->table->count;
         init_prune_table_parallel(c, depth, backsearch);
-        backsearch = c->table->count>c->max/2;
+        clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
+        backsearch = c->table->count>c->max/2;
     }
+#ifdef DEBUG
     if (c->table->count!=c->max)
         LOG("skpped %lld entries\n", c->max-c->table->count);
+#else
+    ASSERT(c->table->count==c->max);
+#endif
 }
 
 static void init_coord(struct coord *c)
