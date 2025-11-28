@@ -6,7 +6,7 @@
     \
     static struct coord coord_##NAME =\
     {\
-        .name = #NAME,\
+        .filename = #NAME".bin",\
         .get = get_##NAME,\
         .set = set_##NAME,\
         .h = h_##NAME,\
@@ -306,17 +306,17 @@ static void init_coord(struct coord *c)
     c->to_rep   = malloc(sizeof(int)*c->sym.classes);
     c->to_class = malloc(sizeof(int)*c->sym.max);
     c->to_sym   = malloc(sizeof(int)*c->sym.max);
-    c->table    = table_new(c->max, 4, c->name);
+    c->table    = table_new(c->max, 4, c->filename);
 
-    if ((fp = fopen(c->name, "rb")))
+    if ((fp = fopen(c->filename, "rb")))
     {
         fread(c->to_rep,      sizeof(int)*c->sym.classes, 1, fp);
         fread(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
         fread(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
         fread(c->table->data, c->table->size,             1, fp);
-        LOG("read '%s'\n", c->name);
+        LOG("read '%s'\n", c->filename);
     }
-    else if ((fp = fopen(c->name, "wb")))
+    else if ((fp = fopen(c->filename, "wb")))
     {
         init_sym(c);
         init_prune_table(c);
@@ -324,11 +324,11 @@ static void init_coord(struct coord *c)
         fwrite(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
         fwrite(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
         fwrite(c->table->data, c->table->size,             1, fp);
-        LOG("wrote '%s'\n", c->name);
+        LOG("wrote '%s'\n", c->filename);
     }
     else
     {
-        ERROR("couldn't write '%s'\n", c->name);
+        ERROR("couldn't write '%s'\n", c->filename);
     }
     fclose(fp);
 }

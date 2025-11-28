@@ -6,7 +6,7 @@
 
 struct coord
 {
-    char *name;
+    char *filename;
     long long (*get)(cube_t);
     cube_t (*set)(long long);
     int (*h)(cube_t);
