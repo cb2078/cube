@@ -88,7 +88,7 @@ int main(void)
             for (int i=0; i<NUM_CORNERS; ++i)
                 y.corners[i] = (y.corners[i]&0xf0)+i;
             cube_t z = compose(x, y);
-            CHECK(get_co(z), 0);
+            CHECK(get_twist(z), 0);
         }
     }
 
@@ -123,6 +123,35 @@ int main(void)
             set_permutation(x, n, i);
             CHECK(i, get_permutation(x, n));
         }
+    }
+
+    TEST("flip")
+    {
+        long long n=pow2[11];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_flip(set_flip(i)));
+    }
+
+    TEST("twist")
+    {
+        long long n=pow3[7];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_twist(set_twist(i)));
+    }
+
+
+    TEST("corner sep")
+    {
+        long long n=choose[8][4];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_corner_sep(set_corner_sep(i)));
+    }
+
+    TEST("edge sep")
+    {
+        long long n=choose[12][4]*choose[8][4];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_edge_sep(set_edge_sep(i)));
     }
 
     printf("all tests passed\n");

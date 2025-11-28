@@ -29,18 +29,13 @@ struct coord
     } raw;
     // data
     struct table *table;
-    // TODO write these to disk
-    // TODO combine this with the table info so that there is only one file per coordinate
     int *to_rep;
     int *to_class;
     int *to_sym;
-    int *self_syms;
+    long long *self_syms;
 };
 
-static struct coord coord_phase1;
-static struct coord coord_phase2;
 static struct coord coord_optimal;
-
 static void init_coord(struct coord *c);
 
 #endif

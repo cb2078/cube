@@ -36,7 +36,6 @@ int main(int argc, char **argv)
     int moves[256], length;
     int i = 1;
     int random = 0;
-    void (*solver)(cube_t, int *, int *) = optimal;
     srand(time(0));
 
     int state = i<argc ? STATE_PARSE_OPTIONS : STATE_HELP;
@@ -47,17 +46,11 @@ int main(int argc, char **argv)
             case STATE_HELP:
                 fprintf(stderr,
                         "Usage: cube [OPTION]... [MOVES]... \n"
-                        "Example: cube --two-phase D L' F' U' L2 B L2 F' D R2 B2 D' R2 D F2\n"
+                        "Example: cube D L3 F3 U3 L2 B L2 F3 D R2 B2 D3 R2 D F2\n"
                         "\n"
                         "Options:\n"
                         "--help        \tdisplay this help text and exit\n"
-                        "--optimal     \tuse Cube Explorer's huge optimal solver (default)\n"
-                        "--random      \tsolve a random scramble\n"
-                        "--two-phase   \tuse Kociemba's two-phase algorithm\n"
-                        "\n"
-                        "Each solver uses pruning tables for improved performance; these can take between\n"
-                        "5 (Kociemba's algorithm) and 30 minutes (the optimal solver) to generate; once\n"
-                        "generated, they will be writeen to disk and reused on successive runs.\n");
+                        "--random      \tsolve a random scramble\n");
                 return 0;
 
             case STATE_INVALID_ARG:
@@ -69,10 +62,6 @@ int main(int argc, char **argv)
                     state = random ? STATE_RANDOM_SCRAMBLE : STATE_READ_SCRAMBLE;
                 else if (0 == strcmp(argv[i], "--help"))
                     state = STATE_HELP;
-                else if (0 == strcmp(argv[i], "--two-phase"))
-                    solver = kociemba, ++i;
-                else if (0 == strcmp(argv[i], "--optimal"))
-                    solver = optimal, ++i;
                 else if (0 == strcmp(argv[i], "--random"))
                     random = 1, ++i;
                 else
@@ -102,7 +91,7 @@ int main(int argc, char **argv)
                 break;
 
             case STATE_SOLVE:
-                solver(x, moves, &length);
+                optimal(x, moves, &length);
                 print_moves(moves, length), putchar('\n');
                 return 0;
         }

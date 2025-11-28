@@ -349,16 +349,6 @@ static void gui_show_moves_fast(int *moves, int length)
     for (int i=0; i<length; ++i) move(moves[i]);
 }
 
-static void gui_show_cube(cube_t x)
-{
-    gui();
-    int moves[64];
-    int length;
-    kociemba(x, moves, &length);
-    reset();
-    for (int i=0; i<length; ++i) move(moves[i]);
-}
-
 static void gui_wait_for_close(void)
 {
     SDL_WaitThread(thread, NULL);

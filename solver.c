@@ -46,33 +46,9 @@ static void solve(cube_t x, int *path, int *length, int (*h)(cube_t), int move_m
     *length = idA(x, path, h, move_mask);
 }
 
-static void kociemba(cube_t x, int *path, int *length)
-{
-    static struct coord *coords[] = {&coord_phase1, &coord_phase2};
-    *length = 0;
-    for (int i=0; i<LENGTH(coords); ++i)
-    {
-        init_coord(coords[i]);
-        int depth = idA(x, path+*length, coords[i]->h, coords[i]->move_mask);
-        x = apply_moves(x, path+*length, depth);
-        // printf("phase%d: ", i);
-        // print_moves(path+*length, depth);
-        // printf(" // %d move%s\n", depth, depth==1?"":"s");
-        *length += depth;
-    }
-    apply_cancellations(path, length);
-    // printf("full: ");
-    // print_moves(path, *length);
-    // printf(" // %d move%s\n", *length, *length==1?"":"s");
-}
-
 static int hh(cube_t x)
 {
-    int result = 0;
-    result = MAX(result, h_optimal(x));
-    result = MAX(result, h_optimal(apply_sym(x, 16)));
-    result = MAX(result, h_optimal(apply_sym(x, 32)));
-    return result ?: !cube_eq(x, new_cube());
+    return h_optimal(x) ?: !cube_eq(x, new_cube());
 }
 
 static void optimal(cube_t x, int *path, int *length)

@@ -71,16 +71,16 @@ static cube_t compose_3(cube_t, cube_t, cube_t);
 static cube_t apply_sym(cube_t, int);
 static cube_t apply_move(cube_t, int);
 static cube_t apply_moves(cube_t, int *, int);
+
+static long long get_flip(cube_t);
+static cube_t set_flip(long long);
+static long long get_twist(cube_t);
+static cube_t set_twist(long long);
+static long long get_corner_sep(cube_t);
+static cube_t set_corner_sep(long long);
+static long long get_edge_sep(cube_t);
+static cube_t set_edge_sep(long long);
+
 static cube_t invert_co(cube_t);
-
-static long long get_co(cube_t);
-static long long get_eo(cube_t);
-static void set_co(cube_t *, long long);
-static void set_eo(cube_t *, long long);
-
-static int h_cp5(cube_t);
-static struct table *tetrad_twist_table;
-static int get_tetrad_twist(cube_t);
-static void set_tetrad_twist(cube_t *, int);
 
 #endif

@@ -26,23 +26,20 @@ static int cube_eq(cube_t x, cube_t y)
 
 static cube_t compose(cube_t x, cube_t y)
 {
-    cube_t result;
-
+    cube_t z;
     for (int i=0; i<NUM_CORNERS; ++i)
     {
-        result.corners[i] = x.corners[y.corners[i]&0x0f];
-        result.corners[i] += y.corners[i]&0xf0;
-        result.corners[i] %= 3*0x10;
+        z.corners[i] = x.corners[y.corners[i]&0x0f];
+        z.corners[i] += y.corners[i]&0xf0;
+        z.corners[i] %= 3*0x10;
     }
-
     for (int i=0; i<NUM_EDGES; ++i)
     {
-        result.edges[i] = x.edges[y.edges[i]&0x0f];
-        result.edges[i] += y.edges[i]&0xf0;
-        result.edges[i] %= 2*0x10;
+        z.edges[i] = x.edges[y.edges[i]&0x0f];
+        z.edges[i] += y.edges[i]&0xf0;
+        z.edges[i] %= 2*0x10;
     }
-
-    return result;
+    return z;
 }
 
 static cube_t compose_3(cube_t x, cube_t y, cube_t z)
@@ -70,9 +67,9 @@ static cube_t apply_move(cube_t x, int move)
 
 static cube_t apply_moves(cube_t x, int *moves, int length)
 {
-    cube_t result=x;
-    for (int i=0; i<length; ++i) result=apply_move(result, moves[i]);
-    return result;
+    for (int i=0; i<length; ++i)
+        x = apply_move(x, moves[i]);
+    return x;
 }
 
 static void orient(char *x, int orientation)
@@ -81,44 +78,82 @@ static void orient(char *x, int orientation)
     *x = (*x&0x0f) | (orientation<<4);
 }
 
-static long long get_eo(cube_t x)
+static long long get_flip(cube_t x)
 {
-    int result = 0;
+    int r = 0;
     for (int i=0; i<NUM_EDGES-1; ++i)
-        result += x.edges[i]>>4<<i;
-    return result;
+        r += x.edges[i]>>4<<i;
+    return r;
 }
 
-static void set_eo(cube_t *x, long long r)
+static cube_t set_flip(long long r)
 {
+    cube_t x = new_cube();
     int parity = 0;
     for (int i=0, y; i<NUM_EDGES-1; ++i, r>>=1)
-        orient(x->edges+i, y=r&1), parity^=y;
-    orient(x->edges+NUM_EDGES-1, parity);
+        orient(x.edges+i, y=r&1), parity^=y;
+    orient(x.edges+NUM_EDGES-1, parity);
+    return x;
 }
 
-static long long get_co(cube_t x)
+static long long get_twist(cube_t x)
 {
-    int result = 0;
+    int r = 0;
     for (int i=0; i<NUM_CORNERS-1; ++i)
-        result += (x.corners[i]>>4)*pow3[i];
-    return result;
+        r += (x.corners[i]>>4)*pow3[i];
+    return r;
 }
 
-static void set_co(cube_t *x, long long r)
+static cube_t set_twist(long long r)
 {
+    cube_t x = new_cube();
     int parity = 0;
     for (int i=0, y; i<NUM_CORNERS-1; ++i, r/=3)
-        orient(x->corners+i, y=r%3), parity+=y;
-    orient(x->corners+NUM_CORNERS-1, (3-parity%3)%3);
+        orient(x.corners+i, y=r%3), parity+=y;
+    orient(x.corners+NUM_CORNERS-1, (3-parity%3)%3);
+    return x;
+}
+
+static long long get_corner_sep(cube_t x)
+{
+    for (int i=0; i<8; ++i) x.corners[i] &= 0x0f;
+    return get_combination(x.corners, 8, 4);
+}
+
+static cube_t set_corner_sep(long long r)
+{
+    cube_t x = new_cube();
+    set_combination(x.corners, 8, 4, r);
+    return x;
+}
+
+static long long get_edge_sep(cube_t x)
+{
+    for (int i=0; i<12; ++i) x.edges[i] &= 0x0f;
+    cube_t y = x;
+    long long r = get_combination(x.edges, 12, 4);
+    for (int i=0, j=0; i<12; ++i)
+        x.edges[i]<4 ? ++j : (y.edges[i-j] = x.edges[i]-4);
+    return r * 70 + get_combination(y.edges, 8, 4);
+}
+
+static cube_t set_edge_sep(long long r)
+{
+    cube_t x, y, z;
+    x = y = z = new_cube();
+    set_combination(x.edges, 12, 4, r/70);
+    set_combination(y.edges, 8, 4, r%70);
+    for (int i=0, j=0; i<12; ++i)
+        z.edges[i] = x.edges[i]<4 ? (++j, x.edges[i]) : y.edges[i-j]+4;
+    return z;
 }
 
 static cube_t invert_co(cube_t x)
 {
     for (int i=0; i<NUM_CORNERS; ++i)
     {
-        int co = x.corners[i]>>4;
-        orient(x.corners+i, co?3-co:co);
+        int twist = x.corners[i]>>4;
+        orient(x.corners+i, twist?3-twist:twist);
     }
     return x;
 }

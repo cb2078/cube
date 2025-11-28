@@ -12,7 +12,7 @@
         .h = h_##NAME,\
         .max = (SYM_CLASSES)*(BASIC_MAX),\
         .move_mask = MASK,\
-        .num_syms = 16,\
+        .num_syms = 48,\
         .sym =\
         {\
             .get = get_##SYM,\
@@ -60,109 +60,23 @@ static cube_t set_sym_comp(long long r, struct coord *c)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static long long get_flip_ud_slice(cube_t x)
+static long long get_separation(cube_t x)
 {
-    long long r = get_eo(x);
-    for (int i=0; i<NUM_EDGES; ++i)
-        x.edges[i] &= 0x0f;
-    return r * choose[12][4] + get_combination(x.edges, 12, 4);
+    return get_edge_sep(x) * choose[8][4] + get_corner_sep(x);
 }
 
-static cube_t set_flip_ud_slice(long long r)
+static cube_t set_separation(long long r)
 {
-    cube_t x = new_cube();
-    set_combination(x.edges, 12, 4, r%choose[12][4]);
-    set_eo(&x, r/choose[12][4]);
-    return x;
-}
-
-static long long get_twist(cube_t x)
-{
-    return get_co(x);
-}
-
-static cube_t set_twist(long long r)
-{
-    cube_t x = new_cube();
-    set_co(&x, r);
-    return x;
-}
-
-COORD(phase1, 0,
-      flip_ud_slice, choose[12][4]*pow2[NUM_EDGES-1], 64430,
-      twist, pow3[NUM_CORNERS-1]);
-
-////////////////////////////////////////////////////////////////////////////////
-
-static long long get_corner_perm(cube_t x)
-{
-    return get_permutation(x.corners, 8);
-}
-
-static cube_t set_corner_perm(long long r)
-{
-    cube_t x = new_cube();
-    set_permutation(x.corners, 8, r);
-    return x;
-}
-
-static long long get_ud_edge_perm(cube_t x)
-{
-    for (int i=4; i<NUM_EDGES; ++i)
-        x.edges[i] -= 4;
-    return get_permutation(x.edges+4, 8);
-}
-
-static cube_t set_ud_edge_perm(long long r)
-{
-    cube_t x = new_cube();
-    set_permutation(x.edges+4, 8, r);
-    for (int i=4; i<NUM_EDGES; ++i)
-        x.edges[i] += 4;
-    return x;
-}
-
-COORD(phase2, DR_MASK,
-      corner_perm, fact[8], 2768,
-      ud_edge_perm, fact[8]);
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-#define TWIST_MAX pow3[NUM_CORNERS-1]
-
-static long long get_ud_slice_sorted(cube_t x)
-{
-    for (int i=0; i<NUM_EDGES; ++i) x.edges[i] &= 0x0f;
-    return get_partial_permutation(x.edges, 12, 4);
-}
-
-static cube_t set_ud_slice_sorted(long long r)
-{
-    cube_t x = new_cube();
-    set_partial_permutation(x.edges, 12, 4, r);
-    return x;
-}
-
-static long long get_orientation(cube_t x)
-{
-    return get_eo(x) * TWIST_MAX + get_twist(x);
-}
-
-static cube_t set_orientation(long long r)
-{
-    cube_t x = new_cube();
-    set_eo(&x, r/TWIST_MAX);
-    set_co(&x, r%TWIST_MAX);
-    return x;
+    cube_t x = set_edge_sep(r/choose[8][4]);
+    cube_t y = set_corner_sep(r%choose[8][4]);
+    return compose(x, y);
 }
 
 COORD(optimal, 0,
-      ud_slice_sorted, pick[12][4], 788,
-      orientation, pow2[NUM_EDGES-1]*pow3[NUM_CORNERS-1]);
+      separation, choose[12][4]*choose[8][4]*choose[8][4], 51198,
+      twist, pow3[7]);
 
 ////////////////////////////////////////////////////////////////////////////////
-
 
 static void print_completion(long long i, long long n)
 {
@@ -183,7 +97,7 @@ static void init_sym(struct coord *c)
         return;
 
     ASSERT(!c->self_syms);
-    c->self_syms = malloc(sizeof(int)*c->sym.max);
+    c->self_syms = malloc(sizeof(long long)*c->sym.max);
     for (long long i=0; i<c->sym.max; ++i)
     {
         cube_t x = c->sym.set(i);
@@ -191,7 +105,7 @@ static void init_sym(struct coord *c)
         {
             cube_t y = apply_sym(x, s);
             int k = c->sym.get(y);
-            c->self_syms[i] |= (i==k)<<s;
+            c->self_syms[i] |= (long long)(i==k)<<s;
         }
         print_completion(i, c->sym.max);
     }
@@ -215,6 +129,9 @@ static void init_sym(struct coord *c)
         print_completion(i, c->sym.max);
     }
     clear_stderr();
+#ifdef DEBUG
+    LOG("%s classes : %d\n", c->filename, class);
+#endif
     ASSERT(class == c->sym.classes);
 }
 
@@ -302,6 +219,13 @@ static void init_prune_table(struct coord *c)
 
 static void init_coord(struct coord *c)
 {
+#ifdef DEBUG
+    if (c->sym.classes == 0)
+        c->sym.classes = c->sym.max;
+#else
+    ASSERT(c->sym.classes);
+#endif
+
     FILE *fp;
     c->to_rep   = malloc(sizeof(int)*c->sym.classes);
     c->to_class = malloc(sizeof(int)*c->sym.max);
