@@ -18,8 +18,8 @@
 #define MIN(x, y) ({ typeof(x) a=(x), b=(y); a<b ? a : b; })
 #define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)
 
-#ifdef DEUBG
-#define UNREACHABLE() debugbreak()
+#ifdef DEBUG
+#define UNREACHABLE() (debugbreak(), __builtin_unreachable())
 #else
 #define UNREACHABLE() __builtin_unreachable()
 #endif
