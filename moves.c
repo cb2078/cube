@@ -73,27 +73,45 @@ static void make_scramble(int *moves, int length)
         moves[i]=rand()%NUM_FACE_TURNS;
 }
 
-static int read_move(char *s)
-{
-    int m = 0;
-    for (; m<NUM_MOVES; ++m)
-        if (0 == strcmp(s, move_str[m]))
-            return m;
-    ERROR("invalid move -- '%s'\n", s);
-}
-
 static void read_moves(char *s, int *moves, int *length)
 {
-    *length=0;
-    for (int i=0; i<(int)strlen(s);)
+    int read_move(char *m)
     {
-        char buf[256];
-        int n;
-        for (n=0; s[i+n]!=' ' && s[i+n]!='\0' && s[i+n]!='\n'; ++n)
-            buf[n] = s[i+n];
-        buf[n] = '\0';
-        moves[(*length)++] = read_move(buf);
-        i += 1+n;
+        for (int i=0; i<NUM_MOVES; i+=UW)
+            for (int j=0; j<6; ++j)
+                if (0 == strncmp(m, move_str[i+j], strlen(move_str[i+j])))
+                    return i+j;
+        if (s[strlen(s)-1] == '\n')
+            s[strlen(s)-1] = '\0';
+        ERROR("invalid input '%s'\n", s);
+    }
+
+    *length=0;
+    for (int i=0; i<(long long)strlen(s);)
+    {
+        if (s[i] == ' ' || s[i] == '\n')
+        {
+            i++;
+            continue;
+        }
+        int m = read_move(s+i);
+        i += strlen(move_str[m]);
+        switch (s[i])
+        {
+            case '1':
+                i++;
+                break;
+            case '2':
+                m += U2;
+                i++;
+                break;
+            case '3':
+            case '\'':
+                m += U3;
+                i++;
+                break;
+        }
+        moves[(*length)++] = m;
     }
 }
 
