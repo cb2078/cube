@@ -139,13 +139,13 @@ static void optimal(cube_t x, int *path, int *length)
 
     // TODO increase the maximum depth by whatever `search` returns
     // TODO sort the queue based on a heuristic
+    int done = 0;
     struct queue_node queue[QUEUE_LENGTH];
     build_search_queue(queue, x);
-    for (; *length<=20; ++*length)
+    while (*length<=20)
     {
         thrd_t threads[THREADS];
         struct search_arg args[THREADS];
-        int done = 0;
         for (int t=0; t<THREADS; ++t)
         {
             args[t].thread_id = t;
@@ -160,15 +160,13 @@ static void optimal(cube_t x, int *path, int *length)
             thrd_join(threads[t], &i);
             if (i == -1)
                 continue;
-            // copy the moves to the depth-4 node to the path
             for (int j=0; j<QUEUE_DEPTH; ++j)
                 // TODO use 8 bits for the path
                 path[j] = args[t].queue[i].path>>8*j&0xff;
-            // copy the moves to from depth-4 node to the path
             memcpy(path+4, args[t].path, sizeof(int)*args[t].depth);
-            return;
         }
+        if (done)
+            break;
+        ++*length;
     }
-
-    UNREACHABLE();
 }
