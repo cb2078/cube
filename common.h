@@ -30,6 +30,8 @@
 #define LOG(...) (void)0
 #endif
 
+static int THREADS = 4;
+
 static inline void debugbreak(void)
 {
     __asm__ volatile("int $0x03");

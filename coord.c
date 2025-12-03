@@ -195,7 +195,7 @@ static int init_prune_table_thread(void *__arg)
 static void init_prune_table_parallel(struct coord *c, int depth, int backsearch)
 {
     thrd_t threads[THREADS];
-    struct init_prune_table_arg args[THREADS] = {0};
+    struct init_prune_table_arg args[THREADS];
     for (int i=0; i<THREADS; ++i)
     {
         args[i].thread_id = i;

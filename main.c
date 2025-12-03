@@ -145,7 +145,7 @@ int main(int argc, char **argv)
                 help();
                 return 0;
             case 't':
-                UNREACHABLE();
+                THREADS = val;
                 break;
             case 'r':
                 length = val;
