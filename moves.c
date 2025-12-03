@@ -89,7 +89,7 @@ static void read_moves(char *s, int *moves, int *length)
     {
         char buf[256];
         int n;
-        for (n=0; s[i+n]!=' ' && s[i+n]!='\0'; ++n)
+        for (n=0; s[i+n]!=' ' && s[i+n]!='\0' && s[i+n]!='\n'; ++n)
             buf[n] = s[i+n];
         buf[n] = '\0';
         moves[(*length)++] = read_move(buf);
