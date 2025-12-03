@@ -235,6 +235,10 @@ static void init_prune_table(struct coord *c)
 
 static void init_coord(struct coord *c)
 {
+    static int initialised = 0;
+    if (initialised)
+        return;
+
 #ifdef DEBUG
     if (c->sym.classes == 0)
         c->sym.classes = c->sym.max;
@@ -271,4 +275,5 @@ static void init_coord(struct coord *c)
         ERROR("couldn't write '%s'\n", c->filename);
     }
     fclose(fp);
+    initialised = 1;
 }
