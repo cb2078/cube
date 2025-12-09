@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <assert.h>
+#include <immintrin.h>
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdio.h>

@@ -4,20 +4,11 @@
 #define NUM_CORNERS 8
 #define NUM_EDGES 12
 
-#define CUBE(...) (cube_t){.cubies={__VA_ARGS__}}
+#define CUBE(URF, ULB, DRB, DLF, URB, ULF, DRF, DLB, RF, RB, LF, LB, UF, UB, DF, DB, UR, UL, DR, DL)\
+    _mm256_set_epi8(15,  14,   13,   12,  11,  10,   9,   8,  DLB, DRF, ULF, URB, DLF, DRB, ULB, URF,\
+                    15,  14,   13,   12,  DL,  DR,  UL,  UR,  DB,  DF,  UB,  UF,  LB,  LF,  RB,  RF)
 
-typedef union
-{
-    struct
-    {
-        char corners[NUM_CORNERS];
-        char edges[NUM_EDGES];
-    };
-    struct
-    {
-        char cubies[NUM_CORNERS+NUM_EDGES];
-    };
-} cube_t;
+typedef __m256i cube_t;
 
 enum cubies
 {
@@ -55,6 +46,6 @@ static cube_t set_corner_sep(long long);
 static long long get_edge_sep(cube_t);
 static cube_t set_edge_sep(long long);
 
-static cube_t invert_co(cube_t);
+static cube_t invert_twist(cube_t);
 
 #endif

@@ -15,6 +15,8 @@
 #define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
 #define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
 
+#include "test.inc"
+
 static char *name;
 
 static void fail(int x, int y, char *xs, char *ys)
@@ -23,43 +25,62 @@ static void fail(int x, int y, char *xs, char *ys)
     exit(1);
 }
 
-// NOTE this does not check weather the corner and edge parities are the same
-static int cube_valid(cube_t x)
-{
-    int valid_permutation(char *x, int n)
-    {
-        int seen[n];
-        memset(seen, 0x00, sizeof(int)*n);
-        for (int i=0, y; i<n; ++i)
-            if ((y=x[i]&0x0f)<0 || y>=n)
-                return 0;
-            else
-                seen[y]++;
-        for (int i=0; i<n; ++i)
-            if (seen[i]!=1)
-                return 0;
-        return 1;
-    }
-
-    int valid_orientation(char *x, int n, int order)
-    {
-        int result = 0;
-        for (int i=0, y; i<n; ++i)
-            if ((y=x[i]>>4)<0 || y>=order)
-                return 0;
-            else
-                result += y;
-        return 0==result%order;
-    }
-
-    return (valid_permutation(x.corners, NUM_CORNERS)    &&
-            valid_permutation(x.edges,   NUM_EDGES)      &&
-            valid_orientation(x.corners, NUM_CORNERS, 3) &&
-            valid_orientation(x.edges,   NUM_EDGES, 2));
-}
-
 int main(void)
 {
+    TEST("moves")
+    {
+        ASSERT(LENGTH(scrambles) == LENGTH(solutions));
+        for (int i=0; i<LENGTH(scrambles); ++i)
+        {
+            cube_t x = apply_moves(new_cube(), scrambles[i], 9);
+            cube_t y = apply_moves(new_cube(), solutions[i], 9);
+            cube_t z = compose(x, y);
+            CHECK(cube_eq(z, new_cube()), 1);
+        }
+    }
+
+    TEST("flip")
+    {
+        long long n=pow2[11];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_flip(set_flip(i)));
+    }
+
+    TEST("twist")
+    {
+        long long n=pow3[7];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_twist(set_twist(i)));
+    }
+
+
+    TEST("corner sep")
+    {
+        long long n=choose[8][4];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_corner_sep(set_corner_sep(i)));
+    }
+
+    TEST("edge sep")
+    {
+        long long n=choose[12][4]*choose[8][4];
+        for (long long i=0; i<n; ++i)
+            CHECK(i, get_edge_sep(set_edge_sep(i)));
+    }
+
+    TEST("invert twist")
+    {
+        for (int i=0; i<10; ++i)
+        {
+            int moves[256], length=100;
+            make_scramble(moves, length);
+            cube_t x = apply_moves(new_cube(), moves, length);
+            cube_t y = set_twist(get_twist(invert_twist(x)));
+            cube_t z = compose(x, y);
+            CHECK(get_twist(z), 0);
+        }
+    }
+
     TEST("transform")
     {
         int moves[256];
@@ -74,21 +95,6 @@ int main(void)
                     transformed_moves[i] = sym_moves[s][moves[i]];
                 CHECK(cube_eq(apply_sym(x, s), apply_moves(new_cube(), transformed_moves, length)), 1);
             }
-        }
-    }
-
-    TEST("invert co")
-    {
-        for (int i=0; i<10; ++i)
-        {
-            int moves[256], length=100;
-            make_scramble(moves, length);
-            cube_t x = apply_moves(new_cube(), moves, length);
-            cube_t y = invert_co(x);
-            for (int i=0; i<NUM_CORNERS; ++i)
-                y.corners[i] = (y.corners[i]&0xf0)+i;
-            cube_t z = compose(x, y);
-            CHECK(get_twist(z), 0);
         }
     }
 
@@ -123,35 +129,6 @@ int main(void)
             set_permutation(x, n, i);
             CHECK(i, get_permutation(x, n));
         }
-    }
-
-    TEST("flip")
-    {
-        long long n=pow2[11];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_flip(set_flip(i)));
-    }
-
-    TEST("twist")
-    {
-        long long n=pow3[7];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_twist(set_twist(i)));
-    }
-
-
-    TEST("corner sep")
-    {
-        long long n=choose[8][4];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_corner_sep(set_corner_sep(i)));
-    }
-
-    TEST("edge sep")
-    {
-        long long n=choose[12][4]*choose[8][4];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_edge_sep(set_edge_sep(i)));
     }
 
     printf("all tests passed\n");

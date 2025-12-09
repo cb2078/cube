@@ -1,10 +1,10 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable
+CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -march=native
 MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
 EXE := main test
 DEP := $(EXE:%=%.d)
 
-all: debug
+all: test debug
 
 debug: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -DDEBUG
 debug: main

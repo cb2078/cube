@@ -4,9 +4,9 @@
 #include "cube.h"
 #include "moves.h"
 
-static cube_t move_cubes[18];
-static cube_t sym_cubes[48];
 static int sym_moves[48][18];
+static cube_t get_move_cube(int);
+static cube_t get_sym_cube(int);
 static int inv_sym[48];
 
 #endif
