@@ -32,9 +32,10 @@ struct arg
 
 static struct arg args[] =
 {
-    {"help",    'h', VALUE_NONE,     "print this help message and exit"},
-    {"random",  'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
-    {"threads", 't', VALUE_REQUIRED, "use NUM threads"},
+    {"help",     'h', VALUE_NONE,     "print this help message and exit"},
+    {"no-input", 'n', VALUE_NONE,     "ignore input"},
+    {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
+    {"threads",  't', VALUE_REQUIRED, "use NUM threads"},
 };
 
 static void help(void)
@@ -152,6 +153,9 @@ int main(int argc, char **argv)
                 make_scramble(moves, length);
                 x = apply_moves(x, moves, length);
                 break;
+            case 'n':
+                optimal(new_cube(), moves, &length);
+                return 0;
             default:
                 UNREACHABLE();
         }
