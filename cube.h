@@ -46,6 +46,7 @@ static cube_t set_corner_sep(long long);
 static long long get_edge_sep(cube_t);
 static cube_t set_edge_sep(long long);
 
+static cube_t inverse(cube_t);
 static cube_t invert_twist(cube_t);
 
 #endif

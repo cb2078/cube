@@ -158,6 +158,50 @@ static cube_t set_edge_sep(long long r)
     return SET_EDGES(h, l);
 }
 
+static cube_t inverse(cube_t x)
+{
+    // - any permutation of the cubies can be borken into cycles
+    // - cubies in the same cycle exchange places each time the permutation is
+    //   applied
+    // - the order of a cycle is its length
+    // - the possible cycle lengths for the cubies is are (1,12]
+    // - their LCM is 27720
+    // - therefore, raising a position to the 27719th power gives its inverse
+    // - see https://github.com/Voltara/vcube/blob/master/src/avx2_cube.h
+    __m256i o, y, z;
+    o = _mm256_and_si256(x, ORIENT_MASK);
+    // http://wwwhomes.uni-bielefeld.de/achim/addition_chain.html
+    y = _mm256_and_si256(x, PERMUTE_MASK);
+    x = _mm256_shuffle_epi8(y, y); // 2
+    z = _mm256_shuffle_epi8(x, y); // 3 (+1)
+    x = _mm256_shuffle_epi8(z, z); // 6
+    x = _mm256_shuffle_epi8(x, x); // 12
+    x = _mm256_shuffle_epi8(x, x); // 24
+    x = _mm256_shuffle_epi8(x, z); // 27 (+3)
+    x = _mm256_shuffle_epi8(x, x); // 54
+    x = _mm256_shuffle_epi8(x, x); // 108
+    x = _mm256_shuffle_epi8(x, x); // 216
+    x = _mm256_shuffle_epi8(x, x); // 432
+    x = _mm256_shuffle_epi8(x, y); // 433 (+1)
+    x = _mm256_shuffle_epi8(x, x); // 866
+    x = _mm256_shuffle_epi8(x, x); // 1732
+    x = _mm256_shuffle_epi8(x, x); // 3464
+    x = _mm256_shuffle_epi8(x, x); // 6928
+    x = _mm256_shuffle_epi8(x, x); // 13856
+    x = _mm256_shuffle_epi8(x, z); // 13859 (+3)
+    x = _mm256_shuffle_epi8(x, x); // 27718
+    x = _mm256_shuffle_epi8(x, y); // 27719 (+1)
+    // invert orientations
+    o = _mm256_sub_epi8(ORIENT_CARRY, o);
+    y = _mm256_sub_epi8(o, ORIENT_CARRY);
+    o = _mm256_min_epu8(o, y);
+    // permute the orientations
+    o = _mm256_shuffle_epi8(o, x);
+    // combine the orientations
+    x = _mm256_or_si256(x, o);
+    return x;
+}
+
 // TODO use mirred compose instead of this (once the tests pass)
 static cube_t invert_twist(cube_t x)
 {
@@ -204,6 +248,11 @@ static cube_t apply_sym(cube_t x, int sym)
 static cube_t apply_move(cube_t x, int move)
 {
     return compose(x, get_move_cube(move));
+}
+
+static cube_t apply_pre_move(cube_t x, int move)
+{
+    return compose(get_move_cube(inverse_move(move)), x);
 }
 
 static cube_t apply_moves(cube_t x, int *moves, int length)

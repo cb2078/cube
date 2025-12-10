@@ -2,29 +2,30 @@
 #define QUEUE_LENGTH 43254
 #define QUEUE_DEPTH 4
 
-struct search_node
-{
-    cube_t cube;
-    int move;
-    int depth;
-};
-
 static int search(cube_t x, int *path, int (*h)(cube_t), int move_mask, int max_depth)
 {
+    struct search_node
+    {
+        cube_t cube;
+        cube_t inverse;
+        int move;
+        int depth;
+    };
+
     int min = INT_MAX;
     struct search_node stack[STACK_LENGTH];
     struct search_node *top = stack;
 
-    void push(cube_t x, int move, int depth)
+    void push(cube_t x, cube_t y, int move, int depth)
     {
-        int f = h(x) + depth;
+        int f = MAX(h(x), h(y)) + depth;
         if (f > max_depth)
             min = MIN(min, f);
         else
-            *top++ = (struct search_node){x, move, depth};
+            *top++ = (struct search_node){x, y, move, depth};
     }
 
-    push(x, 0xff, 0);
+    push(x, inverse(x), 0xff, 0);
     while (top>stack)
     {
         struct search_node cur = *--top;
@@ -36,7 +37,9 @@ static int search(cube_t x, int *path, int (*h)(cube_t), int move_mask, int max_
         int moves[18], length;
         possible_moves(moves, &length, cur.move, move_mask);
         for (int i=0; i<length; ++i)
-            push(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
+            push(apply_move(cur.cube, moves[i]),
+                 apply_pre_move(cur.inverse, moves[i]),
+                 moves[i], cur.depth+1);
     }
 
     return min-max_depth;
@@ -61,6 +64,13 @@ struct queue_node
 
 static void build_search_queue(struct queue_node *queue, cube_t x)
 {
+    struct search_node
+    {
+        cube_t cube;
+        int move;
+        int depth;
+    };
+
     struct search_node stack[STACK_LENGTH];
     struct search_node *top = stack;
     int count = 0;

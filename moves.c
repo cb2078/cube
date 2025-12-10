@@ -43,11 +43,6 @@ static int make_move(int face, int amount)
     return face+U2*(amount-1);
 }
 
-static int inverse_move(int x)
-{
-    return make_move(move_face(x), 3-move_amount(x));
-}
-
 static int prune_move(int x, int y)
 {
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
@@ -145,6 +140,11 @@ static int apply_cancellations(int *moves, int *length)
     }
     if (cancelled) apply_cancellations(moves, length);
     return cancelled;
+}
+
+static int inverse_move(int x)
+{
+    return make_move(move_face(x), 4-move_amount(x));
 }
 
 static void inverse_moves(int *moves, int length)

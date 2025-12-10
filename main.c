@@ -65,6 +65,8 @@ static void help(void)
 
 int main(int argc, char **argv)
 {
+    srand(time(0));
+
     int moves[256], length=0;
     int threads;
     cube_t x = new_cube();

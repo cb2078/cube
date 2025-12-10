@@ -39,6 +39,19 @@ int main(void)
         }
     }
 
+    TEST("inverse")
+    {
+        int moves[256];
+        for (int length=0; length<LENGTH(moves); ++length)
+        {
+            make_scramble(moves, length);
+            cube_t x = apply_moves(new_cube(), moves, length);
+            cube_t y = inverse(x);
+            cube_t z = compose(x, y);
+            CHECK(cube_eq(z, new_cube()), 1);
+        }
+    }
+
     TEST("flip")
     {
         long long n=pow2[11];

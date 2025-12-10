@@ -62,6 +62,7 @@ static void make_scramble(int *moves, int length);
 static int read_move(char *s);
 static void read_moves(char *s, int *moves, int *length);
 static int apply_cancellations(int *moves, int *length);
+static int inverse_move(int x);
 static void inverse_moves(int *moves, int length);
 
 #endif
