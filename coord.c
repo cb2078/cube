@@ -137,6 +137,7 @@ static void init_sym(struct coord *c)
 
 struct init_prune_table_arg
 {
+    mtx_t *mutexes;
     int thread_id;
     int t;
     struct coord *c;
@@ -151,7 +152,7 @@ static int init_prune_table_thread(void *__arg)
     struct init_prune_table_arg *arg = __arg;
     for (long long i=arg->start; i<arg->end; ++i)
     {
-        if (table_get(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
+        if (table_get_atomic(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
         {
             int moves[18], length;
             possible_moves(moves, &length, 0xff, arg->c->move_mask);
@@ -159,9 +160,16 @@ static int init_prune_table_thread(void *__arg)
             {
                 cube_t x = apply_move(arg->c->set(i), moves[j]);
                 long long k = arg->c->get(x);
-                if (!arg->backsearch && table_get_atomic(arg->c->table, k) == arg->c->table->mask)
+                if (arg->backsearch && table_get_atomic(arg->c->table, k) == arg->depth-1)
                 {
-                    table_set_atomic(arg->c->table, k, arg->depth);
+                    table_set_atomic(arg->c->table, i, arg->depth);
+                    break;
+                }
+                int class = k/arg->c->raw.max;
+                mtx_lock(&arg->mutexes[class]);
+                if (!arg->backsearch && table_get(arg->c->table, k) == arg->c->table->mask)
+                {
+                    table_set(arg->c->table, k, arg->depth);
                     if (!arg->c->num_syms)
                         continue;
                     for (int s=1; s<arg->c->num_syms; ++s)
@@ -170,15 +178,11 @@ static int init_prune_table_thread(void *__arg)
                             continue;
                         cube_t y = apply_sym(x, s);
                         long long l = arg->c->get(y);
-                        if (table_get_atomic(arg->c->table, l) == arg->c->table->mask)
-                            table_set_atomic(arg->c->table, l, arg->depth);
+                        if (table_get(arg->c->table, l) == arg->c->table->mask)
+                            table_set(arg->c->table, l, arg->depth);
                     }
                 }
-                else if (arg->backsearch && table_get_atomic(arg->c->table, k) == arg->depth-1)
-                {
-                    table_set_atomic(arg->c->table, i, arg->depth);
-                    break;
-                }
+                mtx_unlock(&arg->mutexes[class]);
             }
         }
         if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
@@ -194,10 +198,16 @@ static int init_prune_table_thread(void *__arg)
 
 static void init_prune_table_parallel(struct coord *c, int depth, int backsearch)
 {
+    mtx_t mutexes[c->sym.classes];
+    for (int i=0; i<c->sym.classes; ++i)
+    {
+        mtx_init(&mutexes[i], mtx_plain);
+    }
     thrd_t threads[THREADS];
     struct init_prune_table_arg args[THREADS];
     for (int i=0; i<THREADS; ++i)
     {
+        args[i].mutexes = mutexes;
         args[i].thread_id = i;
         args[i].t = 0;
         args[i].c = c;
@@ -210,6 +220,10 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     for (int i=0; i<THREADS; ++i)
     {
         thrd_join(threads[i], NULL);
+    }
+    for (int i=0; i<c->sym.classes; ++i)
+    {
+        mtx_destroy(&mutexes[i]);
     }
 }
 
