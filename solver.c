@@ -2,7 +2,7 @@
 #define QUEUE_LENGTH 43254
 #define QUEUE_DEPTH 4
 
-static int search(cube_t x, int *path, int (*h)(cube_t), int move_mask, int max_depth)
+static int search(cube_t x, int *path, int (*h)(cube_t), int max_depth)
 {
     struct search_node
     {
@@ -25,7 +25,7 @@ static int search(cube_t x, int *path, int (*h)(cube_t), int move_mask, int max_
             *top++ = (struct search_node){x, y, move, depth};
     }
 
-    push(x, inverse(x), 0xff, 0);
+    push(x, inverse(x), EMPTY_MOVE, 0);
     while (top>stack)
     {
         struct search_node cur = *--top;
@@ -34,23 +34,21 @@ static int search(cube_t x, int *path, int (*h)(cube_t), int move_mask, int max_
         if (0 == h(cur.cube))
             return 0;
 
-        int moves[18], length;
-        possible_moves(moves, &length, cur.move, move_mask);
-        for (int i=0; i<length; ++i)
-            push(apply_move(cur.cube, moves[i]),
-                 apply_pre_move(cur.inverse, moves[i]),
-                 moves[i], cur.depth+1);
+        FOREACH_MOVE(cur.move)
+            push(apply_move(cur.cube, m),
+                 apply_pre_move(cur.inverse, m),
+                 m, cur.depth+1);
     }
 
     return min-max_depth;
 }
 
-static void solve(cube_t x, int *path, int *length, int (*h)(cube_t), int move_mask)
+static void solve(cube_t x, int *path, int *length, int (*h)(cube_t))
 {
     int diff;
     *length = 0;
     do
-        *length += diff = search(x, path, h, move_mask, *length);
+        *length += diff = search(x, path, h, *length);
     while (diff);
 }
 
@@ -82,7 +80,7 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
             *top++ = (struct search_node){x, move, depth};
     }
 
-    push(x, 0xff, 0);
+    push(x, EMPTY_MOVE, 0);
     while (top>stack)
     {
         struct search_node cur = *--top;
@@ -99,10 +97,8 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
             }
         }
 
-        int moves[18], length;
-        possible_moves(moves, &length, cur.move, 0);
-        for (int i=0; i<length; ++i)
-            push(apply_move(cur.cube, moves[i]), moves[i], cur.depth+1);
+        FOREACH_MOVE(cur.move)
+            push(apply_move(cur.cube, m), m, cur.depth+1);
     }
 
     ASSERT(count == QUEUE_LENGTH);
@@ -127,7 +123,7 @@ static int search_thread(void *__arg)
 {
     struct search_arg *arg = __arg;
     for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=THREADS)
-        if (!search(arg->queue[i].cube, arg->path, hh, 0, arg->depth))
+        if (!search(arg->queue[i].cube, arg->path, hh, arg->depth))
         {
             atomic_store(arg->done, 1);
             return i;
@@ -142,7 +138,7 @@ static void optimal(cube_t x, int *path, int *length)
     *length = 0;
     while (*length < QUEUE_DEPTH)
     {
-        int diff = search(x, path, hh, 0, *length);
+        int diff = search(x, path, hh, *length);
         if (!diff) return;
         *length += diff;
     }

@@ -154,22 +154,20 @@ static int init_prune_table_thread(void *__arg)
     {
         if (table_get_atomic(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
         {
-            int moves[18], length;
-            possible_moves(moves, &length, 0xff, arg->c->move_mask);
-            for (int j=0; j<length; ++j)
+            for (int m=0; m<18; ++m)
             {
-                cube_t x = apply_move(arg->c->set(i), moves[j]);
-                long long k = arg->c->get(x);
-                if (arg->backsearch && table_get_atomic(arg->c->table, k) == arg->depth-1)
+                cube_t x = apply_move(arg->c->set(i), m);
+                long long j = arg->c->get(x);
+                if (arg->backsearch && table_get_atomic(arg->c->table, j) == arg->depth-1)
                 {
                     table_set_atomic(arg->c->table, i, arg->depth);
                     break;
                 }
-                int class = k/arg->c->raw.max;
+                int class = j/arg->c->raw.max;
                 mtx_lock(&arg->mutexes[class]);
-                if (!arg->backsearch && table_get(arg->c->table, k) == arg->c->table->mask)
+                if (!arg->backsearch && table_get(arg->c->table, j) == arg->c->table->mask)
                 {
-                    table_set(arg->c->table, k, arg->depth);
+                    table_set(arg->c->table, j, arg->depth);
                     if (!arg->c->num_syms)
                         continue;
                     for (int s=1; s<arg->c->num_syms; ++s)
@@ -177,9 +175,9 @@ static int init_prune_table_thread(void *__arg)
                         if (~arg->c->self_syms[arg->c->sym.get(x)]>>s&1)
                             continue;
                         cube_t y = apply_sym(x, s);
-                        long long l = arg->c->get(y);
-                        if (table_get(arg->c->table, l) == arg->c->table->mask)
-                            table_set(arg->c->table, l, arg->depth);
+                        long long k = arg->c->get(y);
+                        if (table_get(arg->c->table, k) == arg->c->table->mask)
+                            table_set(arg->c->table, k, arg->depth);
                     }
                 }
                 mtx_unlock(&arg->mutexes[class]);

@@ -3,12 +3,8 @@
 
 #define NUM_FACE_TURNS 18
 
-enum move_mask
-{
-    EO_MASK  = 147492,
-    DR_MASK  = 221238,
-    HTR_MASK = 258111,
-};
+#define FOREACH_MOVE(prev)\
+    for (int m=0; m<18; ++m) if (prev!=EMPTY_MOVE && prune_move(prev, m)); else
 
 enum move_type
 {
@@ -27,12 +23,12 @@ enum move
     UW,  RW,  FW,  DW,  LW,  BW,
     UW2, RW2, FW2, DW2, LW2, BW2,
     UW3, RW3, FW3, DW3, LW3, BW3,
-
     Y,  X,  Z,  E,  M,  S,
     Y2, X2, Z2, E2, M2, S2,
     Y3, X3, Z3, E3, M3, S3,
 
     NUM_MOVES,
+    EMPTY_MOVE = 0xff,
 };
 
 static char *move_str[NUM_MOVES] =
@@ -56,8 +52,8 @@ static int move_face(int x);
 static int move_opposite_face(int x);
 static int move_side(int x);
 static int move_amount(int x);
-static void possible_moves(int *moves, int *length, int move, int mask);
 static void print_moves(int *moves, int length);
+static int prune_move(int, int);
 static void make_scramble(int *moves, int length);
 static int read_move(char *s);
 static void read_moves(char *s, int *moves, int *length);

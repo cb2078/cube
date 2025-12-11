@@ -48,14 +48,6 @@ static int prune_move(int x, int y)
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
 }
 
-static void possible_moves(int *moves, int *length, int move, int move_mask)
-{
-    *length = 0;
-    for (int m=0; m<NUM_FACE_TURNS; ++m)
-        if ((move==0xff || !prune_move(move, m)) && ~move_mask>>m&1)
-            moves[(*length)++] = m;
-}
-
 static void print_moves(int *moves, int length)
 {
     for (int i=0; i<length; ++i)
