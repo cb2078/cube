@@ -238,7 +238,46 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     }
 }
 
-static int init_prune_table_dfs(struct coord *c, int max_depth)
+// NOTE this does not give the distance for very few cubes (for partial flip
+// coordinates). I believe this is because the full EO coordinate may be
+// different in the current cube and the one where the pruning value is stored.
+//
+// Since this affects such a small amount of nodes, it doesn't make much of a
+// difference when solving.
+static int init_prune_table_dfs_forward(struct coord *c, int max_depth)
+{
+    struct search_node
+    {
+        cube_t cube;
+        int move;
+        int depth;
+    };
+
+    struct search_node stack[256];
+    struct search_node *top = stack;
+
+    void push(cube_t x, int move, int depth)
+    {
+        if (depth>max_depth)
+            return;
+        if (table_get(c->table, c->get(x)) < depth)
+            return;
+        if (table_get(c->table, c->get(x)) == c->table->mask)
+            table_set(c->table, c->get(x), depth);
+        *top++ = (struct search_node){x, move, depth};
+    }
+
+    push(new_cube(), EMPTY_MOVE, 0);
+    while (top>stack)
+    {
+        struct search_node cur = *--top;
+        FOREACH_MOVE(cur.move)
+            push(apply_move(cur.cube, m), m, cur.depth+1);
+    }
+    return 0;
+}
+
+static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
 {
     int h(cube_t x)
     {
@@ -300,17 +339,17 @@ static void init_prune_table(struct coord *c)
 #if FLIP_VARIANT==0 || FLIP_VARIANT==11
         init_prune_table_parallel(c, depth, backsearch);
 #else
-        init_prune_table_dfs(c, depth);
+        if (backsearch)
+            init_prune_table_dfs_backward(c, depth);
+        else
+            init_prune_table_dfs_forward(c, depth);
 #endif
         clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
     }
-#ifdef DEBUG
     if (c->table->count!=c->max)
         LOG("skpped %lld entries\n", c->max-c->table->count);
-#else
     ASSERT(c->table->count==c->max);
-#endif
 }
 
 static void init_coord(struct coord *c)
