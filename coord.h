@@ -3,6 +3,13 @@
 
 #include "cube.h"
 #include "table.h"
+#include "util.h"
+
+#define TWIST_MAX pow3[7]
+#define CORNER_SEP_MAX choose[8][4]
+#define FLIP_MAX pow2[11]
+#define EDGE_SEP_MAX (choose[12][4]*choose[8][4])
+#define PARTIAL_FLIP_MAX pow2[FLIP_VARIANT]
 
 struct coord
 {

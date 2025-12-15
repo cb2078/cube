@@ -60,21 +60,34 @@ static cube_t set_sym_comp(long long r, struct coord *c)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static long long get_separation(cube_t x)
+static long long get_twist_corner_sep(cube_t x)
 {
-    return get_edge_sep(x) * choose[8][4] + get_corner_sep(x);
+    return get_twist(x) * CORNER_SEP_MAX + get_corner_sep(x);
 }
 
-static cube_t set_separation(long long r)
+static cube_t set_twist_corner_sep(long long r)
 {
-    cube_t x = set_edge_sep(r/choose[8][4]);
-    cube_t y = set_corner_sep(r%choose[8][4]);
+    cube_t x = set_corner_sep(r%CORNER_SEP_MAX);
+    cube_t y = set_twist(r/CORNER_SEP_MAX);
+    return compose(x, y);
+}
+
+static long long get_flip_edge_sep(cube_t x)
+{
+    return (get_flip(x) & (PARTIAL_FLIP_MAX-1)) * EDGE_SEP_MAX + get_edge_sep(x);
+}
+
+static cube_t set_flip_edge_sep(long long r)
+{
+    cube_t x = set_edge_sep(r%EDGE_SEP_MAX);
+    cube_t y = set_flip(r/EDGE_SEP_MAX);
     return compose(x, y);
 }
 
 COORD(optimal, 0,
-      separation, choose[12][4]*choose[8][4]*choose[8][4], 51198,
-      twist, pow3[7]);
+      corner_sep, CORNER_SEP_MAX, 9,
+      // twist_corner_sep, TWIST_MAX*CORNER_SEP_MAX, 3393,
+      flip_edge_sep, PARTIAL_FLIP_MAX*EDGE_SEP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -135,7 +148,7 @@ static void init_sym(struct coord *c)
     ASSERT(class == c->sym.classes);
 }
 
-struct init_prune_table_arg
+struct init_prune_table_bfs_arg
 {
     mtx_t *mutexes;
     int thread_id;
@@ -147,9 +160,9 @@ struct init_prune_table_arg
     long long end;
 };
 
-static int init_prune_table_thread(void *__arg)
+static int init_prune_table_bfs(void *varg)
 {
-    struct init_prune_table_arg *arg = __arg;
+    struct init_prune_table_bfs_arg *arg = varg;
     for (long long i=arg->start; i<arg->end; ++i)
     {
         if (table_get_atomic(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
@@ -202,7 +215,7 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
         mtx_init(&mutexes[i], mtx_plain);
     }
     thrd_t threads[THREADS];
-    struct init_prune_table_arg args[THREADS];
+    struct init_prune_table_bfs_arg args[THREADS];
     for (int i=0; i<THREADS; ++i)
     {
         args[i].mutexes = mutexes;
@@ -213,7 +226,7 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
         args[i].backsearch = backsearch;
         args[i].start = i*c->max/THREADS;
         args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
-        thrd_create(&threads[i], init_prune_table_thread, &args[i]);
+        thrd_create(&threads[i], init_prune_table_bfs, &args[i]);
     }
     for (int i=0; i<THREADS; ++i)
     {
@@ -225,17 +238,72 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     }
 }
 
+static int init_prune_table_dfs(struct coord *c, int max_depth)
+{
+    int h(cube_t x)
+    {
+        int r = table_get(c->table, c->get(x));
+        return r == c->table->mask ? max_depth : r ?: get_flip(x)>0;
+    }
+
+    int dlA(cube_t x)
+    {
+        struct search_node
+        {
+            cube_t cube;
+            int move;
+            int depth;
+        };
+
+        struct search_node stack[256];
+        struct search_node *top = stack;
+
+        void push(cube_t x, int move, int depth)
+        {
+            if (h(x)+depth <= max_depth)
+                *top++ = (struct search_node){x, move, depth};
+        }
+
+        push(x, EMPTY_MOVE, 0);
+        while (top>stack)
+        {
+            struct search_node cur = *--top;
+            if (!h(cur.cube))
+                return 0;
+            FOREACH_MOVE(cur.move)
+                push(apply_move(cur.cube, m), m, cur.depth+1);
+        }
+        return 1;
+    }
+
+    for (long long i=0; i<c->max; i++)
+        for (int j=0; j<FLIP_MAX; j+=PARTIAL_FLIP_MAX)
+        {
+            if (table_get(c->table, i) != c->table->mask)
+                break;
+            if (!j && i%(c->max/100)==0)
+                printf("%lld%%\n", i/(c->max/100));
+            if (!dlA(compose(c->set(i), set_flip(j))))
+                table_set(c->table, i, max_depth);
+        }
+    return 0;
+}
+
 static void init_prune_table(struct coord *c)
 {
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
-    for (int depth=1, t=0, backsearch=0; c->table->count<c->max && depth<c->table->mask; ++depth)
+    for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
     {
+        int backsearch = c->table->count>c->max/2;
         long long m = c->table->count;
+#if FLIP_VARIANT==0 || FLIP_VARIANT==11
         init_prune_table_parallel(c, depth, backsearch);
+#else
+        init_prune_table_dfs(c, depth);
+#endif
         clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
-        backsearch = c->table->count>c->max/2;
     }
 #ifdef DEBUG
     if (c->table->count!=c->max)
@@ -259,27 +327,30 @@ static void init_coord(struct coord *c)
 #endif
 
     FILE *fp;
-    c->to_rep   = malloc(sizeof(int)*c->sym.classes);
+    c->to_rep = malloc(sizeof(int)*c->sym.classes);
     c->to_class = malloc(sizeof(int)*c->sym.max);
-    c->to_sym   = malloc(sizeof(int)*c->sym.max);
-    c->table    = table_new(c->max, 4, c->filename);
+    c->to_sym = malloc(sizeof(int)*c->sym.max);
+    c->table = table_new(c->max, 4, c->filename);
 
+#if 1
     if ((fp = fopen(c->filename, "rb")))
     {
-        fread(c->to_rep,      sizeof(int)*c->sym.classes, 1, fp);
-        fread(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
-        fread(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
-        fread(c->table->data, c->table->size,             1, fp);
+        fread(c->to_rep, sizeof(int)*c->sym.classes, 1, fp);
+        fread(c->to_class, sizeof(int)*c->sym.max, 1, fp);
+        fread(c->to_sym, sizeof(int)*c->sym.max, 1, fp);
+        fread(c->table->data, c->table->size, 1, fp);
         LOG("read '%s'\n", c->filename);
     }
-    else if ((fp = fopen(c->filename, "wb")))
+    else
+#endif
+        if ((fp = fopen(c->filename, "wb")))
     {
         init_sym(c);
         init_prune_table(c);
-        fwrite(c->to_rep,      sizeof(int)*c->sym.classes, 1, fp);
-        fwrite(c->to_class,    sizeof(int)*c->sym.max,     1, fp);
-        fwrite(c->to_sym,      sizeof(int)*c->sym.max,     1, fp);
-        fwrite(c->table->data, c->table->size,             1, fp);
+        fwrite(c->to_rep, sizeof(int)*c->sym.classes, 1, fp);
+        fwrite(c->to_class, sizeof(int)*c->sym.max, 1, fp);
+        fwrite(c->to_sym, sizeof(int)*c->sym.max, 1, fp);
+        fwrite(c->table->data, c->table->size, 1, fp);
         LOG("wrote '%s'\n", c->filename);
     }
     else
