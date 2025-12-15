@@ -36,6 +36,7 @@ static struct arg args[] =
     {"no-input", 'n', VALUE_NONE,     "ignore input"},
     {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
     {"threads",  't', VALUE_REQUIRED, "use NUM threads"},
+    {"verbose",  'v', VALUE_NONE,     ""},
 };
 
 static void help(void)
@@ -158,6 +159,9 @@ int main(int argc, char **argv)
             case 'n':
                 optimal(new_cube(), moves, &length);
                 return 0;
+            case 'v':
+                VERBOSE = 1;
+                break;
             default:
                 UNREACHABLE();
         }

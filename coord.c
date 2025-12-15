@@ -142,9 +142,7 @@ static void init_sym(struct coord *c)
         print_completion(i, c->sym.max);
     }
     clear_stderr();
-#ifdef DEBUG
     LOG("%s classes : %d\n", c->filename, class);
-#endif
     ASSERT(class == c->sym.classes);
 }
 
