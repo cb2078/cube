@@ -1,15 +1,12 @@
-static struct table *table_new(long long entries, int bits, char *name)
+static struct table *table_new(long long entries, int bits)
 {
     assert(bits==1 || bits==2 || bits==4 || bits==8);
     long long size = (entries*bits+7)/8;
     struct table *t = calloc(1, sizeof(struct table)+size);
-    if (!t)
-        ERROR("failed to allocate memory for '%s' table\n", name);
     t->bits = bits;
     t->size = size;
     t->mask = (1<<t->bits)-1;
     t->divisor = (int)sizeof(t->data[0])*8/t->bits;
-    t->name = name;
     return t;
 }
 

@@ -282,7 +282,7 @@ static void init_coord(struct coord *c)
     c->to_rep = malloc(sizeof(int)*c->sym.classes);
     c->to_class = malloc(sizeof(int)*c->sym.max);
     c->to_sym = malloc(sizeof(int)*c->sym.max);
-    c->table = table_new(c->max, 4, c->filename); // TODO remove table filename (since it isn't used)
+    c->table = table_new(c->max, 4);
     if (!NO_INPUT && (fp = fopen(c->filename, "rb")))
     {
         fread(c->to_rep, sizeof(int)*c->sym.classes, 1, fp);
