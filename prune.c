@@ -276,8 +276,7 @@ static void init_coord(struct coord *c)
     c->to_sym = malloc(sizeof(int)*c->sym.max);
     c->table = table_new(c->max, 4, c->filename);
 
-#if 1
-    if ((fp = fopen(c->filename, "rb")))
+    if (!NO_INPUT && (fp = fopen(c->filename, "rb")))
     {
         fread(c->to_rep, sizeof(int)*c->sym.classes, 1, fp);
         fread(c->to_class, sizeof(int)*c->sym.max, 1, fp);
@@ -286,7 +285,6 @@ static void init_coord(struct coord *c)
         LOG("read '%s'\n", c->filename);
     }
     else
-#endif
         if ((fp = fopen(c->filename, "wb")))
     {
         init_sym(c);

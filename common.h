@@ -33,6 +33,7 @@ static int VERBOSE = 0;
 #endif
 
 static int THREADS = 4;
+static int NO_INPUT = 0;
 
 static inline void debugbreak(void)
 {

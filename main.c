@@ -150,17 +150,17 @@ int main(int argc, char **argv)
             case 'h':
                 help();
                 return 0;
-            case 't':
-                THREADS = val;
+            case 'n':
+                NO_INPUT = 1;
                 break;
             case 'r':
                 length = val;
                 make_scramble(moves, length);
                 x = apply_moves(x, moves, length);
                 break;
-            case 'n':
-                optimal(new_cube(), moves, &length);
-                return 0;
+            case 't':
+                THREADS = val;
+                break;
             case 'v':
                 VERBOSE = 1;
                 break;
@@ -168,7 +168,11 @@ int main(int argc, char **argv)
                 UNREACHABLE();
         }
 
-    if (!length)
+    if (NO_INPUT)
+    {
+        init_coord(coord);
+    }
+    else if (!length)
     {
         char buf[256];
         while (fgets(buf, LENGTH(buf), stdin))
