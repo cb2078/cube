@@ -1,4 +1,4 @@
-#define COORD(NAME, MASK, SYM, SYM_MAX, SYM_CLASSES, BASIC, BASIC_MAX)\
+#define COORD(NAME, SYM, SYM_MAX, SYM_CLASSES, BASIC, BASIC_MAX)\
     \
     static long long get_##NAME(cube_t);\
     static cube_t set_##NAME(long long);\
@@ -11,8 +11,6 @@
         .set = set_##NAME,\
         .h = h_##NAME,\
         .h_optimal = h_##NAME##_optimal,\
-        .move_mask = MASK,\
-        .num_syms = 48,\
         .sym =\
         {\
             .get = get_##SYM,\
@@ -98,15 +96,14 @@ static cube_t set_partial_eo_esep(long long r)
     return set_eo_esep(r);
 }
 
-// TODO remove the move mask parameter in coordinate macro (since it's always 0)
-COORD(eo_none, 0,
+COORD(eo_none,
       csep, CSEP_MAX, 9,
       esep, ESEP_MAX);
 
-COORD(eo_partial, 0,
+COORD(eo_partial,
       csep, CSEP_MAX, 9,
       partial_eo_esep, PARTIAL_EO_ESEP_MAX);
 
-COORD(eo_full, 0,
+COORD(eo_full,
       csep, CSEP_MAX, 9,
       eo_esep, EO_ESEP_MAX);

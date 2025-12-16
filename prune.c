@@ -13,15 +13,12 @@ static void clear_stderr(void)
 
 static void init_sym(struct coord *c)
 {
-    if (!c->num_syms)
-        return;
-
     ASSERT(!c->self_syms);
     c->self_syms = malloc(sizeof(long long)*c->sym.max);
     for (long long i=0; i<c->sym.max; ++i)
     {
         cube_t x = c->sym.set(i);
-        for (int s=0; s<c->num_syms; ++s)
+        for (int s=0; s<NUM_SYMS; ++s)
         {
             cube_t y = apply_sym(x, s);
             int k = c->sym.get(y);
@@ -38,7 +35,7 @@ static void init_sym(struct coord *c)
         if (c->to_class[i] != -1)
             continue;
         cube_t x = c->sym.set(i);
-        for (int s=0; s<c->num_syms; ++s)
+        for (int s=0; s<NUM_SYMS; ++s)
         {
             cube_t y = apply_sym(x, s);
             int k = c->sym.get(y);
@@ -86,9 +83,7 @@ static int init_prune_table_bfs(void *varg)
                 if (!arg->backsearch && table_get(arg->c->table, j) == arg->c->table->mask)
                 {
                     table_set(arg->c->table, j, arg->depth);
-                    if (!arg->c->num_syms)
-                        continue;
-                    for (int s=1; s<arg->c->num_syms; ++s)
+                    for (int s=1; s<NUM_SYMS; ++s)
                     {
                         if (~arg->c->self_syms[arg->c->sym.get(x)]>>s&1)
                             continue;

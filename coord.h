@@ -5,6 +5,8 @@
 #include "table.h"
 #include "util.h"
 
+#define NUM_SYMS 48
+
 #define CO_MAX pow3[7]
 #define CSEP_MAX choose[8][4]
 #define EO_MAX pow2[11]
@@ -23,9 +25,7 @@ struct coord
     int (*h)(cube_t);
     int (*h_optimal)(cube_t);
     long long max;
-    unsigned move_mask;
     // symmetric composite coordinates
-    int num_syms; // TODO make this a macro constant (since its always 48)
     struct
     {
         long long (*get)(cube_t);
