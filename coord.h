@@ -43,6 +43,5 @@ struct coord
 };
 
 static struct coord coord_optimal;
-static void init_coord(struct coord *c);
 
 #endif
