@@ -34,6 +34,8 @@ struct arg
 
 static struct arg args[] =
 {
+    // TODO documentation about default values
+    {"eo",       'e', VALUE_REQUIRED, "edge orientation variant"},
     {"help",     'h', VALUE_NONE,     "print this help message and exit"},
     {"no-input", 'n', VALUE_NONE,     "ignore input"},
     {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
@@ -70,6 +72,7 @@ int main(int argc, char **argv)
 {
     srand(time(0));
 
+    struct coord *coord = &coord_eo_partial;
     int moves[256], length=0;
     int threads;
     cube_t x = new_cube();
@@ -92,7 +95,9 @@ int main(int argc, char **argv)
         char *end;
         if (!strlen(argv[i]+j))
             missing_arg_value();
-        if (!(val=strtoul(argv[i]+j, &end, 10)) || end-argv[i] != (long long)strlen(argv[i]))
+        if (((!(val=strtoul(argv[i]+j, &end, 10)) &&
+              strcmp(argv[i]+j, "0")) ||
+             end-argv[i] != (long long)strlen(argv[i])))
             ERROR("invalid arg value '%s'\n", argv[i]+j);
         j = strlen(argv[i]);
     }
@@ -147,6 +152,17 @@ int main(int argc, char **argv)
     for (char c; (c=get_arg());)
         switch (c)
         {
+            case 'e':
+                if (val == 0)
+                    coord = &coord_eo_none;
+                else if (val < 11)
+                    coord = &coord_eo_partial;
+                else if (val == 11)
+                    coord = &coord_eo_full;
+                else
+                    ERROR("invalid EO variant '%d'\n", val);
+                EO_VARIANT = val;
+                break;
             case 'h':
                 help();
                 return 0;
@@ -179,13 +195,13 @@ int main(int argc, char **argv)
         {
             read_moves(buf, moves, &length);
             x = apply_moves(new_cube(), moves, length);
-            optimal(x, moves, &length);
+            optimal(coord, x, moves, &length);
             print_moves(moves, length), putchar('\n');
         }
     }
     else
     {
-        optimal(x, moves, &length);
+        optimal(coord, x, moves, &length);
         print_moves(moves, length), putchar('\n');
     }
 

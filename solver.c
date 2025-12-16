@@ -104,13 +104,9 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
     ASSERT(count == QUEUE_LENGTH);
 }
 
-static int h_optimal(cube_t x)
-{
-    return h_partial_eo(x) ?: !cube_eq(x, new_cube());
-}
-
 struct search_arg
 {
+    int (*h)(cube_t);
     int thread_id;
     struct queue_node *queue;
     int path[20];
@@ -123,7 +119,7 @@ static int search_thread(void *__arg)
 {
     struct search_arg *arg = __arg;
     for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=THREADS)
-        if (!search(arg->queue[i].cube, arg->path, h_optimal, arg->depth))
+        if (!search(arg->queue[i].cube, arg->path, arg->h, arg->depth))
         {
             atomic_store(arg->done, 1);
             return i;
@@ -131,14 +127,14 @@ static int search_thread(void *__arg)
     return -1;
 }
 
-static void optimal(cube_t x, int *path, int *length)
+static void optimal(struct coord *c, cube_t x, int *path, int *length)
 {
-    init_coord(&coord_partial_eo);
+    init_coord(c);
 
     *length = 0;
     while (*length < QUEUE_DEPTH)
     {
-        int diff = search(x, path, h_optimal, *length);
+        int diff = search(x, path, c->h_optimal, *length);
         if (!diff) return;
         *length += diff;
     }
@@ -154,6 +150,7 @@ static void optimal(cube_t x, int *path, int *length)
         struct search_arg args[THREADS];
         for (int t=0; t<THREADS; ++t)
         {
+            args[t].h = c->h_optimal;
             args[t].thread_id = t;
             args[t].queue = queue;
             args[t].depth = *length-QUEUE_DEPTH;

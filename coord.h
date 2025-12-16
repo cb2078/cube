@@ -11,16 +11,21 @@
 #define ESEP_MAX (choose[12][4]*choose[8][4])
 #define PARTIAL_EO_MAX pow2[EO_VARIANT]
 
+#define CO_CSCP_MAX (CO_MAX*CSEP_MAX)
+#define EO_ESEP_MAX (EO_MAX*ESEP_MAX)
+#define PARTIAL_EO_ESEP_MAX (PARTIAL_EO_MAX*ESEP_MAX)
+
 struct coord
 {
-    char *filename;
+    char filename[256];
     long long (*get)(cube_t);
     cube_t (*set)(long long);
     int (*h)(cube_t);
+    int (*h_optimal)(cube_t);
     long long max;
     unsigned move_mask;
     // symmetric composite coordinates
-    int num_syms;
+    int num_syms; // TODO make this a macro constant (since its always 48)
     struct
     {
         long long (*get)(cube_t);
@@ -42,6 +47,10 @@ struct coord
     long long *self_syms;
 };
 
-static struct coord coord_partial_eo;
+static struct coord coord_eo_none;
+static struct coord coord_eo_partial;
+static struct coord coord_eo_full;
+
+static int EO_VARIANT = 1;
 
 #endif

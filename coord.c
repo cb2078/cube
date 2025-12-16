@@ -3,14 +3,14 @@
     static long long get_##NAME(cube_t);\
     static cube_t set_##NAME(long long);\
     static int h_##NAME(cube_t);\
+    static int h_##NAME##_optimal(cube_t);\
     \
     static struct coord coord_##NAME =\
     {\
-        .filename = #NAME".bin",\
         .get = get_##NAME,\
         .set = set_##NAME,\
         .h = h_##NAME,\
-        .max = (SYM_CLASSES)*(BASIC_MAX),\
+        .h_optimal = h_##NAME##_optimal,\
         .move_mask = MASK,\
         .num_syms = 48,\
         .sym =\
@@ -24,7 +24,6 @@
         {\
             .get = get_##BASIC,\
             .set = set_##BASIC,\
-            .max = BASIC_MAX,\
         },\
     };\
     \
@@ -41,6 +40,11 @@
     static int h_##NAME(cube_t x)\
     {\
         return table_get(coord_##NAME.table, get_##NAME(x));\
+    }\
+    \
+    static int h_##NAME##_optimal(cube_t x)\
+    {\
+        return h_##NAME(x) ?: !cube_eq(x, new_cube());\
     }
 
 static long long get_sym_comp(cube_t x, struct coord *c)
@@ -74,7 +78,7 @@ static cube_t set_co_csep(long long r)
 
 static long long get_eo_esep(cube_t x)
 {
-    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
+    return get_eo(x) * ESEP_MAX + get_esep(x);
 }
 
 static cube_t set_eo_esep(long long r)
@@ -84,7 +88,25 @@ static cube_t set_eo_esep(long long r)
     return compose(x, y);
 }
 
-COORD(partial_eo, 0,
+static long long get_partial_eo_esep(cube_t x)
+{
+    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
+}
+
+static cube_t set_partial_eo_esep(long long r)
+{
+    return set_eo_esep(r);
+}
+
+// TODO remove the move mask parameter in coordinate macro (since it's always 0)
+COORD(eo_none, 0,
       csep, CSEP_MAX, 9,
-      // co_csep, CO_MAX*CSEP_MAX, 3393,
-      eo_esep, PARTIAL_EO_MAX*ESEP_MAX);
+      esep, ESEP_MAX);
+
+COORD(eo_partial, 0,
+      csep, CSEP_MAX, 9,
+      partial_eo_esep, PARTIAL_EO_ESEP_MAX);
+
+COORD(eo_full, 0,
+      csep, CSEP_MAX, 9,
+      eo_esep, EO_ESEP_MAX);

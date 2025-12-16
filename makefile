@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -march=native -DEO_VARIANT=1
+CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -march=native
 MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
 EXE := main test
 DEP := $(EXE:%=%.d)
