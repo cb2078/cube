@@ -3,6 +3,7 @@
 
 #include "coord.h"
 
-static void init_coord(struct coord *c);
+static void init_sym(struct coord *c);
+static void init_prune_table(struct coord *c);
 
 #endif
