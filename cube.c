@@ -57,7 +57,7 @@ static cube_t compose(cube_t x, cube_t y)
     return r;
 }
 
-static long long get_flip(cube_t x)
+static long long get_eo(cube_t x)
 {
     long long r;
     x = _mm256_and_si256(x, ORIENT_MASK);
@@ -69,7 +69,7 @@ static long long get_flip(cube_t x)
     return r;
 }
 
-static cube_t set_flip(long long r)
+static cube_t set_eo(long long r)
 {
     unsigned long long l, h;
     r = r | ((_mm_popcnt_u64(r)&1)<<11);
@@ -78,7 +78,7 @@ static cube_t set_flip(long long r)
     return MERGE_EDGES(h, l);
 }
 
-static long long get_twist(cube_t x)
+static long long get_co(cube_t x)
 {
     long long r;
     __m128i c, y, z;
@@ -99,7 +99,7 @@ static long long get_twist(cube_t x)
     return r;
 }
 
-static cube_t set_twist(long long r)
+static cube_t set_co(long long r)
 {
     unsigned long long b = 0;
     for (int i=0, p=0; i<8; ++i, p+=r%3, r/=3)
@@ -107,7 +107,7 @@ static cube_t set_twist(long long r)
     return MERGE_CORNERS(b);
 }
 
-static long long get_corner_sep(cube_t x)
+static long long get_csep(cube_t x)
 {
     unsigned char b;
     x = _mm256_slli_epi32(x, 5);
@@ -115,7 +115,7 @@ static long long get_corner_sep(cube_t x)
     return rank_8C4[b];
 };
 
-static cube_t set_corner_sep(long long r)
+static cube_t set_csep(long long r)
 {
     unsigned long long a, b, m;
     a = unrank_8C4[r];
@@ -124,7 +124,7 @@ static cube_t set_corner_sep(long long r)
     return SET_CORNERS(b);
 }
 
-static long long get_edge_sep(cube_t x)
+static long long get_esep(cube_t x)
 {
     unsigned e, s;
     // mask of positions of the E-slice edges
@@ -140,7 +140,7 @@ static long long get_edge_sep(cube_t x)
     return rank_12C4[e] * 70 + rank_8C4[s];
 }
 
-static cube_t set_edge_sep(long long r)
+static cube_t set_esep(long long r)
 {
     unsigned long long b, l, h;
     unsigned short e, s, m;
@@ -203,9 +203,9 @@ static cube_t inverse(cube_t x)
 }
 
 // TODO use mirred compose instead of this (once the tests pass)
-static cube_t invert_twist(cube_t x)
+static cube_t invert_co(cube_t x)
 {
-    // twist = (carry-twist)%carry
+    // co = (carry-co)%carry
     __m256i o, y;
     o = _mm256_and_si256(x, ORIENT_MASK);
     x = _mm256_and_si256(x, PERMUTE_MASK);
@@ -239,7 +239,7 @@ static cube_t apply_sym(cube_t x, int sym)
 
     cube_t maybe_invert_co(cube_t x)
     {
-        return sym&1 ? invert_twist(x) : x;
+        return sym&1 ? invert_co(x) : x;
     }
 
     return compose_3(get_sym_cube(inv_sym[sym]), maybe_invert_co(x), maybe_invert_co(get_sym_cube(sym)));

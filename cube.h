@@ -37,16 +37,16 @@ static cube_t apply_sym(cube_t, int);
 static cube_t apply_move(cube_t, int);
 static cube_t apply_moves(cube_t, int *, int);
 
-static long long get_flip(cube_t);
-static cube_t set_flip(long long);
-static long long get_twist(cube_t);
-static cube_t set_twist(long long);
-static long long get_corner_sep(cube_t);
-static cube_t set_corner_sep(long long);
-static long long get_edge_sep(cube_t);
-static cube_t set_edge_sep(long long);
+static long long get_eo(cube_t);
+static cube_t set_eo(long long);
+static long long get_co(cube_t);
+static cube_t set_co(long long);
+static long long get_csep(cube_t);
+static cube_t set_csep(long long);
+static long long get_esep(cube_t);
+static cube_t set_esep(long long);
 
 static cube_t inverse(cube_t);
-static cube_t invert_twist(cube_t);
+static cube_t invert_co(cube_t);
 
 #endif

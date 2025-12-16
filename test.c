@@ -52,45 +52,45 @@ int main(void)
         }
     }
 
-    TEST("flip")
+    TEST("eo")
     {
         long long n=pow2[11];
         for (long long i=0; i<n; ++i)
-            CHECK(i, get_flip(set_flip(i)));
+            CHECK(i, get_eo(set_eo(i)));
     }
 
-    TEST("twist")
+    TEST("co")
     {
         long long n=pow3[7];
         for (long long i=0; i<n; ++i)
-            CHECK(i, get_twist(set_twist(i)));
+            CHECK(i, get_co(set_co(i)));
     }
 
 
-    TEST("corner sep")
+    TEST("csep")
     {
         long long n=choose[8][4];
         for (long long i=0; i<n; ++i)
-            CHECK(i, get_corner_sep(set_corner_sep(i)));
+            CHECK(i, get_csep(set_csep(i)));
     }
 
-    TEST("edge sep")
+    TEST("esep")
     {
         long long n=choose[12][4]*choose[8][4];
         for (long long i=0; i<n; ++i)
-            CHECK(i, get_edge_sep(set_edge_sep(i)));
+            CHECK(i, get_esep(set_esep(i)));
     }
 
-    TEST("invert twist")
+    TEST("invert co")
     {
         for (int i=0; i<10; ++i)
         {
             int moves[256], length=100;
             make_scramble(moves, length);
             cube_t x = apply_moves(new_cube(), moves, length);
-            cube_t y = set_twist(get_twist(invert_twist(x)));
+            cube_t y = set_co(get_co(invert_co(x)));
             cube_t z = compose(x, y);
-            CHECK(get_twist(z), 0);
+            CHECK(get_co(z), 0);
         }
     }
 

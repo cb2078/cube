@@ -60,31 +60,31 @@ static cube_t set_sym_comp(long long r, struct coord *c)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static long long get_twist_corner_sep(cube_t x)
+static long long get_co_csep(cube_t x)
 {
-    return get_twist(x) * CORNER_SEP_MAX + get_corner_sep(x);
+    return get_co(x) * CSEP_MAX + get_csep(x);
 }
 
-static cube_t set_twist_corner_sep(long long r)
+static cube_t set_co_csep(long long r)
 {
-    cube_t x = set_corner_sep(r%CORNER_SEP_MAX);
-    cube_t y = set_twist(r/CORNER_SEP_MAX);
+    cube_t x = set_csep(r%CSEP_MAX);
+    cube_t y = set_co(r/CSEP_MAX);
     return compose(x, y);
 }
 
-static long long get_flip_edge_sep(cube_t x)
+static long long get_eo_esep(cube_t x)
 {
-    return (get_flip(x) & (PARTIAL_FLIP_MAX-1)) * EDGE_SEP_MAX + get_edge_sep(x);
+    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_flip_edge_sep(long long r)
+static cube_t set_eo_esep(long long r)
 {
-    cube_t x = set_edge_sep(r%EDGE_SEP_MAX);
-    cube_t y = set_flip(r/EDGE_SEP_MAX);
+    cube_t x = set_esep(r%ESEP_MAX);
+    cube_t y = set_eo(r/ESEP_MAX);
     return compose(x, y);
 }
 
-COORD(optimal, 0,
-      corner_sep, CORNER_SEP_MAX, 9,
-      // twist_corner_sep, TWIST_MAX*CORNER_SEP_MAX, 3393,
-      flip_edge_sep, PARTIAL_FLIP_MAX*EDGE_SEP_MAX);
+COORD(partial_eo, 0,
+      csep, CSEP_MAX, 9,
+      // co_csep, CO_MAX*CSEP_MAX, 3393,
+      eo_esep, PARTIAL_EO_MAX*ESEP_MAX);

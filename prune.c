@@ -143,7 +143,7 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     }
 }
 
-// NOTE this does not give the distance for very few cubes (for partial flip
+// NOTE this does not give the distance for very few cubes (for partial eo
 // coordinates). I believe this is because the full EO coordinate may be
 // different in the current cube and the one where the pruning value is stored.
 //
@@ -187,7 +187,7 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
     int h(cube_t x)
     {
         int r = table_get(c->table, c->get(x));
-        return r == c->table->mask ? max_depth : r ?: get_flip(x)>0;
+        return r == c->table->mask ? max_depth : r ?: get_eo(x)>0;
     }
 
     int dlA(cube_t x)
@@ -221,13 +221,13 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
     }
 
     for (long long i=0; i<c->max; i++)
-        for (int j=0; j<FLIP_MAX; j+=PARTIAL_FLIP_MAX)
+        for (int j=0; j<EO_MAX; j+=PARTIAL_EO_MAX)
         {
             if (table_get(c->table, i) != c->table->mask)
                 break;
             if (!j && i%(c->max/100)==0)
                 printf("%lld%%\n", i/(c->max/100));
-            if (!dlA(compose(c->set(i), set_flip(j))))
+            if (!dlA(compose(c->set(i), set_eo(j))))
                 table_set(c->table, i, max_depth);
         }
     return 0;
@@ -241,7 +241,7 @@ static void init_prune_table(struct coord *c)
     {
         int backsearch = c->table->count>c->max/2;
         long long m = c->table->count;
-#if FLIP_VARIANT==0 || FLIP_VARIANT==11
+#if EO_VARIANT==0 || EO_VARIANT==11
         init_prune_table_parallel(c, depth, backsearch);
 #else
         if (backsearch)
@@ -304,4 +304,3 @@ static void init_coord(struct coord *c)
     fclose(fp);
     initialised = 1;
 }
-

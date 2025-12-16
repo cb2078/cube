@@ -5,11 +5,11 @@
 #include "table.h"
 #include "util.h"
 
-#define TWIST_MAX pow3[7]
-#define CORNER_SEP_MAX choose[8][4]
-#define FLIP_MAX pow2[11]
-#define EDGE_SEP_MAX (choose[12][4]*choose[8][4])
-#define PARTIAL_FLIP_MAX pow2[FLIP_VARIANT]
+#define CO_MAX pow3[7]
+#define CSEP_MAX choose[8][4]
+#define EO_MAX pow2[11]
+#define ESEP_MAX (choose[12][4]*choose[8][4])
+#define PARTIAL_EO_MAX pow2[EO_VARIANT]
 
 struct coord
 {
@@ -42,6 +42,6 @@ struct coord
     long long *self_syms;
 };
 
-static struct coord coord_optimal;
+static struct coord coord_partial_eo;
 
 #endif
