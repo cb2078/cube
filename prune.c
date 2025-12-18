@@ -11,43 +11,43 @@ static void clear_stderr(void)
     fprintf(stderr, "\r");
 }
 
-static void init_sym(struct coord *c)
+static void init_sym(struct sym_coord *c)
 {
     ASSERT(!c->self_syms);
-    c->self_syms = malloc(sizeof(long long)*c->sym.max);
-    for (long long i=0; i<c->sym.max; ++i)
+    c->self_syms = malloc(sizeof(long long)*c->max);
+    for (long long i=0; i<c->max; ++i)
     {
-        cube_t x = c->sym.set(i);
+        cube_t x = c->set(i);
         for (int s=0; s<NUM_SYMS; ++s)
         {
             cube_t y = apply_sym(x, s);
-            int k = c->sym.get(y);
+            int k = c->get(y);
             c->self_syms[i] |= (long long)(i==k)<<s;
         }
-        print_completion(i, c->sym.max);
+        print_completion(i, c->max);
     }
     clear_stderr();
 
     int class = 0;
-    memset(c->to_class, 0xff, sizeof(c->to_class[0])*c->sym.max);
-    for (long long i=0; i<c->sym.max; ++i)
+    memset(c->to_class, 0xff, sizeof(c->to_class[0])*c->max);
+    for (long long i=0; i<c->max; ++i)
     {
         if (c->to_class[i] != -1)
             continue;
-        cube_t x = c->sym.set(i);
+        cube_t x = c->set(i);
         for (int s=0; s<NUM_SYMS; ++s)
         {
             cube_t y = apply_sym(x, s);
-            int k = c->sym.get(y);
+            int k = c->get(y);
             c->to_class[k] = class;
             c->to_sym[k] = inv_sym[s];
         }
         c->to_rep[class++] = i;
-        print_completion(i, c->sym.max);
+        print_completion(i, c->max);
     }
     clear_stderr();
-    LOG("%s classes : %d\n", c->filename, class);
-    ASSERT(class == c->sym.classes);
+    LOG("%s classes : %d\n", c->name, class);
+    ASSERT(class == c->classes);
 }
 
 struct init_prune_table_bfs_arg
@@ -78,14 +78,14 @@ static int init_prune_table_bfs(void *varg)
                     table_set_atomic(arg->c->table, i, arg->depth);
                     break;
                 }
-                int class = j/arg->c->raw.max;
+                int class = j/arg->c->raw->max;
                 mtx_lock(&arg->mutexes[class]);
                 if (!arg->backsearch && table_get(arg->c->table, j) == arg->c->table->mask)
                 {
                     table_set(arg->c->table, j, arg->depth);
                     for (int s=1; s<NUM_SYMS; ++s)
                     {
-                        if (~arg->c->self_syms[arg->c->sym.get(x)]>>s&1)
+                        if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
                             continue;
                         cube_t y = apply_sym(x, s);
                         long long k = arg->c->get(y);
@@ -109,8 +109,8 @@ static int init_prune_table_bfs(void *varg)
 
 static void init_prune_table_parallel(struct coord *c, int depth, int backsearch)
 {
-    mtx_t mutexes[c->sym.classes];
-    for (int i=0; i<c->sym.classes; ++i)
+    mtx_t mutexes[c->sym->classes];
+    for (int i=0; i<c->sym->classes; ++i)
     {
         mtx_init(&mutexes[i], mtx_plain);
     }
@@ -124,8 +124,6 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
         args[i].c = c;
         args[i].depth = depth;
         args[i].backsearch = backsearch;
-        // TODO would it be faster to for threads to start at 0, 1, 2, ... and
-        // increment by the number of threads?
         args[i].start = i*c->max/THREADS;
         args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
         thrd_create(&threads[i], init_prune_table_bfs, &args[i]);
@@ -134,19 +132,46 @@ static void init_prune_table_parallel(struct coord *c, int depth, int backsearch
     {
         thrd_join(threads[i], NULL);
     }
-    for (int i=0; i<c->sym.classes; ++i)
+    for (int i=0; i<c->sym->classes; ++i)
     {
         mtx_destroy(&mutexes[i]);
     }
 }
 
-// NOTE this does not give the distance for very few cubes (for partial eo
-// coordinates). I believe this is because the full EO coordinate may be
-// different in the current cube and the one where the pruning value is stored.
-//
-// Since this affects such a small amount of nodes, it doesn't make much of a
-// difference when solving.
-static int init_prune_table_dfs_forward(struct coord *c, int max_depth)
+static int init_prune_map(struct coord *c, int max_depth, struct map *map)
+{
+    int t = map->count*1000/MAP_CAPACITY;
+    for (long long i=0; i<MAP_CAPACITY; ++i)
+    {
+        if (map->data[i].val == max_depth-1)
+        {
+            for (int m=0; m<18; ++m)
+            {
+                cube_t x = apply_move(c->set(map->data[i].key), m);
+                long long j = c->get(x);
+                if (map_get(map, j) == MAP_VAL_MAX)
+                    for (int s=0; s<NUM_SYMS; ++s)
+                    {
+                        if (~c->sym->self_syms[c->sym->get(x)]>>s&1)
+                            continue;
+                        cube_t y = apply_sym(x, s);
+                        long long k = c->get(y);
+                        if (map_get(map, k) == MAP_VAL_MAX)
+                            map_set(map, k, max_depth);
+                    }
+            }
+        }
+        if (map->count*1000/MAP_CAPACITY > t)
+        {
+            fprintf(stderr, "\rdepth=%d load=%.1f%% mem=%.1fMB",
+                    max_depth, (double)map->count/MAP_CAPACITY*100, (double)map->count*8/1e6);
+            t++;
+        }
+    }
+    return 0;
+}
+
+static int init_prune_table_dfs_forward(struct coord *c, int max_depth, struct map *map)
 {
     struct search_node
     {
@@ -162,7 +187,7 @@ static int init_prune_table_dfs_forward(struct coord *c, int max_depth)
     {
         if (depth>max_depth)
             return;
-        if (table_get(c->table, c->get(x)) < depth)
+        if (map_get(map, c->get(x)) < depth)
             return;
         if (table_get(c->table, c->get(x)) == c->table->mask)
             table_set(c->table, c->get(x), depth);
@@ -232,22 +257,44 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
 
 static void init_prune_table(struct coord *c)
 {
+    struct map *map = 0;
+    if (EO_PARTIAL)
+    {
+        map = map_new();
+        map_set(map, c->get(new_cube()), 0);
+        for (int depth=1; map->count<coord_eo_full.max && depth<9; ++depth)
+        {
+            long long m = map->count;
+            init_prune_map(&coord_eo_full, depth, map);
+            clear_stderr();
+        }
+    }
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
     {
         int backsearch = c->table->count>c->max/2;
         long long m = c->table->count;
-        if (EO_VARIANT == 0 || EO_VARIANT == 11)
+        if (!EO_PARTIAL)
         {
             init_prune_table_parallel(c, depth, backsearch);
         }
         else
         {
-            if (backsearch)
+            if (depth<9)
+            {
+                for (int i=0; i<MAP_CAPACITY; ++i)
+                    if (map->data[i].val == depth)
+                    {
+                        long long j = c->get(coord_eo_full.set(map->data[i].key));
+                        if (table_get(c->table, j) == c->table->mask)
+                            table_set(c->table, j, depth);
+                    }
+            }
+            else if (backsearch)
                 init_prune_table_dfs_backward(c, depth);
             else
-                init_prune_table_dfs_forward(c, depth);
+                init_prune_table_dfs_forward(c, depth, map);
         }
         clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);

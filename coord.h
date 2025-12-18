@@ -13,39 +13,46 @@
 #define ESEP_MAX (choose[12][4]*choose[8][4])
 #define PARTIAL_EO_MAX pow2[EO_VARIANT]
 
-#define CO_CSCP_MAX (CO_MAX*CSEP_MAX)
+#define CO_CSEP_MAX (CO_MAX*CSEP_MAX)
 #define EO_ESEP_MAX (EO_MAX*ESEP_MAX)
 #define PARTIAL_EO_ESEP_MAX (PARTIAL_EO_MAX*ESEP_MAX)
 
-struct coord
+struct raw_coord
 {
-    char filename[256];
+    char *name;
     long long (*get)(cube_t);
     cube_t (*set)(long long);
-    int (*h)(cube_t);
-    int (*h_optimal)(cube_t);
     long long max;
-    // symmetric composite coordinates
-    struct
-    {
-        long long (*get)(cube_t);
-        cube_t (*set)(long long);
-        long long max;
-        long long classes;
-    } sym;
-    struct
-    {
-        long long (*get)(cube_t);
-        cube_t (*set)(long long);
-        long long max;
-    } raw;
-    // data
-    struct table *table;
+};
+
+struct sym_coord
+{
+    char *name;
+    long long (*get)(cube_t);
+    cube_t (*set)(long long);
+    long long max;
+    long long classes;
+    // TODO merge these into a single array
     int *to_rep;
     int *to_class;
     int *to_sym;
     long long *self_syms;
 };
+
+struct coord
+{
+    char *name;
+    long long (*get)(cube_t);
+    cube_t (*set)(long long);
+    long long max;
+    int (*h)(cube_t);
+    int (*h_optimal)(cube_t);
+    struct raw_coord *raw;
+    struct sym_coord *sym;
+    struct table *table;
+};
+
+static struct sym_coord sym_co_csep;
 
 static struct coord coord_eo_none;
 static struct coord coord_eo_partial;
@@ -54,5 +61,6 @@ static struct coord coord_eo_full;
 static void init_coord(struct coord *c);
 
 static int EO_VARIANT = 1;
+#define EO_PARTIAL (EO_VARIANT>0 && EO_VARIANT<11)
 
 #endif
