@@ -62,13 +62,6 @@ struct queue_node
 
 static void build_search_queue(struct queue_node *queue, cube_t x)
 {
-    struct search_node
-    {
-        cube_t cube;
-        int move;
-        int depth;
-    };
-
     struct search_node stack[STACK_LENGTH];
     struct search_node *top = stack;
     int count = 0;

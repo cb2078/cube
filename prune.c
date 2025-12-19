@@ -134,14 +134,6 @@ static int init_prune_table_dfs_forward(void *varg)
 
     void dfs(cube_t x)
     {
-        // TODO move this into a header
-        struct search_node
-        {
-            cube_t cube;
-            int move;
-            int depth;
-        };
-
         struct search_node stack[256];
         struct search_node *top = stack;
 
@@ -200,13 +192,6 @@ static int init_prune_table_dfs_backward(void *varg)
 
     int dlA(cube_t x)
     {
-        struct search_node
-        {
-            cube_t cube;
-            int move;
-            int depth;
-        };
-
         struct search_node stack[256];
         struct search_node *top = stack;
 
