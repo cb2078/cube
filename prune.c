@@ -213,12 +213,27 @@ static int init_prune_table_dfs_forward(void *varg)
     return 0;
 }
 
-static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
+struct init_prune_table_dfs_backward_arg
 {
+    mtx_t *mutexes;
+    int thread_id;
+    int t;
+    struct coord *c;
+    int depth;
+    int backsearch;
+    long long start;
+    long long end;
+};
+
+static int init_prune_table_dfs_backward(void *varg)
+{
+    struct init_prune_table_dfs_forward_arg *arg = varg;
+
     int h(cube_t x)
     {
-        int r = table_get(c->table, c->get(x));
-        return r == c->table->mask ? max_depth : r ?: get_eo(x)>0;
+        int r = table_get_atomic(arg->c->table, arg->c->get(x));
+        // TODO use the map here?
+        return r == arg->c->table->mask ? arg->depth : r ?: get_eo(x)>0;
     }
 
     int dlA(cube_t x)
@@ -235,7 +250,7 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
 
         void push(cube_t x, int move, int depth)
         {
-            if (h(x)+depth <= max_depth)
+            if (h(x)+depth <= arg->depth)
                 *top++ = (struct search_node){x, move, depth};
         }
 
@@ -251,15 +266,22 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
         return 1;
     }
 
-    for (long long i=0; i<c->max; i++)
+    for (long long i=arg->start; i<arg->end; ++i)
         for (int j=0; j<EO_MAX; j+=PARTIAL_EO_MAX)
         {
-            if (table_get(c->table, i) != c->table->mask)
+            if (table_get_atomic(arg->c->table, i) != arg->c->table->mask)
                 break;
-            if (!j && i%(c->max/100)==0)
-                printf("%lld%%\n", i/(c->max/100));
-            if (!dlA(compose(c->set(i), set_eo(j))))
-                table_set(c->table, i, max_depth);
+            // TODO maybe do this in the main thread?
+            // TODO (if possible) include 'i' in status print
+            if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
+            {
+                // TODO remove this function and do everything in one 'print'
+                print_completion(arg->c->table->count, arg->c->max);
+                fprintf(stderr, " depth=%d (backsearch)", arg->depth);
+                arg->t++;
+            }
+            if (!dlA(compose(arg->c->set(i), set_eo(j))))
+                table_set_atomic(arg->c->table, i, arg->depth);
         }
     return 0;
 }
@@ -298,7 +320,7 @@ static void init_prune_table(struct coord *c)
             {
                 args[i].mutexes = mutexes;
                 args[i].thread_id = i;
-                args[i].t = 0;
+                args[i].t = c->table->count*10000/c->max;
                 args[i].c = c;
                 args[i].depth = depth;
                 args[i].backsearch = backsearch;
@@ -323,7 +345,21 @@ static void init_prune_table(struct coord *c)
         }
         else if (backsearch)
         {
-            init_prune_table_dfs_backward(c, depth);
+            struct init_prune_table_bfs_arg args[THREADS];
+            for (int i=0; i<THREADS; ++i)
+            {
+                args[i].mutexes = mutexes;
+                args[i].thread_id = i;
+                args[i].t = c->table->count*10000/c->max;
+                args[i].c = c;
+                args[i].depth = depth;
+                args[i].backsearch = backsearch;
+                args[i].start = i*c->max/THREADS;
+                args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
+                thrd_create(&threads[i], init_prune_table_dfs_backward, &args[i]);
+            }
+            for (int i=0; i<THREADS; ++i)
+                thrd_join(threads[i], NULL);
         }
         else
         {
