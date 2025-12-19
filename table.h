@@ -12,7 +12,6 @@ struct table
 };
 
 static struct table *table_new(long long size, int bits);
-static void table_destroy(struct table *t);
 
 static int table_get(struct table *t, long long i);
 static void table_set(struct table *t, long long i, int x);

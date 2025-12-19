@@ -253,8 +253,6 @@ static void init_prune_table(struct coord *c)
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
-    // TODO do this in `table_new`
-    memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
     {

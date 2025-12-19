@@ -1,18 +1,15 @@
 static struct table *table_new(long long entries, int bits)
 {
-    assert(bits==1 || bits==2 || bits==4 || bits==8);
+    ASSERT(bits==1 || bits==2 || bits==4 || bits==8);
     long long size = (entries*bits+7)/8;
-    struct table *t = calloc(1, sizeof(struct table)+size);
+    struct table *t = malloc(sizeof(struct table)+size);
+    t->count = 0;
     t->bits = bits;
     t->size = size;
     t->mask = (1<<t->bits)-1;
     t->divisor = (int)sizeof(t->data[0])*8/t->bits;
+    memset(t->data, 0xff, size);
     return t;
-}
-
-static void table_destroy(struct table *t)
-{
-    free(t);
 }
 
 static int table_get(struct table *t, long long i)
