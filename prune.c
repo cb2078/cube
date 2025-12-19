@@ -107,6 +107,8 @@ static int init_prune_map(struct coord *c, int max_depth, struct map *map)
                 cube_t x = apply_move(c->set(map->data[i].key), m);
                 long long j = c->get(x);
                 if (map_get(map, j) == MAP_VAL_MAX)
+                {
+                    map_set(map, j, max_depth);
                     for (int s=0; s<NUM_SYMS; ++s)
                     {
                         if (~c->sym->self_syms[c->sym->get(x)]>>s&1)
@@ -116,6 +118,7 @@ static int init_prune_map(struct coord *c, int max_depth, struct map *map)
                         if (map_get(map, k) == MAP_VAL_MAX)
                             map_set(map, k, max_depth);
                     }
+                }
             }
         }
         if (map->count*1000/MAP_CAPACITY > t)
@@ -143,7 +146,6 @@ static int init_prune_table_dfs_forward(void *varg)
                 return;
             if (depth > map_get(arg->map, coord_eo_full.get(x)))
                 return;
-            // TODO move this to a function
             int class = arg->c->get(x)/arg->c->raw->max;
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
@@ -185,9 +187,10 @@ static int init_prune_table_dfs_backward(void *varg)
 
     int h(cube_t x)
     {
-        int r = table_get_atomic(arg->c->table, arg->c->get(x));
-        // TODO use the map here?
-        return r == arg->c->table->mask ? arg->depth : r ?: get_eo(x)>0;
+        int y = table_get_atomic(arg->c->table, arg->c->get(x));
+        int z = map_get(arg->map, coord_eo_full.get(x));
+        return MAX(y == arg->c->table->mask ? arg->depth : y,
+                   z == MAP_VAL_MAX ? get_eo(x)>0 : z);
     }
 
     int dlA(cube_t x)
