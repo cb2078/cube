@@ -107,37 +107,6 @@ static int init_prune_table_bfs(void *varg)
     return 0;
 }
 
-static void init_prune_table_parallel(struct coord *c, int depth, int backsearch)
-{
-    mtx_t mutexes[c->sym->classes];
-    for (int i=0; i<c->sym->classes; ++i)
-    {
-        mtx_init(&mutexes[i], mtx_plain);
-    }
-    thrd_t threads[THREADS];
-    struct init_prune_table_bfs_arg args[THREADS];
-    for (int i=0; i<THREADS; ++i)
-    {
-        args[i].mutexes = mutexes;
-        args[i].thread_id = i;
-        args[i].t = 0;
-        args[i].c = c;
-        args[i].depth = depth;
-        args[i].backsearch = backsearch;
-        args[i].start = i*c->max/THREADS;
-        args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
-        thrd_create(&threads[i], init_prune_table_bfs, &args[i]);
-    }
-    for (int i=0; i<THREADS; ++i)
-    {
-        thrd_join(threads[i], NULL);
-    }
-    for (int i=0; i<c->sym->classes; ++i)
-    {
-        mtx_destroy(&mutexes[i]);
-    }
-}
-
 static int init_prune_map(struct coord *c, int max_depth, struct map *map)
 {
     int t = map->count*1000/MAP_CAPACITY;
@@ -171,36 +140,76 @@ static int init_prune_map(struct coord *c, int max_depth, struct map *map)
     return 0;
 }
 
-static int init_prune_table_dfs_forward(struct coord *c, int max_depth, struct map *map)
+// NOTE consider merging these
+struct init_prune_table_dfs_forward_arg
 {
-    struct search_node
-    {
-        cube_t cube;
-        int move;
-        int depth;
-    };
+    mtx_t *mutexes;
+    int thread_id;
+    int t;
+    struct coord *c;
+    int depth;
+    long long start;
+    long long end;
+    struct map *map;
+    int start_depth;
+};
 
-    struct search_node stack[256];
-    struct search_node *top = stack;
+static int init_prune_table_dfs_forward(void *varg)
+{
+    struct init_prune_table_dfs_forward_arg *arg = varg;
 
-    void push(cube_t x, int move, int depth)
+    void dfs(cube_t x)
     {
-        if (depth>max_depth)
-            return;
-        if (map_get(map, c->get(x)) < depth)
-            return;
-        if (table_get(c->table, c->get(x)) == c->table->mask)
-            table_set(c->table, c->get(x), depth);
-        *top++ = (struct search_node){x, move, depth};
+        // TODO move this into a header
+        struct search_node
+        {
+            cube_t cube;
+            int move;
+            int depth;
+        };
+
+        struct search_node stack[256];
+        struct search_node *top = stack;
+
+        void push(cube_t x, int move, int depth)
+        {
+            if (depth > arg->depth)
+                return;
+            if (depth > map_get(arg->map, coord_eo_full.get(x)))
+                return;
+            // TODO move this to a function
+            int class = arg->c->get(x)/arg->c->raw->max;
+            mtx_lock(&arg->mutexes[class]);
+            for (int s=0; s<NUM_SYMS; ++s)
+            {
+                if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
+                    continue;
+                long long k = arg->c->get(apply_sym(x, s));
+                if (table_get(arg->c->table, k) == arg->c->table->mask)
+                    table_set(arg->c->table, k, depth);
+            }
+            mtx_unlock(&arg->mutexes[class]);
+            *top++ = (struct search_node){x, move, depth};
+        }
+
+        push(x, EMPTY_MOVE, arg->start_depth);
+        while (top>stack)
+        {
+            struct search_node cur = *--top;
+            FOREACH_MOVE(cur.move)
+                push(apply_move(cur.cube, m), m, cur.depth+1);
+        }
+        if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
+        {
+            print_completion(arg->c->table->count, arg->c->max);
+            fprintf(stderr, " depth=%d", arg->depth);
+            arg->t++;
+        }
     }
 
-    push(new_cube(), EMPTY_MOVE, 0);
-    while (top>stack)
-    {
-        struct search_node cur = *--top;
-        FOREACH_MOVE(cur.move)
-            push(apply_move(cur.cube, m), m, cur.depth+1);
-    }
+    for (int i=arg->start; i<arg->end; ++i)
+        if (arg->map->data[i].val == arg->start_depth)
+            dfs(coord_eo_full.set(arg->map->data[i].key));
     return 0;
 }
 
@@ -257,18 +266,25 @@ static int init_prune_table_dfs_backward(struct coord *c, int max_depth)
 
 static void init_prune_table(struct coord *c)
 {
+    int map_depth = 9;
     struct map *map = 0;
     if (EO_PARTIAL)
     {
         map = map_new();
         map_set(map, c->get(new_cube()), 0);
-        for (int depth=1; map->count<coord_eo_full.max && depth<9; ++depth)
+        for (int depth=1; map->count<coord_eo_full.max && depth < map_depth; ++depth)
         {
             long long m = map->count;
             init_prune_map(&coord_eo_full, depth, map);
             clear_stderr();
         }
     }
+
+    thrd_t threads[THREADS];
+    mtx_t mutexes[c->sym->classes];
+    for (int i=0; i<c->sym->classes; ++i)
+        mtx_init(&mutexes[i], mtx_plain);
+    // TODO do this in `table_new`
     memset(c->table->data, 0xff, c->table->size);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
@@ -277,24 +293,56 @@ static void init_prune_table(struct coord *c)
         long long m = c->table->count;
         if (!EO_PARTIAL)
         {
-            init_prune_table_parallel(c, depth, backsearch);
+            struct init_prune_table_bfs_arg args[THREADS];
+            for (int i=0; i<THREADS; ++i)
+            {
+                args[i].mutexes = mutexes;
+                args[i].thread_id = i;
+                args[i].t = 0;
+                args[i].c = c;
+                args[i].depth = depth;
+                args[i].backsearch = backsearch;
+                args[i].start = i*c->max/THREADS;
+                args[i].end = i==THREADS-1 ? c->max : (i+1)*c->max/THREADS;
+                thrd_create(&threads[i], init_prune_table_bfs, &args[i]);
+            }
+            for (int i=0; i<THREADS; ++i)
+                thrd_join(threads[i], NULL);
+        }
+        // TODO use the map for the full coordinates as well (this is
+        // definitely faster for full EO)
+        else if (depth < map_depth)
+        {
+            for (int i=0; i<MAP_CAPACITY; ++i)
+                if (map->data[i].val == depth)
+                {
+                    long long j = c->get(coord_eo_full.set(map->data[i].key));
+                    if (table_get(c->table, j) == c->table->mask)
+                        table_set(c->table, j, depth);
+                }
+        }
+        else if (backsearch)
+        {
+            init_prune_table_dfs_backward(c, depth);
         }
         else
         {
-            if (depth<9)
+            struct init_prune_table_dfs_forward_arg args[THREADS];
+            for (int i=0; i<THREADS; ++i)
             {
-                for (int i=0; i<MAP_CAPACITY; ++i)
-                    if (map->data[i].val == depth)
-                    {
-                        long long j = c->get(coord_eo_full.set(map->data[i].key));
-                        if (table_get(c->table, j) == c->table->mask)
-                            table_set(c->table, j, depth);
-                    }
+                args[i].mutexes = mutexes;
+                args[i].thread_id = i;
+                args[i].t = c->table->count*10000/c->max;
+                args[i].c = c;
+                args[i].depth = depth;
+                args[i].start = i*MAP_CAPACITY/THREADS;
+                args[i].end = i==THREADS-1 ? MAP_CAPACITY : (i+1)*MAP_CAPACITY/THREADS;
+                args[i].map = map;
+                args[i].start_depth = map_depth-1;
+                thrd_create(&threads[i], init_prune_table_dfs_forward, &args[i]);
             }
-            else if (backsearch)
-                init_prune_table_dfs_backward(c, depth);
-            else
-                init_prune_table_dfs_forward(c, depth, map);
+            for (int i=0; i<THREADS; ++i)
+                thrd_join(threads[i], NULL);
         }
         clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
@@ -302,4 +350,6 @@ static void init_prune_table(struct coord *c)
     if (c->table->count!=c->max)
         LOG("skpped %lld entries\n", c->max-c->table->count);
     ASSERT(c->table->count==c->max);
+    for (int i=0; i<c->sym->classes; ++i)
+        mtx_destroy(&mutexes[i]);
 }
