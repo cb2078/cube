@@ -61,6 +61,6 @@ static struct coord coord_eo_full;
 static void init_coord(struct coord *c);
 
 static int EO_VARIANT = 1;
-#define EO_PARTIAL (EO_VARIANT>0 && EO_VARIANT<11)
+#define EO_PARTIAL 1// (EO_VARIANT>0 && EO_VARIANT<11)
 
 #endif

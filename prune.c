@@ -89,20 +89,19 @@ static int init_prune_map(struct coord *c, int max_depth, struct map *map)
         {
             for (int m=0; m<18; ++m)
             {
-                cube_t x = apply_move(c->set(map->data[i].key), m);
-                long long j = c->get(x);
-                if (map_get(map, j) == MAP_VAL_MAX)
+                cube_t x = apply_move(coord_eo_full.set(map->data[i].key), m);
+                long long j = coord_eo_full.get(x);
+                for (int s=0; s<NUM_SYMS; ++s)
                 {
-                    map_set(map, j, max_depth);
-                    for (int s=0; s<NUM_SYMS; ++s)
-                    {
-                        if (~c->sym->self_syms[c->sym->get(x)]>>s&1)
-                            continue;
-                        cube_t y = apply_sym(x, s);
-                        long long k = c->get(y);
-                        if (map_get(map, k) == MAP_VAL_MAX)
-                            map_set(map, k, max_depth);
-                    }
+                    if (~coord_eo_full.sym->self_syms[coord_eo_full.sym->get(x)]>>s&1)
+                        continue;
+                    cube_t y = apply_sym(x, s);
+                    long long k = coord_eo_full.get(y);
+                    if (map_get(map, k) == MAP_VAL_MAX)
+                        map_set(map, k, max_depth);
+                    long long l = c->get(coord_eo_full.set(k));
+                    if (table_get(c->table, l) == c->table->mask)
+                        table_set(c->table, l, max_depth);
                 }
             }
         }
@@ -197,52 +196,33 @@ static int init_prune_table_dfs_backward(void *varg)
     }
 
     for (long long i=arg->start; i<arg->end; ++i)
-        for (int j=0; j<EO_MAX; j+=PARTIAL_EO_MAX)
-        {
-            if (table_get_atomic(arg->c->table, i) != arg->c->table->mask)
-                break;
-            if (!dlA(compose(arg->c->set(i), set_eo(j))))
-                table_set_atomic(arg->c->table, i, arg->depth);
-        }
+        if (table_get_atomic(arg->c->table, i) == arg->c->table->mask)
+            for (int j=0; j<EO_MAX; j+=PARTIAL_EO_MAX)
+                if (!dlA(compose(arg->c->set(i), set_eo(j))))
+                {
+                    table_set_atomic(arg->c->table, i, arg->depth);
+                    break;
+                }
     arg->done = 1;
     return 0;
 }
 
 static void init_prune_table(struct coord *c)
 {
-    struct map *map = 0;
-    if (EO_PARTIAL)
-    {
-        map = map_new();
-        map_set(map, c->get(new_cube()), 0);
-        for (int depth=1; map->count<coord_eo_full.max && depth <= MAP_DEPTH; ++depth)
-        {
-            long long m = map->count;
-            init_prune_map(&coord_eo_full, depth, map);
-            clear_stderr();
-        }
-    }
-
     struct init_prune_table_arg args[THREADS];
     thrd_t threads[THREADS];
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
+    struct map *map = map_new();
+    map_set(map, c->get(new_cube()), 0);
     table_set(c->table, c->get(new_cube()), 0);
     for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
     {
         long long m = c->table->count;
-        // TODO use the map for the full coordinates as well (this is
-        // definitely faster for full EO)
-        if (EO_PARTIAL && depth <= MAP_DEPTH)
+        if (depth <= MAP_DEPTH)
         {
-            for (int i=0; i<MAP_CAPACITY; ++i)
-                if (map->data[i].val == depth)
-                {
-                    long long j = c->get(coord_eo_full.set(map->data[i].key));
-                    if (table_get(c->table, j) == c->table->mask)
-                        table_set(c->table, j, depth);
-                }
+            init_prune_map(c, depth, map);
         }
         else
         {
