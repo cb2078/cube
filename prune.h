@@ -9,14 +9,13 @@
 struct init_prune_table_arg
 {
     mtx_t *mutexes;
-    int thread_id;
-    int t;
     struct coord *c;
     int depth;
     int backsearch;
     long long start;
     long long end;
     struct map *map;
+    _Atomic int done;
 };
 
 static void init_sym(struct sym_coord *c);

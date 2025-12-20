@@ -1,8 +1,3 @@
-static void print_completion(long long i, long long n)
-{
-    fprintf(stderr, "\rcompletion=%.2f", (double)i/n*100);
-}
-
 static void clear_stderr(void)
 {
     fprintf(stderr, "\r");
@@ -24,7 +19,7 @@ static void init_sym(struct sym_coord *c)
             int k = c->get(y);
             c->self_syms[i] |= (long long)(i==k)<<s;
         }
-        print_completion(i, c->max);
+        fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);
     }
     clear_stderr();
 
@@ -43,7 +38,7 @@ static void init_sym(struct sym_coord *c)
             c->to_sym[k] = inv_sym[s];
         }
         c->to_rep[class++] = i;
-        print_completion(i, c->max);
+        fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);
     }
     clear_stderr();
     LOG("%s classes : %d\n", c->name, class);
@@ -54,9 +49,7 @@ static int init_prune_table_bfs(void *varg)
 {
     struct init_prune_table_arg *arg = varg;
     for (long long i=arg->start; i<arg->end; ++i)
-    {
         if (table_get_atomic(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
-        {
             for (int m=0; m<18; ++m)
             {
                 cube_t x = apply_move(arg->c->set(i), m);
@@ -83,15 +76,7 @@ static int init_prune_table_bfs(void *varg)
                 }
                 mtx_unlock(&arg->mutexes[class]);
             }
-        }
-        if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
-        {
-            print_completion(arg->c->table->count, arg->c->max);
-            fprintf(stderr, " depth=%d%s", arg->depth, arg->backsearch?" (backsearch)":"");
-            // fprintf(stderr, " t=%d", arg->t);
-            arg->t++;
-        }
-    }
+    arg->done = 1;
     return 0;
 }
 
@@ -167,17 +152,12 @@ static int init_prune_table_dfs_forward(void *varg)
             FOREACH_MOVE(cur.move)
                 push(apply_move(cur.cube, m), m, cur.depth+1);
         }
-        if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
-        {
-            print_completion(arg->c->table->count, arg->c->max);
-            fprintf(stderr, " depth=%d", arg->depth);
-            arg->t++;
-        }
     }
 
     for (int i=arg->start; i<arg->end; ++i)
         if (arg->map->data[i].val == MAP_DEPTH)
             dfs(coord_eo_full.set(arg->map->data[i].key));
+    arg->done = 1;
     return 0;
 }
 
@@ -190,7 +170,7 @@ static int init_prune_table_dfs_backward(void *varg)
         int y = table_get_atomic(arg->c->table, arg->c->get(x));
         int z = map_get(arg->map, coord_eo_full.get(x));
         return MAX(y == arg->c->table->mask ? arg->depth : y,
-                   z == MAP_VAL_MAX ? get_eo(x)>0 : z);
+                   z == MAP_VAL_MAX ? 0 : z) ?: get_eo(x)>0;
     }
 
     int dlA(cube_t x)
@@ -221,18 +201,10 @@ static int init_prune_table_dfs_backward(void *varg)
         {
             if (table_get_atomic(arg->c->table, i) != arg->c->table->mask)
                 break;
-            // TODO maybe do this in the main thread?
-            // TODO (if possible) include 'i' in status print
-            if (!arg->thread_id && arg->c->table->count*10000/arg->c->max>arg->t)
-            {
-                // TODO remove this function and do everything in one 'print'
-                print_completion(arg->c->table->count, arg->c->max);
-                fprintf(stderr, " depth=%d (backsearch)", arg->depth);
-                arg->t++;
-            }
             if (!dlA(compose(arg->c->set(i), set_eo(j))))
                 table_set_atomic(arg->c->table, i, arg->depth);
         }
+    arg->done = 1;
     return 0;
 }
 
@@ -282,18 +254,25 @@ static void init_prune_table(struct coord *c)
             for (int i=0; i<THREADS; ++i)
             {
                 args[i].mutexes = mutexes;
-                args[i].thread_id = i;
-                args[i].t = c->table->count*10000/c->max;
                 args[i].c = c;
                 args[i].depth = depth;
                 args[i].backsearch = backsearch;
                 args[i].map = map;
                 args[i].start = i*max/THREADS;
                 args[i].end = i==THREADS-1 ? max : (i+1)*max/THREADS;
+                args[i].done = 0;
                 thrd_create(&threads[i], f, &args[i]);
             }
             for (int i=0; i<THREADS; ++i)
+            {
+                while (!args[i].done)
+                {
+                    fprintf(stderr, "\rcompletion=%.2f%%%s",
+                            100.0*c->table->count/c->max, backsearch?" (backsearch)":"");
+                    thrd_sleep(&(struct timespec){ .tv_nsec=100000000, }, 0);
+                }
                 thrd_join(threads[i], NULL);
+            }
         }
         clear_stderr();
         LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
