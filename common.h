@@ -15,7 +15,7 @@
     (!(cond) ? fprintf(stderr, "%s:%d: Assertion '%s' failed.\n", __FILE__, __LINE__, #cond), UNREACHABLE() : (void)0)
 #define ERROR(...) (fprintf(stderr, "cube: " __VA_ARGS__), exit(1))
 #define LENGTH(x) (long long)(sizeof(x)/sizeof(x[0]))
-#define LOG(fmt, ...) (VERBOSE ? fprintf(stderr, fmt, __VA_ARGS__) : (void)0)
+#define LOG(...) (VERBOSE ? fprintf(stderr, __VA_ARGS__) : (void)0)
 #define MAX(x, y) ({ typeof(x) a=(x), b=(y); a>b ? a : b; })
 #define MIN(x, y) ({ typeof(x) a=(x), b=(y); a<b ? a : b; })
 #define SWAP(x, y) do { typeof(x) z=x; x=y; y=z; } while (0)

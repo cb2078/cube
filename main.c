@@ -186,6 +186,11 @@ int main(int argc, char **argv)
                 UNREACHABLE();
         }
 
+#if DEBUG
+    LOG("build mode: DEBUG\n");
+#else
+    LOG("build mode: RELEASE\n");
+#endif
     if (NO_INPUT)
     {
         init_coord(coord);
