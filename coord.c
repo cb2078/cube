@@ -118,7 +118,7 @@ static cube_t set_sym_comp(long long r, struct coord *c)
     return compose(x, y);
 }
 
-#if 1
+#if 0
 COORD(eo_none, csep, 9, esep, ESEP_MAX);
 COORD(eo_partial, csep, 9, partial_eo_esep, 0);
 COORD(eo_full, csep, 9, eo_esep, EO_ESEP_MAX);
