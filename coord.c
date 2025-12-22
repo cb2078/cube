@@ -95,7 +95,8 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
     \
     static int h_##NAME(cube_t x)\
     {\
-        return table_get(coord_##NAME.table, get_##NAME(x));\
+        int r = table_get(coord_##NAME.table, get_##NAME(x));\
+        return r ? r+PRUNE_BASE : 0;\
     }\
     \
     static int h_##NAME##_optimal(cube_t x)\
@@ -152,7 +153,7 @@ static void init_coord(struct coord *c)
     c->sym->to_rep = malloc(sizeof(int)*c->sym->classes);
     c->sym->to_class = malloc(sizeof(int)*c->sym->max);
     c->sym->to_sym = malloc(sizeof(int)*c->sym->max);
-    c->table = table_new(c->max, 4);
+    c->table = table_new(c->max, 2);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {
         fread(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);

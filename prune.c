@@ -45,77 +45,40 @@ static void init_sym(struct sym_coord *c)
     ASSERT(class == c->classes);
 }
 
-static int init_prune_table_bfs(void *varg)
+static struct map *init_prune_map(void)
 {
-    struct init_prune_table_arg *arg = varg;
-    for (long long i=arg->start; i<arg->end; ++i)
-        if (table_get_atomic(arg->c->table, i) == (arg->backsearch ? arg->c->table->mask : arg->depth-1))
-            for (int m=0; m<18; ++m)
+    struct coord *c = &coord_eo_full;
+    struct map *map = map_new();
+    map_set(map, c->get(new_cube()), 0);
+    for (int depth=1; depth<=MAP_DEPTH; ++depth)
+        for (long long i=0; i<MAP_CAPACITY; ++i)
+        {
+            if (map->data[i].val == depth-1)
             {
-                cube_t x = apply_move(arg->c->set(i), m);
-                long long j = arg->c->get(x);
-                if (arg->backsearch && table_get_atomic(arg->c->table, j) == arg->depth-1)
+                for (int m=0; m<18; ++m)
                 {
-                    table_set_atomic(arg->c->table, i, arg->depth);
-                    break;
-                }
-                int class = j/arg->c->raw->max;
-                mtx_lock(&arg->mutexes[class]);
-                if (!arg->backsearch && table_get(arg->c->table, j) == arg->c->table->mask)
-                {
-                    table_set(arg->c->table, j, arg->depth);
-                    for (int s=1; s<NUM_SYMS; ++s)
+                    cube_t x = apply_move(c->set(map->data[i].key), m);
+                    for (int s=0; s<NUM_SYMS; ++s)
                     {
-                        if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
+                        if (~c->sym->self_syms[c->sym->get(x)]>>s&1)
                             continue;
-                        cube_t y = apply_sym(x, s);
-                        long long k = arg->c->get(y);
-                        if (table_get(arg->c->table, k) == arg->c->table->mask)
-                            table_set(arg->c->table, k, arg->depth);
+                        long long k = c->get(apply_sym(x, s));
+                        if (map_get(map, k) == MAP_VAL_MAX)
+                            map_set(map, k, depth);
                     }
                 }
-                mtx_unlock(&arg->mutexes[class]);
             }
-    arg->done = 1;
-    return 0;
-}
-
-static int init_prune_map(struct coord *c, int max_depth, struct map *map)
-{
-    int t = map->count*1000/MAP_CAPACITY;
-    for (long long i=0; i<MAP_CAPACITY; ++i)
-    {
-        if (map->data[i].val == max_depth-1)
-        {
-            for (int m=0; m<18; ++m)
+            if ((i+MAP_CAPACITY*(depth-1))%(MAP_DEPTH*MAP_CAPACITY/1000)==0)
             {
-                cube_t x = apply_move(coord_eo_full.set(map->data[i].key), m);
-                long long j = coord_eo_full.get(x);
-                for (int s=0; s<NUM_SYMS; ++s)
-                {
-                    if (~coord_eo_full.sym->self_syms[coord_eo_full.sym->get(x)]>>s&1)
-                        continue;
-                    cube_t y = apply_sym(x, s);
-                    long long k = coord_eo_full.get(y);
-                    if (map_get(map, k) == MAP_VAL_MAX)
-                        map_set(map, k, max_depth);
-                    long long l = c->get(coord_eo_full.set(k));
-                    if (table_get(c->table, l) == c->table->mask)
-                        table_set(c->table, l, max_depth);
-                }
+                fprintf(stderr, "\rdepth=%d load=%.1f%% mem=%.1fMB",
+                        depth, 100.0*map->count/MAP_CAPACITY, 8.0*map->count/1e6);
             }
         }
-        if (map->count*1000/MAP_CAPACITY > t)
-        {
-            fprintf(stderr, "\rdepth=%d load=%.1f%% mem=%.1fMB",
-                    max_depth, (double)map->count/MAP_CAPACITY*100, (double)map->count*8/1e6);
-            t++;
-        }
-    }
-    return 0;
+    clear_stderr();
+    return map;
 }
 
-static int init_prune_table_dfs_forward(void *varg)
+static int init_prune_table_dfs(void *varg)
 {
     struct init_prune_table_arg *arg = varg;
 
@@ -126,10 +89,6 @@ static int init_prune_table_dfs_forward(void *varg)
 
         void push(cube_t x, int move, int depth)
         {
-            if (depth > arg->depth)
-                return;
-            if (depth > map_get(arg->map, coord_eo_full.get(x)))
-                return;
             int class = arg->c->get(x)/arg->c->raw->max;
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
@@ -137,11 +96,12 @@ static int init_prune_table_dfs_forward(void *varg)
                 if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
                     continue;
                 long long k = arg->c->get(apply_sym(x, s));
-                if (table_get(arg->c->table, k) == arg->c->table->mask)
-                    table_set(arg->c->table, k, depth);
+                if (table_get(arg->c->table, k) > depth-PRUNE_BASE)
+                    table_set(arg->c->table, k, depth-PRUNE_BASE);
             }
             mtx_unlock(&arg->mutexes[class]);
-            *top++ = (struct search_node){x, move, depth};
+            if (depth < arg->depth && depth <= map_get(arg->map, coord_eo_full.get(x)))
+                *top++ = (struct search_node){x, move, depth};
         }
 
         push(x, EMPTY_MOVE, MAP_DEPTH);
@@ -153,113 +113,49 @@ static int init_prune_table_dfs_forward(void *varg)
         }
     }
 
-    for (int i=arg->start; i<arg->end; ++i)
+    int start = arg->thread_id*MAP_CAPACITY/THREADS;
+    int end = arg->thread_id==THREADS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/THREADS;
+    for (int i=start; i<end; ++i)
+    {
+        if (arg->map->data[i].val == MAP_VAL_MAX)
+            continue;
         if (arg->map->data[i].val == MAP_DEPTH)
             dfs(coord_eo_full.set(arg->map->data[i].key));
-    arg->done = 1;
-    return 0;
-}
-
-static int init_prune_table_dfs_backward(void *varg)
-{
-    struct init_prune_table_arg *arg = varg;
-
-    int h(cube_t x)
-    {
-        int y = table_get_atomic(arg->c->table, arg->c->get(x));
-        int z = map_get(arg->map, coord_eo_full.get(x));
-        return MAX(y == arg->c->table->mask ? arg->depth : y,
-                   z == MAP_VAL_MAX ? 0 : z) ?: get_eo(x)>0;
+        else
+            table_set(arg->c->table, arg->c->get(coord_eo_full.set(arg->map->data[i].key)), 0);
+        if (arg->thread_id==0 && i%(end/10000)==0)
+            fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }
-
-    int dlA(cube_t x)
-    {
-        struct search_node stack[256];
-        struct search_node *top = stack;
-
-        void push(cube_t x, int move, int depth)
-        {
-            if (h(x)+depth <= arg->depth)
-                *top++ = (struct search_node){x, move, depth};
-        }
-
-        push(x, EMPTY_MOVE, 0);
-        while (top>stack)
-        {
-            struct search_node cur = *--top;
-            if (!h(cur.cube))
-                return 0;
-            FOREACH_MOVE(cur.move)
-                push(apply_move(cur.cube, m), m, cur.depth+1);
-        }
-        return 1;
-    }
-
-    for (long long i=arg->start; i<arg->end; ++i)
-        if (table_get_atomic(arg->c->table, i) == arg->c->table->mask)
-            for (int j=0; j<EO_MAX; j+=PARTIAL_EO_MAX)
-                if (!dlA(compose(arg->c->set(i), set_eo(j))))
-                {
-                    table_set_atomic(arg->c->table, i, arg->depth);
-                    break;
-                }
-    arg->done = 1;
     return 0;
 }
 
 static void init_prune_table(struct coord *c)
 {
-    struct init_prune_table_arg args[THREADS];
-    thrd_t threads[THREADS];
+    struct map *map = init_prune_map();
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
-    struct map *map = map_new();
-    map_set(map, c->get(new_cube()), 0);
-    table_set(c->table, c->get(new_cube()), 0);
-    for (int depth=1; c->table->count<c->max && depth<c->table->mask; ++depth)
+    struct init_prune_table_arg args[THREADS];
+    thrd_t threads[THREADS];
+    for (int i=0; i<THREADS; ++i)
     {
-        long long m = c->table->count;
-        if (depth <= MAP_DEPTH)
-        {
-            init_prune_map(c, depth, map);
-        }
-        else
-        {
-            int backsearch = c->table->count>c->max/2;
-            int (*f)(void *) = !EO_PARTIAL ? init_prune_table_bfs
-                : !backsearch ? init_prune_table_dfs_forward
-                : init_prune_table_dfs_backward;
-            int max = EO_PARTIAL && !backsearch ? MAP_CAPACITY : c->max;
-            for (int i=0; i<THREADS; ++i)
-            {
-                args[i].mutexes = mutexes;
-                args[i].c = c;
-                args[i].depth = depth;
-                args[i].backsearch = backsearch;
-                args[i].map = map;
-                args[i].start = i*max/THREADS;
-                args[i].end = i==THREADS-1 ? max : (i+1)*max/THREADS;
-                args[i].done = 0;
-                thrd_create(&threads[i], f, &args[i]);
-            }
-            for (int i=0; i<THREADS; ++i)
-            {
-                while (!args[i].done)
-                {
-                    fprintf(stderr, "\rcompletion=%.2f%%%s",
-                            100.0*c->table->count/c->max, backsearch?" (backsearch)":"");
-                    thrd_sleep(&(struct timespec){ .tv_nsec=100000000, }, 0);
-                }
-                thrd_join(threads[i], NULL);
-            }
-        }
-        clear_stderr();
-        LOG("%s[%d] = %lld\n", depth<10?" ":"", depth, c->table->count-m);
+        args[i].mutexes = mutexes;
+        args[i].thread_id = i;
+        args[i].c = c;
+        args[i].depth = 10;
+        args[i].map = map;
+        thrd_create(&threads[i], init_prune_table_dfs, &args[i]);
     }
-    if (c->table->count!=c->max)
-        LOG("skpped %lld entries\n", c->max-c->table->count);
-    ASSERT(c->table->count==c->max);
+    for (int i=0; i<THREADS; ++i)
+        thrd_join(threads[i], NULL);
     for (int i=0; i<c->sym->classes; ++i)
         mtx_destroy(&mutexes[i]);
+    clear_stderr();
+    if (!VERBOSE)
+        return;
+    long long dist[4] = {0};
+    for (int i=0; i<c->max; ++i)
+        dist[table_get(c->table, i)]++;
+    for (int i=PRUNE_BASE; i<PRUNE_BASE+4; ++i)
+        LOG("%s[%d] = %lld\n", i<10?" ":"", i, dist[i-PRUNE_BASE]);
 }

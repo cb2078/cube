@@ -10,7 +10,7 @@
 
 struct map
 {
-    _Atomic long long count;
+    long long count;
     struct
     {
         unsigned long long key: MAP_KEY_BITS;
