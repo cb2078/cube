@@ -142,7 +142,7 @@ static void init_prune_table(struct coord *c)
         args[i].mutexes = mutexes;
         args[i].thread_id = i;
         args[i].c = c;
-        args[i].depth = 10;
+        args[i].depth = PRUNE_BASE+2;
         args[i].map = map;
         thrd_create(&threads[i], init_prune_table_dfs, &args[i]);
     }
