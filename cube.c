@@ -137,15 +137,15 @@ static long long get_esep(cube_t x)
     // "filter out" the E-slice edges from the S-slice edges
     s = _pext_u32(s, ~e);
     s = s & 0xff;
-    return rank_12C4[e] * 70 + rank_8C4[s];
+    return rank_8C4[s] * 512 + INSERT_ESLICE_GAPS(rank_12C4[e]);
 }
 
 static cube_t set_esep(long long r)
 {
     unsigned long long b, l, h;
     unsigned short e, s, m;
-    e = unrank_12C4[r/70];
-    s = unrank_8C4[r%70];
+    e = unrank_12C4[REMOVE_ESLICE_GAPS(r%512)];
+    s = unrank_8C4[r/512];
     s = _pdep_u32(s, ~e);
     m = 0xfff ^ s ^ e;
     b = 0xfedc000000000000;

@@ -5,6 +5,9 @@
 #include "map.h"
 
 #define MAP_DEPTH 8
+#define PRUNE_BASE (prune_base[EO_VARIANT])
+
+#define PRUNE_MIN_62(i) ((i)/64*64+62)
 
 struct init_prune_table_arg
 {
@@ -33,6 +36,5 @@ static int prune_base[12] =
     [10] = 10,
     [11] = 10,
 };
-#define PRUNE_BASE (prune_base[EO_VARIANT])
 
 #endif

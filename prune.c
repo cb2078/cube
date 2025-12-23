@@ -82,7 +82,7 @@ static int init_prune_table_dfs(void *varg)
 {
     struct init_prune_table_arg *arg = varg;
 
-    void dfs(cube_t x)
+    void dfs(cube_t x, int start_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
@@ -96,15 +96,24 @@ static int init_prune_table_dfs(void *varg)
                 if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
                     continue;
                 long long k = arg->c->get(apply_sym(x, s));
-                if (table_get(arg->c->table, k) > depth-PRUNE_BASE)
-                    table_set(arg->c->table, k, depth-PRUNE_BASE);
+                int v = MAX(depth-PRUNE_BASE, 0);
+                if (table_get(arg->c->table, k) > v)
+                    table_set(arg->c->table, k, v);
+                long long j = PRUNE_MIN_62(k);
+                // TODO macros for table_min_62
+                int h = depth/4;
+                int l = depth%4;
+                if (table_get(arg->c->table, j+1)*4+table_get(arg->c->table, j) > h*4+l)
+                    table_set(arg->c->table, j+1, h), table_set(arg->c->table, j, l);
             }
             mtx_unlock(&arg->mutexes[class]);
-            if (depth < arg->depth && depth <= map_get(arg->map, coord_eo_full.get(x)))
+            if (depth >= MAP_DEPTH &&
+                depth < arg->depth &&
+                depth <= map_get(arg->map, coord_eo_full.get(x)))
                 *top++ = (struct search_node){x, move, depth};
         }
 
-        push(x, EMPTY_MOVE, MAP_DEPTH);
+        push(x, EMPTY_MOVE, start_depth);
         while (top>stack)
         {
             struct search_node cur = *--top;
@@ -117,12 +126,8 @@ static int init_prune_table_dfs(void *varg)
     int end = arg->thread_id==THREADS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/THREADS;
     for (int i=start; i<end; ++i)
     {
-        if (arg->map->data[i].val == MAP_VAL_MAX)
-            continue;
-        if (arg->map->data[i].val == MAP_DEPTH)
-            dfs(coord_eo_full.set(arg->map->data[i].key));
-        else
-            table_set(arg->c->table, arg->c->get(coord_eo_full.set(arg->map->data[i].key)), 0);
+        if (arg->map->data[i].val <= MAP_DEPTH)
+            dfs(coord_eo_full.set(arg->map->data[i].key), arg->map->data[i].val);
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }

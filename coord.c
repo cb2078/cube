@@ -95,8 +95,11 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
     \
     static int h_##NAME(cube_t x)\
     {\
-        int r = table_get(coord_##NAME.table, get_##NAME(x));\
-        return r ? r+PRUNE_BASE : 0;\
+        long long i = get_##NAME(x);\
+        int r = table_get(coord_##NAME.table, i);\
+        return r ? r+PRUNE_BASE\
+            : (table_get(coord_##NAME.table, PRUNE_MIN_62(i)) +\
+               4*table_get(coord_##NAME.table, PRUNE_MIN_62(i)+1));\
     }\
     \
     static int h_##NAME##_optimal(cube_t x)\
