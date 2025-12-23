@@ -97,14 +97,14 @@ static int init_prune_table_dfs(void *varg)
                     continue;
                 long long k = arg->c->get(apply_sym(x, s));
                 int v = MAX(depth-PRUNE_BASE, 0);
-                if (table_get(arg->c->table, k) > v)
-                    table_set(arg->c->table, k, v);
+                if (table_get(arg->c->table, 2, k) > v)
+                    table_set(arg->c->table, 2, k, v);
                 long long j = PRUNE_MIN_62(k);
                 // TODO macros for table_min_62
                 int h = depth/4;
                 int l = depth%4;
-                if (table_get(arg->c->table, j+1)*4+table_get(arg->c->table, j) > h*4+l)
-                    table_set(arg->c->table, j+1, h), table_set(arg->c->table, j, l);
+                if (table_get(arg->c->table, 2, j+1)*4 + table_get(arg->c->table, 2, j) > h*4+l)
+                    table_set(arg->c->table, 2, j+1, h), table_set(arg->c->table, 2, j, l);
             }
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
@@ -160,7 +160,7 @@ static void init_prune_table(struct coord *c)
         return;
     long long dist[4] = {0};
     for (int i=0; i<c->max; ++i)
-        dist[table_get(c->table, i)]++;
+        dist[table_get(c->table, 2, i)]++;
     for (int i=PRUNE_BASE; i<PRUNE_BASE+4; ++i)
         LOG("%s[%d] = %lld\n", i<10?" ":"", i, dist[i-PRUNE_BASE]);
 }

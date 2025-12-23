@@ -1,17 +1,11 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-struct table
-{
-    long long size; // size in bytes
-    int bits; // bits per entry
-    int mask; // (1<<bits)-1
-    int divisor; // sizeof(data[0])/bits
-    unsigned data[];
-};
+#define TABLE_ALIGN 16
 
-static struct table *table_new(long long, int);
+#define TABLE_SIZE(entries, bits) (((entries)*(bits)+7)/8)
 
-static int table_get(struct table *, long long);
-static void table_set(struct table *, long long, int);
+static unsigned *table_new(long long, int);
+static int table_get(unsigned *, int, long long);
+static void table_set(unsigned *, int, long long, int);
 #endif

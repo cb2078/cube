@@ -1,27 +1,27 @@
-static struct table *table_new(long long entries, int bits)
+static unsigned *table_new(long long entries, int bits)
 {
-    ASSERT(bits==1 || bits==2 || bits==4 || bits==8);
-    long long size = (entries*bits+7)/8;
-    struct table *t = malloc(sizeof(struct table)+size);
-    t->bits = bits;
-    t->size = size;
-    t->mask = (1<<t->bits)-1;
-    t->divisor = (int)sizeof(t->data[0])*8/t->bits;
-    memset(t->data, 0xff, size);
-    return t;
+    long long size = TABLE_SIZE(entries, bits);
+    unsigned *a = aligned_alloc(TABLE_ALIGN, size);
+    memset(a, 0xff, size);
+    return a;
 }
 
-static int table_get(struct table *t, long long i)
+static int table_get(unsigned *a, int bits, long long i)
 {
-    int shift = (int)(i&(t->divisor-1))*t->bits;
-    return (t->data[i/t->divisor]>>shift)&t->mask;
+    ASSERT(bits==2 || bits==4);
+    int divisor = sizeof(unsigned)*8/bits;
+    int shift = (i&(divisor-1))*bits;
+    int mask = (1<<bits)-1;
+    return (a[i/divisor] >> shift) & mask;
 }
 
-static void table_set(struct table *t, long long i, int x)
+static void table_set(unsigned *a, int bits, long long i, int x)
 {
+    ASSERT(bits==2 || bits==4);
+    int divisor = sizeof(unsigned)*8/bits;
+    int shift = (i&(divisor-1))*bits;
+    int mask = (1<<bits)-1;
     ASSERT(x >= 0);
-    ASSERT(x <= t->mask);
-    int shift = (int)(i&(t->divisor-1))*t->bits;
-    t->data[i/t->divisor] = (t->data[i/t->divisor]&~((unsigned)t->mask<<shift))
-        | (unsigned)x<<shift;
+    ASSERT(x <= mask);
+    a[i/divisor] = (a[i/divisor] & ~((unsigned)mask<<shift)) | (unsigned)x<<shift;
 }

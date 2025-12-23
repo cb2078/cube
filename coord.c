@@ -96,10 +96,10 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
     static int h_##NAME(cube_t x)\
     {\
         long long i = get_##NAME(x);\
-        int r = table_get(coord_##NAME.table, i);\
+        int r = table_get(coord_##NAME.table, 2, i);\
         return r ? r+PRUNE_BASE\
-            : (table_get(coord_##NAME.table, PRUNE_MIN_62(i)) +\
-               4*table_get(coord_##NAME.table, PRUNE_MIN_62(i)+1));\
+            : (table_get(coord_##NAME.table, 2, PRUNE_MIN_62(i)) +\
+               4*table_get(coord_##NAME.table, 2, PRUNE_MIN_62(i)+1));\
     }\
     \
     static int h_##NAME##_optimal(cube_t x)\
@@ -162,7 +162,7 @@ static void init_coord(struct coord *c)
         fread(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
         fread(c->sym->to_class, sizeof(int)*c->sym->max, 1, fp);
         fread(c->sym->to_sym, sizeof(int)*c->sym->max, 1, fp);
-        fread(c->table->data, c->table->size, 1, fp);
+        fread(c->table, TABLE_SIZE(c->max, 2), 1, fp);
         LOG("read '%s'\n", filename);
     }
     else
@@ -173,7 +173,7 @@ static void init_coord(struct coord *c)
         fwrite(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
         fwrite(c->sym->to_class, sizeof(int)*c->sym->max, 1, fp);
         fwrite(c->sym->to_sym, sizeof(int)*c->sym->max, 1, fp);
-        fwrite(c->table->data, c->table->size, 1, fp);
+        fwrite(c->table, TABLE_SIZE(c->max, 2), 1, fp);
         LOG("wrote '%s'\n", filename);
     }
     else

@@ -49,7 +49,7 @@ struct coord
     int (*h_optimal)(cube_t);
     struct raw_coord *raw;
     struct sym_coord *sym;
-    struct table *table;
+    unsigned *table;
 };
 
 static struct sym_coord sym_co_csep;
