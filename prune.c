@@ -100,11 +100,8 @@ static int init_prune_table_dfs(void *varg)
                 if (table_get(arg->c->table, 2, k) > v)
                     table_set(arg->c->table, 2, k, v);
                 long long j = PRUNE_MIN_62(k);
-                // TODO macros for table_min_62
-                int h = depth/4;
-                int l = depth%4;
-                if (table_get(arg->c->table, 2, j+1)*4 + table_get(arg->c->table, 2, j) > h*4+l)
-                    table_set(arg->c->table, 2, j+1, h), table_set(arg->c->table, 2, j, l);
+                if (table_get(arg->c->table, 4, j/2) > depth)
+                    table_set(arg->c->table, 4, j/2, depth);
             }
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
