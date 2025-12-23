@@ -24,18 +24,18 @@ static void init_sym(struct sym_coord *c)
     clear_stderr();
 
     int class = 0;
-    memset(c->to_class, 0xff, sizeof(c->to_class[0])*c->max);
+    memset(c->info, 0xff, 4*c->max);
     for (long long i=0; i<c->max; ++i)
     {
-        if (c->to_class[i] != -1)
+        if (c->info[i].class != 0xffff)
             continue;
         cube_t x = c->set(i);
         for (int s=0; s<NUM_SYMS; ++s)
         {
             cube_t y = apply_sym(x, s);
             int k = c->get(y);
-            c->to_class[k] = class;
-            c->to_sym[k] = inv_sym[s];
+            c->info[k].class = class;
+            c->info[k].sym = inv_sym[s];
         }
         c->to_rep[class++] = i;
         fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);

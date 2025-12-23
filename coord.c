@@ -109,8 +109,8 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
 static long long get_sym_comp(cube_t x, struct coord *c)
 {
     long long r = c->sym->get(x);
-    x = apply_sym(x, c->sym->to_sym[r]);
-    r = c->sym->to_class[r];
+    x = apply_sym(x, c->sym->info[r].sym);
+    r = c->sym->info[r].class;
     return r * c->raw->max + c->raw->get(x);
 }
 
@@ -153,14 +153,12 @@ static void init_coord(struct coord *c)
     snprintf(filename, sizeof(filename), "e%d.bin", EO_VARIANT);
     FILE *fp;
     c->sym->to_rep = malloc(sizeof(int)*c->sym->classes);
-    c->sym->to_class = malloc(sizeof(int)*c->sym->max);
-    c->sym->to_sym = malloc(sizeof(int)*c->sym->max);
+    c->sym->info = malloc(4*c->sym->max);
     c->table = table_new(c->max, 2);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {
         fread(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
-        fread(c->sym->to_class, sizeof(int)*c->sym->max, 1, fp);
-        fread(c->sym->to_sym, sizeof(int)*c->sym->max, 1, fp);
+        fread(c->sym->info, 4*c->sym->max, 1, fp);
         fread(c->table, TABLE_SIZE(c->max, 2), 1, fp);
         LOG("read '%s'\n", filename);
     }
@@ -170,8 +168,7 @@ static void init_coord(struct coord *c)
         init_sym(c->sym);
         init_prune_table(c);
         fwrite(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
-        fwrite(c->sym->to_class, sizeof(int)*c->sym->max, 1, fp);
-        fwrite(c->sym->to_sym, sizeof(int)*c->sym->max, 1, fp);
+        fwrite(c->sym->info, 4*c->sym->max, 1, fp);
         fwrite(c->table, TABLE_SIZE(c->max, 2), 1, fp);
         LOG("wrote '%s'\n", filename);
     }

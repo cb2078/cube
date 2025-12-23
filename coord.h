@@ -32,10 +32,12 @@ struct sym_coord
     cube_t (*set)(long long);
     long long max;
     long long classes;
-    // TODO merge these into a single array
+    struct
+    {
+        unsigned class: 16;
+        unsigned sym: 16;
+    } *info;
     int *to_rep;
-    int *to_class;
-    int *to_sym;
     long long *self_syms;
 };
 
