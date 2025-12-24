@@ -107,7 +107,6 @@ struct search_arg
     int *done;
 };
 
-// TODO have threads pop form a work queue to keep all threads busy
 static int search_thread(void *__arg)
 {
     struct search_arg *arg = __arg;
@@ -157,7 +156,6 @@ static void optimal(struct coord *c, cube_t x, int *path, int *length)
             if (i == -1)
                 continue;
             for (int j=0; j<QUEUE_DEPTH; ++j)
-                // TODO use 8 bits for the path
                 path[j] = args[t].queue[i].path>>8*j&0xff;
             memcpy(path+4, args[t].path, sizeof(int)*args[t].depth);
         }

@@ -50,7 +50,6 @@ static int sym_moves[48][18] =
     [47] = { R3, D3, B3, L3, U3, F3, R2, D2, B2, L2, U2, F2,  R,  D,  B,  L,  U,  F},
 };
 
-
 static int inv_sym[] =
 {
      0,  1,  2,  3, 12,  5,  6, 15,  8,  9, 10, 11,  4, 13, 14,  7,

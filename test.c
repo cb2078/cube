@@ -80,19 +80,6 @@ int main(void)
                 CHECK((i), get_esep(set_esep(i)));
     }
 
-    TEST("invert co")
-    {
-        for (int i=0; i<10; ++i)
-        {
-            int moves[256], length=100;
-            make_scramble(moves, length);
-            cube_t x = apply_moves(new_cube(), moves, length);
-            cube_t y = set_co(get_co(invert_co(x)));
-            cube_t z = compose(x, y);
-            CHECK(get_co(z), 0);
-        }
-    }
-
     TEST("transform")
     {
         int moves[256];

@@ -37,7 +37,6 @@ static cube_t new_cube(void);
 static void print_cube(cube_t);
 static int cube_eq(cube_t, cube_t);
 static cube_t compose(cube_t, cube_t);
-static cube_t compose_3(cube_t, cube_t, cube_t);
 static cube_t apply_sym(cube_t, int);
 static cube_t apply_move(cube_t, int);
 static cube_t apply_moves(cube_t, int *, int);
@@ -52,6 +51,5 @@ static long long get_esep(cube_t);
 static cube_t set_esep(long long);
 
 static cube_t inverse(cube_t);
-static cube_t invert_co(cube_t);
 
 #endif

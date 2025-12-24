@@ -46,15 +46,28 @@ static int cube_eq(cube_t x, cube_t y)
     return r == -1;
 }
 
-static cube_t compose(cube_t x, cube_t y)
+static cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
 {
     __m256i r, o;
     x = _mm256_shuffle_epi8(x, y);
     o = _mm256_and_si256(y, ORIENT_MASK);
-    x = _mm256_add_epi8(x, o);
-    r = _mm256_sub_epi8(x, ORIENT_CARRY);
+    if (mirror)
+    {
+        x = _mm256_sub_epi8(x, o);
+        r = _mm256_add_epi8(x, ORIENT_CARRY);
+    }
+    else
+    {
+        x = _mm256_add_epi8(x, o);
+        r = _mm256_sub_epi8(x, ORIENT_CARRY);
+    }
     r = _mm256_min_epu8(x, r);
     return r;
+}
+
+static cube_t compose(cube_t x, cube_t y)
+{
+    return mirrored_compose(x, y, 0);
 }
 
 static long long get_eo(cube_t x)
@@ -200,20 +213,6 @@ static cube_t inverse(cube_t x)
     return x;
 }
 
-// TODO use mirred compose instead of this (once the tests pass)
-static cube_t invert_co(cube_t x)
-{
-    // co = (carry-co)%carry
-    __m256i o, y;
-    o = _mm256_and_si256(x, ORIENT_MASK);
-    x = _mm256_and_si256(x, PERMUTE_MASK);
-    x = _mm256_or_si256(x, ORIENT_CARRY);
-    x = _mm256_sub_epi8(x, o);
-    y = _mm256_sub_epi8(x, ORIENT_CARRY);
-    x = _mm256_min_epu8(x, y);
-    return x;
-}
-
 static inline unsigned long long set_comb(int b, int s, unsigned long long m)
 {
     unsigned long long a, r;
@@ -225,22 +224,14 @@ static inline unsigned long long set_comb(int b, int s, unsigned long long m)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static cube_t compose_3(cube_t x, cube_t y, cube_t z)
-{
-    return compose(compose(x, y), z);
-}
-
 static cube_t apply_sym(cube_t x, int sym)
 {
-    // TODO try creating a "mirroed compose" function to see if its faster than
-    // inverting the CO twice
-
-    cube_t maybe_invert_co(cube_t x)
+    cube_t compose_3(cube_t x, cube_t y, cube_t z)
     {
-        return sym&1 ? invert_co(x) : x;
+        return mirrored_compose(mirrored_compose(x, y, sym&1), z, sym&1);
     }
 
-    return compose_3(get_sym_cube(inv_sym[sym]), maybe_invert_co(x), maybe_invert_co(get_sym_cube(sym)));
+    return compose_3(get_sym_cube(inv_sym[sym]), x, get_sym_cube(sym));
 }
 
 static cube_t apply_move(cube_t x, int move)
