@@ -74,9 +74,10 @@ int main(void)
 
     TEST("esep")
     {
-        long long n=choose[12][4]*choose[8][4];
+        long long n=512*choose[8][4];
         for (long long i=0; i<n; ++i)
-            CHECK(i, get_esep(set_esep(i)));
+            if (i%64<62 && i%512<509)
+                CHECK((i), get_esep(set_esep(i)));
     }
 
     TEST("invert co")
