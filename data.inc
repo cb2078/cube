@@ -1,3 +1,63 @@
+static int sym_moves[48][18] =
+{
+    [0]  = {  U,  R,  F,  D,  L,  B, U2, R2, F2, D2, L2, B2, U3, R3, F3, D3, L3, B3},
+    [1]  = { U3, L3, F3, D3, R3, B3, U2, L2, F2, D2, R2, B2,  U,  L,  F,  D,  R,  B},
+    [2]  = {  D,  L,  F,  U,  R,  B, D2, L2, F2, U2, R2, B2, D3, L3, F3, U3, R3, B3},
+    [3]  = { D3, R3, F3, U3, L3, B3, D2, R2, F2, U2, L2, B2,  D,  R,  F,  U,  L,  B},
+    [4]  = {  U,  F,  L,  D,  B,  R, U2, F2, L2, D2, B2, R2, U3, F3, L3, D3, B3, R3},
+    [5]  = { U3, F3, R3, D3, B3, L3, U2, F2, R2, D2, B2, L2,  U,  F,  R,  D,  B,  L},
+    [6]  = {  D,  F,  R,  U,  B,  L, D2, F2, R2, U2, B2, L2, D3, F3, R3, U3, B3, L3},
+    [7]  = { D3, F3, L3, U3, B3, R3, D2, F2, L2, U2, B2, R2,  D,  F,  L,  U,  B,  R},
+    [8]  = {  U,  L,  B,  D,  R,  F, U2, L2, B2, D2, R2, F2, U3, L3, B3, D3, R3, F3},
+    [9]  = { U3, R3, B3, D3, L3, F3, U2, R2, B2, D2, L2, F2,  U,  R,  B,  D,  L,  F},
+    [10] = {  D,  R,  B,  U,  L,  F, D2, R2, B2, U2, L2, F2, D3, R3, B3, U3, L3, F3},
+    [11] = { D3, L3, B3, U3, R3, F3, D2, L2, B2, U2, R2, F2,  D,  L,  B,  U,  R,  F},
+    [12] = {  U,  B,  R,  D,  F,  L, U2, B2, R2, D2, F2, L2, U3, B3, R3, D3, F3, L3},
+    [13] = { U3, B3, L3, D3, F3, R3, U2, B2, L2, D2, F2, R2,  U,  B,  L,  D,  F,  R},
+    [14] = {  D,  B,  L,  U,  F,  R, D2, B2, L2, U2, F2, R2, D3, B3, L3, U3, F3, R3},
+    [15] = { D3, B3, R3, U3, F3, L3, D2, B2, R2, U2, F2, L2,  D,  B,  R,  U,  F,  L},
+    [16] = {  R,  F,  U,  L,  B,  D, R2, F2, U2, L2, B2, D2, R3, F3, U3, L3, B3, D3},
+    [17] = { L3, F3, U3, R3, B3, D3, L2, F2, U2, R2, B2, D2,  L,  F,  U,  R,  B,  D},
+    [18] = {  L,  F,  D,  R,  B,  U, L2, F2, D2, R2, B2, U2, L3, F3, D3, R3, B3, U3},
+    [19] = { R3, F3, D3, L3, B3, U3, R2, F2, D2, L2, B2, U2,  R,  F,  D,  L,  B,  U},
+    [20] = {  F,  L,  U,  B,  R,  D, F2, L2, U2, B2, R2, D2, F3, L3, U3, B3, R3, D3},
+    [21] = { F3, R3, U3, B3, L3, D3, F2, R2, U2, B2, L2, D2,  F,  R,  U,  B,  L,  D},
+    [22] = {  F,  R,  D,  B,  L,  U, F2, R2, D2, B2, L2, U2, F3, R3, D3, B3, L3, U3},
+    [23] = { F3, L3, D3, B3, R3, U3, F2, L2, D2, B2, R2, U2,  F,  L,  D,  B,  R,  U},
+    [24] = {  L,  B,  U,  R,  F,  D, L2, B2, U2, R2, F2, D2, L3, B3, U3, R3, F3, D3},
+    [25] = { R3, B3, U3, L3, F3, D3, R2, B2, U2, L2, F2, D2,  R,  B,  U,  L,  F,  D},
+    [26] = {  R,  B,  D,  L,  F,  U, R2, B2, D2, L2, F2, U2, R3, B3, D3, L3, F3, U3},
+    [27] = { L3, B3, D3, R3, F3, U3, L2, B2, D2, R2, F2, U2,  L,  B,  D,  R,  F,  U},
+    [28] = {  B,  R,  U,  F,  L,  D, B2, R2, U2, F2, L2, D2, B3, R3, U3, F3, L3, D3},
+    [29] = { B3, L3, U3, F3, R3, D3, B2, L2, U2, F2, R2, D2,  B,  L,  U,  F,  R,  D},
+    [30] = {  B,  L,  D,  F,  R,  U, B2, L2, D2, F2, R2, U2, B3, L3, D3, F3, R3, U3},
+    [31] = { B3, R3, D3, F3, L3, U3, B2, R2, D2, F2, L2, U2,  B,  R,  D,  F,  L,  U},
+    [32] = {  F,  U,  R,  B,  D,  L, F2, U2, R2, B2, D2, L2, F3, U3, R3, B3, D3, L3},
+    [33] = { F3, U3, L3, B3, D3, R3, F2, U2, L2, B2, D2, R2,  F,  U,  L,  B,  D,  R},
+    [34] = {  F,  D,  L,  B,  U,  R, F2, D2, L2, B2, U2, R2, F3, D3, L3, B3, U3, R3},
+    [35] = { F3, D3, R3, B3, U3, L3, F2, D2, R2, B2, U2, L2,  F,  D,  R,  B,  U,  L},
+    [36] = {  L,  U,  F,  R,  D,  B, L2, U2, F2, R2, D2, B2, L3, U3, F3, R3, D3, B3},
+    [37] = { R3, U3, F3, L3, D3, B3, R2, U2, F2, L2, D2, B2,  R,  U,  F,  L,  D,  B},
+    [38] = {  R,  D,  F,  L,  U,  B, R2, D2, F2, L2, U2, B2, R3, D3, F3, L3, U3, B3},
+    [39] = { L3, D3, F3, R3, U3, B3, L2, D2, F2, R2, U2, B2,  L,  D,  F,  R,  U,  B},
+    [40] = {  B,  U,  L,  F,  D,  R, B2, U2, L2, F2, D2, R2, B3, U3, L3, F3, D3, R3},
+    [41] = { B3, U3, R3, F3, D3, L3, B2, U2, R2, F2, D2, L2,  B,  U,  R,  F,  D,  L},
+    [42] = {  B,  D,  R,  F,  U,  L, B2, D2, R2, F2, U2, L2, B3, D3, R3, F3, U3, L3},
+    [43] = { B3, D3, L3, F3, U3, R3, B2, D2, L2, F2, U2, R2,  B,  D,  L,  F,  U,  R},
+    [44] = {  R,  U,  B,  L,  D,  F, R2, U2, B2, L2, D2, F2, R3, U3, B3, L3, D3, F3},
+    [45] = { L3, U3, B3, R3, D3, F3, L2, U2, B2, R2, D2, F2,  L,  U,  B,  R,  D,  F},
+    [46] = {  L,  D,  B,  R,  U,  F, L2, D2, B2, R2, U2, F2, L3, D3, B3, R3, U3, F3},
+    [47] = { R3, D3, B3, L3, U3, F3, R2, D2, B2, L2, U2, F2,  R,  D,  B,  L,  U,  F},
+};
+
+
+static int inv_sym[] =
+{
+     0,  1,  2,  3, 12,  5,  6, 15,  8,  9, 10, 11,  4, 13, 14,  7,
+    32, 35, 42, 41, 20, 21, 28, 29, 34, 33, 40, 43, 22, 23, 30, 31,
+    16, 25, 24, 17, 38, 37, 36, 39, 26, 19, 18, 27, 44, 47, 46, 45,
+};
+
 static const long long pick[][13] =
 {
     {1,  0,   0,    0,     0,     0,      0,       0,        0,         0,         0,         0,         0},

@@ -8,7 +8,6 @@
 #include "prune.h"
 #include "solver.h"
 #include "table.h"
-#include "util.h"
 
 #include "coord.c"
 #include "cube.c"
@@ -18,7 +17,6 @@
 #include "prune.c"
 #include "solver.c"
 #include "table.c"
-#include "util.c"
 
 #include <time.h>
 

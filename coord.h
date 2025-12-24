@@ -3,7 +3,6 @@
 
 #include "cube.h"
 #include "table.h"
-#include "util.h"
 
 #define NUM_SYMS 48
 

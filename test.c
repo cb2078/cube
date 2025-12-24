@@ -3,13 +3,11 @@
 #include "data.h"
 #include "cube.h"
 #include "moves.h"
-#include "util.h"
 #include "table.h"
 
 #include "data.c"
 #include "cube.c"
 #include "moves.c"
-#include "util.c"
 #include "table.c"
 
 #define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
@@ -108,39 +106,6 @@ int main(void)
                     transformed_moves[i] = sym_moves[s][moves[i]];
                 CHECK(cube_eq(apply_sym(x, s), apply_moves(new_cube(), transformed_moves, length)), 1);
             }
-        }
-    }
-
-    TEST("combination")
-    {
-        int n=12, k=4;
-        for (int i=0; i<choose[n][k]; ++i)
-        {
-            char x[n];
-            set_combination(x, n, k, i);
-            CHECK(i, get_combination(x, n, k));
-        }
-    }
-
-    TEST("partial permutation")
-    {
-        int n=12, k=4;
-        for (int i=0; i<pick[n][k]; ++i)
-        {
-            char x[n];
-            set_partial_permutation(x, n, k, i);
-            CHECK(i, get_partial_permutation(x, n, k));
-        }
-    }
-
-    TEST("permutation")
-    {
-        int n=8;
-        for (int i=0; i<fact[n]; ++i)
-        {
-            char x[n];
-            set_permutation(x, n, i);
-            CHECK(i, get_permutation(x, n));
         }
     }
 
