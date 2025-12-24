@@ -80,22 +80,20 @@ static cube_t set_eo(long long r)
 
 static long long get_co(cube_t x)
 {
-    long long r;
-    __m128i c, y, z;
+    unsigned long long r;
+    __m128i c, y;
     // create 8x16bit vector y of corner orientations
     x = _mm256_and_si256(x, ORIENT_MASK);
-    x = _mm256_srli_epi32(x, 4);
     y = _mm256_extracti128_si256(x, 1);
     y = _mm_cvtepu8_epi16(y);
     // multiply each corner orientation by its place value, then sum
     c = _mm_set_epi16(0, 729, 243, 81, 27, 9, 3, 1);
     y = _mm_madd_epi16(y, c);
-    // TODO use a normal register for this
-    z = _mm_srli_si128(y, 8);
-    y = _mm_add_epi32(y, z);
-    z = _mm_srli_si128(y, 4);
-    y = _mm_add_epi32(y, z);
-    r = _mm_cvtsi128_si32(y);
+    r = _mm_extract_epi64(y, 0);
+    r = _mm_extract_epi64(y, 1) + r;
+    r = r + (r >> 32);
+    r = r >> 4;
+    r = r & 0xffffffff;
     return r;
 }
 
