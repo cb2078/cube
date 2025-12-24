@@ -36,39 +36,13 @@ struct arg
 
 static struct arg args[] =
 {
-    // TODO documentation about default values
     {"eo",       'e', VALUE_REQUIRED, "edge orientation variant"},
     {"help",     'h', VALUE_NONE,     "print this help message and exit"},
-    {"no-input", 'n', VALUE_NONE,     "ignore input"},
+    {"no-input", 'n', VALUE_NONE,     "ignore input, just generate the prune table"},
     {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
     {"threads",  't', VALUE_REQUIRED, "use NUM threads"},
     {"verbose",  'v', VALUE_NONE,     ""},
 };
-
-static void help(void)
-{
-    static char *value_str[] = {"", "=NUM"};
-
-    int width(int i)
-    {
-        return strlen(args[i].long_name)+strlen(value_str[args[i].value_type]);
-    }
-
-    fprintf(stderr,
-            "Usage: cube [OPTION]...\n"
-            "\n"
-            "Options:\n");
-    int n = 0;
-    for (int i=0; i<LENGTH(args); ++i)
-        n = MAX(n, width(i));
-    for (int i=0; i<LENGTH(args); ++i)
-        fprintf(stderr, "  -%c, --%s%s%.*s\t%s\n",
-                args[i].short_name,
-                args[i].long_name, value_str[args[i].value_type],
-                n-width(i), "                    ",
-                args[i].doc);
-    // TODO print more documentation
-}
 
 int main(int argc, char **argv)
 {
@@ -79,6 +53,40 @@ int main(int argc, char **argv)
     int threads;
     cube_t x = new_cube();
     int i=1, j=0, val=0;
+
+    void help(void)
+    {
+        static char *value_str[] = {"", "=NUM"};
+
+        int width(int i)
+        {
+            return strlen(args[i].long_name)+strlen(value_str[args[i].value_type]);
+        }
+
+        fprintf(stderr,
+                "Usage: cube [OPTION]...\n"
+                "Read scrambles from standard input and write solution to standard output.\n"
+                "\n"
+                "Options:\n");
+        int n = 0;
+        for (int i=0; i<LENGTH(args); ++i)
+            n = MAX(n, width(i));
+        for (int i=0; i<LENGTH(args); ++i)
+            fprintf(stderr, "  -%c, --%s%s%.*s\t%s\n",
+                    args[i].short_name,
+                    args[i].long_name, value_str[args[i].value_type],
+                    n-width(i), "                    ",
+                    args[i].doc);
+        fprintf(stderr,
+                "\n"
+                "By default, all threads are used and -e1 is set.\n"
+                "\n"
+                "Examples:\n"
+                "  echo \"R U R' U'\" | %s -e5\n"
+                "  %s -t2 -e5 < scrambles.txt\n"
+                "  %s -n -e3\n",
+                argv[0], argv[0], argv[0]);
+        }
 
     __attribute__((noreturn))
     void invalid_arg(void)
