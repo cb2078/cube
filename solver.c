@@ -4,28 +4,20 @@
 
 static int search(cube_t x, int *path, int (*h)(cube_t), int max_depth)
 {
-    struct search_node
-    {
-        cube_t cube;
-        cube_t inverse;
-        int move;
-        int depth;
-    };
-
     int min = INT_MAX;
     struct search_node stack[STACK_LENGTH];
     struct search_node *top = stack;
 
-    void push(cube_t x, cube_t y, int move, int depth)
+    void push(cube_t x, int move, int depth)
     {
-        int f = MAX(h(x), h(y)) + depth;
+        int f = h(x) + depth;
         if (f > max_depth)
             min = MIN(min, f);
         else
-            *top++ = (struct search_node){x, y, move, depth};
+            *top++ = (struct search_node){x, move, depth};
     }
 
-    push(x, inverse(x), EMPTY_MOVE, 0);
+    push(x, EMPTY_MOVE, 0);
     while (top>stack)
     {
         struct search_node cur = *--top;
@@ -35,9 +27,7 @@ static int search(cube_t x, int *path, int (*h)(cube_t), int max_depth)
             return 0;
 
         FOREACH_MOVE(cur.move)
-            push(apply_move(cur.cube, m),
-                 apply_pre_move(cur.inverse, m),
-                 m, cur.depth+1);
+            push(apply_move(cur.cube, m), m, cur.depth+1);
     }
 
     return min-max_depth;

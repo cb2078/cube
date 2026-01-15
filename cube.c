@@ -12,6 +12,8 @@
 #define MERGE_CORNERS(x) SET_CORNERS((x)|LOW_BITS)
 
 static inline unsigned long long set_comb(int, int, unsigned long long);
+static inline long long get_perm(cube_t, int);
+static inline cube_t set_perm(long long, int);
 
 static cube_t new_cube(void)
 {
@@ -169,6 +171,28 @@ static cube_t set_esep(long long r)
     return SET_EDGES(h, l);
 }
 
+// TODO see if it is faster than to do permutations of each tetrad and separation (this has no loops)
+// TODO see if it is faster to use DP
+static long long get_cp(cube_t x)
+{
+    return get_perm(x, NUM_CORNERS);
+}
+
+static cube_t set_cp(long long r)
+{
+    return set_perm(r, NUM_CORNERS);
+}
+
+static long long get_ep(cube_t x)
+{
+    return get_perm(x, NUM_EDGES);
+}
+
+static cube_t set_ep(long long r)
+{
+    return set_perm(r, NUM_EDGES);
+}
+
 static cube_t inverse(cube_t x)
 {
     // - any permutation of the cubies can be borken into cycles
@@ -222,16 +246,58 @@ static inline unsigned long long set_comb(int b, int s, unsigned long long m)
     return r;
 }
 
+static inline long long get_perm(cube_t x, int n)
+{
+    long long r = 0;
+    long long t = 0xba9876543210;
+    long long b;
+    for (int i=0; i<n-1; ++i)
+    {
+        int s, p;
+        b = i % 8 ? b
+            : i/8 ? _mm256_extract_epi64(x, 1)
+            : n==NUM_EDGES ? _mm256_extract_epi64(x, 0)
+            : _mm256_extract_epi64(x, 2);
+        s = (b & 0x0f) * 4;
+        p = _bextr_u64(t, s, 4);
+        r = r * (n - i) + p;
+        t = t - (0x111111111110ull << s);
+        b = b >> 8;
+    }
+    return r;
+}
+
+static inline cube_t set_perm(long long r, int n)
+{
+    long long t = n == NUM_EDGES ? 0xba9876543210 : 0x76543210;
+    long long a[2] = {0};
+    int i;
+#define b a[i/8]
+    for (i=0; i<n-1; ++i)
+    {
+        int s, p;
+        s = r / fact[n - i - 1] % (n - i) * 4;
+        p = _bextr_u64(t, s, 4);
+        b = b | ((long long)p << i % 8 * 8);
+        t = ((t >> 4) & (-1llu << s)) | (t & ~(-1llu << s));
+    }
+    b = b | (t << i % 8 * 8);
+#undef b
+    return n==NUM_EDGES ? SET_EDGES(a[1], a[0]) : SET_CORNERS(a[0]);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-static cube_t apply_sym(cube_t x, int sym)
+static cube_t apply_sym(cube_t x, int s)
 {
     cube_t compose_3(cube_t x, cube_t y, cube_t z)
     {
-        return mirrored_compose(mirrored_compose(x, y, sym&1), z, sym&1);
+        return mirrored_compose(mirrored_compose(x, y, s&1), z, s&1);
     }
 
-    return compose_3(get_sym_cube(inv_sym[sym]), x, get_sym_cube(sym));
+    ASSERT(s >= 0 && s < 96);
+    x = compose_3(get_sym_cube(inv_sym[s%48]), x, get_sym_cube(s%48));
+    return s < 48 ? x : inverse(x);
 }
 
 static cube_t apply_move(cube_t x, int move)

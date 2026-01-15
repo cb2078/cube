@@ -1,13 +1,21 @@
 #include "common.h"
 
-#include "data.h"
+#include "coord.h"
 #include "cube.h"
+#include "data.h"
+#include "map.h"
 #include "moves.h"
+#include "prune.h"
+#include "solver.h"
 #include "table.h"
 
-#include "data.c"
+#include "coord.c"
 #include "cube.c"
+#include "data.c"
+#include "map.c"
 #include "moves.c"
+#include "prune.c"
+#include "solver.c"
 #include "table.c"
 
 #define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
@@ -80,18 +88,34 @@ int main(void)
                 CHECK((i), get_esep(set_esep(i)));
     }
 
-    TEST("transform")
+    TEST("cp")
+    {
+        long long n = fact[8];
+        for (int i=0; i<n; ++i)
+            CHECK(i, get_cp(set_cp(i)));
+    }
+
+    TEST("ep")
+    {
+        long long n = fact[8];
+        for (int i=0, j; i<n; ++i)
+            j=rand()%fact[12], CHECK(j, get_ep(set_ep(j)));
+    }
+
+    TEST("syms")
     {
         int moves[256];
+        int transformed_moves[LENGTH(moves)];
         for (int length=0; length<LENGTH(moves); ++length)
         {
             make_scramble(moves, length);
             cube_t x = apply_moves(new_cube(), moves, length);
-            for (int s=0; s<48; ++s)
+            for (int s=0; s<NUM_SYMS; ++s)
             {
-                int transformed_moves[LENGTH(moves)];
                 for (int i=0; i<length; ++i)
-                    transformed_moves[i] = sym_moves[s][moves[i]];
+                    transformed_moves[i] = sym_moves[s%48][moves[i]];
+                if (s>47)
+                    inverse_moves(transformed_moves, length);
                 CHECK(cube_eq(apply_sym(x, s), apply_moves(new_cube(), transformed_moves, length)), 1);
             }
         }

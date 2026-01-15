@@ -30,9 +30,22 @@ static cube_t set_partial_eo_esep(long long r)
     return set_eo_esep(r);
 }
 
+static long long get_eo_ep(cube_t x)
+{
+    return get_eo(x) * EP_MAX + get_ep(x);
+}
+
+static cube_t set_eo_ep(long long r)
+{
+    cube_t x = set_ep(r%EP_MAX);
+    cube_t y = set_eo(r/EP_MAX);
+    return compose(x, y);
+}
+
 RAW_COORD(esep, ESEP_MAX);
 RAW_COORD(partial_eo_esep, 0);
 RAW_COORD(eo_esep, EO_ESEP_MAX);
+RAW_COORD(eo_ep, EO_EP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -61,6 +74,7 @@ static cube_t set_co_csep(long long r)
 
 SYM_COORD(csep, CSEP_MAX, 9);
 SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
+SYM_COORD(cp, CP_MAX, 654);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -121,17 +135,25 @@ static cube_t set_sym_comp(long long r, struct coord *c)
     return compose(x, y);
 }
 
-#if 0
-COORD(eo_none, csep, 9, esep, ESEP_MAX);
-COORD(eo_partial, csep, 9, partial_eo_esep, 0);
-COORD(eo_full, csep, 9, eo_esep, EO_ESEP_MAX);
-#else
-COORD(eo_none, co_csep, 3393, esep, ESEP_MAX);
-COORD(eo_partial, co_csep, 3393, partial_eo_esep, 0);
-COORD(eo_full, co_csep, 3393, eo_esep, EO_ESEP_MAX);
-#endif
+// COORD(eo_none, csep, 9, esep, ESEP_MAX);
+// COORD(eo_partial, csep, 9, partial_eo_esep, 0);
+// COORD(eo_full, csep, 9, eo_esep, EO_ESEP_MAX);
+
+// COORD(eo_none, co_csep, 3393, esep, ESEP_MAX);
+// COORD(eo_partial, co_csep, 3393, partial_eo_esep, 0);
+// COORD(eo_full, co_csep, 3393, eo_esep, EO_ESEP_MAX);
+
+COORD(eo_none, cp, 654, esep, ESEP_MAX);
+COORD(eo_partial, cp, 654, partial_eo_esep, 0);
+COORD(eo_full, cp, 654, eo_esep, EO_ESEP_MAX);
+COORD(eo_full_ep, cp, 654, eo_ep, EO_EP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
+
+static int is_self_sym(struct coord *c, cube_t x, int s)
+{
+    return c->sym->self_syms[c->sym->get(x)] >> s % 48 & 1;
+}
 
 static void init_coord(struct coord *c)
 {
@@ -139,14 +161,14 @@ static void init_coord(struct coord *c)
     if (initialised)
         return;
 
-    c->raw->max = PARTIAL_EO_ESEP_MAX;
-    c->max = c->sym->classes * c->raw->max;
 #ifdef DEBUG
     if (c->sym->classes == 0)
         c->sym->classes = c->sym->max;
 #else
     ASSERT(c->sym->classes);
 #endif
+    c->raw->max = PARTIAL_EO_ESEP_MAX;
+    c->max = c->sym->classes * c->raw->max;
     ASSERT(c->max);
 
     char filename[256];

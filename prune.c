@@ -18,14 +18,13 @@ static void init_sym(struct sym_coord *c)
         cube_t x = c->set(i);
         for (int s=0; s<NUM_SYMS; ++s)
         {
-            cube_t y = apply_sym(x, s);
-            int k = c->get(y);
+            int k = c->get(apply_sym(x, s));
             if (!seen)
             {
                 c->info[k].class = class;
                 c->info[k].sym = inv_sym[s];
             }
-            c->self_syms[i] |= (long long)(i==k)<<s;
+            c->self_syms[i] |= (long long)(i==k)<<s%48;
         }
         if (!seen)
         {
@@ -40,7 +39,7 @@ static void init_sym(struct sym_coord *c)
 
 static struct map *init_prune_map(void)
 {
-    struct coord *c = &coord_eo_full;
+    struct coord *c = &coord_eo_full_ep;
     struct map *map = map_new();
     map_set(map, c->get(new_cube()), 0);
     for (int depth=1; depth<=MAP_DEPTH; ++depth)
@@ -53,7 +52,7 @@ static struct map *init_prune_map(void)
                     cube_t x = apply_move(c->set(map->data[i].key), m);
                     for (int s=0; s<NUM_SYMS; ++s)
                     {
-                        if (~c->sym->self_syms[c->sym->get(x)]>>s&1)
+                        if (!is_self_sym(c, x, s))
                             continue;
                         long long k = c->get(apply_sym(x, s));
                         if (map_get(map, k) == MAP_VAL_MAX)
@@ -86,7 +85,7 @@ static int init_prune_table_dfs(void *varg)
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
             {
-                if (~arg->c->sym->self_syms[arg->c->sym->get(x)]>>s&1)
+                if (!is_self_sym(arg->c, x, s))
                     continue;
                 long long k = arg->c->get(apply_sym(x, s));
                 int v = MAX(depth-PRUNE_BASE, 0);
@@ -117,7 +116,7 @@ static int init_prune_table_dfs(void *varg)
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
-            dfs(coord_eo_full.set(arg->map->data[i].key), arg->map->data[i].val);
+            dfs(coord_eo_full_ep.set(arg->map->data[i].key), arg->map->data[i].val);
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }
