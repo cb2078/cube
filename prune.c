@@ -46,10 +46,9 @@ static struct map *init_prune_map(void)
         for (long long i=0; i<MAP_CAPACITY; ++i)
         {
             if (map->data[i].val == depth-1)
-            {
-                for (int m=0; m<18; ++m)
+                for (int j=0; j<2; ++j) for (int m=0; m<18; ++m)
                 {
-                    cube_t x = apply_move(c->set(map->data[i].key), m);
+                    cube_t x = (j ? apply_pre_move : apply_move)(c->set(map->data[i].key), m);
                     for (int s=0; s<NUM_SYMS; ++s)
                     {
                         if (!is_self_sym(c, x, s))
@@ -59,12 +58,9 @@ static struct map *init_prune_map(void)
                             map_set(map, k, depth);
                     }
                 }
-            }
             if ((i+MAP_CAPACITY*(depth-1))%(MAP_DEPTH*MAP_CAPACITY/1000)==0)
-            {
                 fprintf(stderr, "\rdepth=%d load=%.1f%% mem=%.1fMB",
                         depth, 100.0*map->count/MAP_CAPACITY, 8.0*map->count/1e6);
-            }
         }
     clear_stderr();
     return map;
@@ -98,11 +94,12 @@ static int init_prune_table_dfs(void *varg)
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
                 depth < arg->depth &&
-                depth <= map_get(arg->map, coord_eo_full.get(x)))
+                depth <= map_get(arg->map, coord_eo_full_ep.get(x)))
                 *top++ = (struct search_node){x, move, depth};
         }
 
         push(x, EMPTY_MOVE, start_depth);
+        push(inverse(x), EMPTY_MOVE, start_depth);
         while (top>stack)
         {
             struct search_node cur = *--top;
