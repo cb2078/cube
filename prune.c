@@ -39,7 +39,7 @@ static void init_sym(struct sym_coord *c)
 
 static struct map *init_prune_map(void)
 {
-    struct coord *c = &coord_eo_full_ep;
+    struct coord *c = &coord_phase1_full;
     struct map *map = map_new();
     map_set(map, c->get(new_cube()), 0);
     for (int depth=1; depth<=MAP_DEPTH; ++depth)
@@ -94,7 +94,7 @@ static int init_prune_table_dfs(void *varg)
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
                 depth < arg->depth &&
-                depth <= map_get(arg->map, coord_eo_full_ep.get(x)))
+                depth <= map_get(arg->map, coord_phase1_full.get(x)))
                 *top++ = (struct search_node){x, move, depth};
         }
 
@@ -113,7 +113,7 @@ static int init_prune_table_dfs(void *varg)
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
-            dfs(coord_eo_full_ep.set(arg->map->data[i].key), arg->map->data[i].val);
+            dfs(coord_phase1_full.set(arg->map->data[i].key), arg->map->data[i].val);
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }

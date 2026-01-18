@@ -58,9 +58,8 @@ struct coord
 
 static struct sym_coord sym_co_csep;
 
-static struct coord coord_eo_none;
-static struct coord coord_eo_partial;
-static struct coord coord_eo_full;
+static struct coord coord_phase1;
+static struct coord coord_phase1_full;
 
 static int is_self_sym(struct coord *c, cube_t x, int s);
 static void init_coord(struct coord *c);

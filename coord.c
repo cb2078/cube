@@ -8,18 +8,6 @@
         .max = MAX,\
     };
 
-static long long get_eo_esep(cube_t x)
-{
-    return get_eo(x) * ESEP_MAX + get_esep(x);
-}
-
-static cube_t set_eo_esep(long long r)
-{
-    cube_t x = set_esep(r%ESEP_MAX);
-    cube_t y = set_eo(r/ESEP_MAX);
-    return compose(x, y);
-}
-
 static long long get_partial_eo_esep(cube_t x)
 {
     return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
@@ -27,7 +15,9 @@ static long long get_partial_eo_esep(cube_t x)
 
 static cube_t set_partial_eo_esep(long long r)
 {
-    return set_eo_esep(r);
+    cube_t x = set_esep(r%ESEP_MAX);
+    cube_t y = set_eo(r/ESEP_MAX);
+    return compose(x, y);
 }
 
 static long long get_eo_ep(cube_t x)
@@ -42,9 +32,7 @@ static cube_t set_eo_ep(long long r)
     return compose(x, y);
 }
 
-RAW_COORD(esep, ESEP_MAX);
 RAW_COORD(partial_eo_esep, 0);
-RAW_COORD(eo_esep, EO_ESEP_MAX);
 RAW_COORD(eo_ep, EO_EP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,18 +123,8 @@ static cube_t set_sym_comp(long long r, struct coord *c)
     return compose(x, y);
 }
 
-// COORD(eo_none, csep, 9, esep, ESEP_MAX);
-// COORD(eo_partial, csep, 9, partial_eo_esep, 0);
-// COORD(eo_full, csep, 9, eo_esep, EO_ESEP_MAX);
-
-// COORD(eo_none, co_csep, 3393, esep, ESEP_MAX);
-// COORD(eo_partial, co_csep, 3393, partial_eo_esep, 0);
-// COORD(eo_full, co_csep, 3393, eo_esep, EO_ESEP_MAX);
-
-COORD(eo_none, cp, 654, esep, ESEP_MAX);
-COORD(eo_partial, cp, 654, partial_eo_esep, 0);
-COORD(eo_full, cp, 654, eo_esep, EO_ESEP_MAX);
-COORD(eo_full_ep, cp, 654, eo_ep, EO_EP_MAX);
+COORD(phase1, cp, 654, partial_eo_esep, 0);
+COORD(phase1_full, cp, 654, eo_ep, EO_EP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 

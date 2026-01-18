@@ -46,7 +46,6 @@ int main(int argc, char **argv)
 {
     srand(time(0));
 
-    struct coord *coord = &coord_eo_partial;
     int moves[256], length=0;
     int threads;
     cube_t x = new_cube();
@@ -161,13 +160,7 @@ int main(int argc, char **argv)
         switch (c)
         {
             case 'e':
-                if (val == 0)
-                    coord = &coord_eo_none;
-                else if (val < 11)
-                    coord = &coord_eo_partial;
-                else if (val == 11)
-                    coord = &coord_eo_full;
-                else
+                if (val > 0 && val > 11)
                     ERROR("invalid EO variant '%d'\n", val);
                 EO_VARIANT = val;
                 break;
@@ -199,7 +192,7 @@ int main(int argc, char **argv)
 #endif
     if (NO_INPUT)
     {
-        init_coord(coord);
+        init_coord(&coord_phase1);
     }
     else if (!length)
     {
@@ -208,13 +201,13 @@ int main(int argc, char **argv)
         {
             read_moves(buf, moves, &length);
             x = apply_moves(new_cube(), moves, length);
-            optimal(coord, x, moves, &length);
+            optimal(&coord_phase1, x, moves, &length);
             print_moves(moves, length), putchar('\n');
         }
     }
     else
     {
-        optimal(coord, x, moves, &length);
+        optimal(&coord_phase1, x, moves, &length);
         print_moves(moves, length), putchar('\n');
     }
 
