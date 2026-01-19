@@ -12,8 +12,6 @@
 #define MERGE_CORNERS(x) SET_CORNERS((x)|LOW_BITS)
 
 static inline unsigned long long set_comb(int, int, unsigned long long);
-static inline long long get_perm(cube_t, int);
-static inline cube_t set_perm(long long, int);
 
 static cube_t new_cube(void)
 {
@@ -171,26 +169,70 @@ static cube_t set_esep(long long r)
     return SET_EDGES(h, l);
 }
 
-// TODO see if it is faster than to do permutations of each tetrad and separation (this has no loops)
-// TODO see if it is faster to use DP
 static long long get_cp(cube_t x)
 {
-    return get_perm(x, NUM_CORNERS);
+    long long b, m, h, l;
+    b = _mm256_extract_epi64(x, 2);
+    m = b & 0x0404040404040404;
+    m = m - (m >> 2);
+    h = _pext_u64(b, m);
+    m = m ^ 0x0303030303030303;
+    l = _pext_u64(b, m);
+    return get_csep(x) * 24 * 24 + rank_4P4[h] * 24 + rank_4P4[l];
 }
 
 static cube_t set_cp(long long r)
 {
-    return set_perm(r, NUM_CORNERS);
+    unsigned long long a, b, m;
+    unsigned char h, l;
+    a = unrank_8C4[r / 24 / 24];
+    h = unrank_4P4[r % (24 * 24) / 24];
+    l = unrank_4P4[r % 24];
+    b = _pdep_u64(a, 0x0404040404040404);
+    m = b - (b >> 2);
+    b = _pdep_u64(h, m) | b;
+    m = m ^ 0x0303030303030303;
+    b = _pdep_u64(l, m) | b;
+    return SET_CORNERS(b);
 }
 
 static long long get_ep(cube_t x)
 {
-    return get_perm(x, NUM_EDGES);
+    long long r = 0;
+    long long t = 0xba9876543210;
+    long long b;
+    for (int i=0; i<11; ++i)
+    {
+        int s, p;
+        b = i % 8 ? b : i/8
+            ? _mm256_extract_epi64(x, 1)
+            : _mm256_extract_epi64(x, 0);
+        s = (b & 0x0f) * 4;
+        p = _bextr_u64(t, s, 4);
+        r = r * (12 - i) + p;
+        t = t - (0x111111111110ull << s);
+        b = b >> 8;
+    }
+    return r;
 }
 
 static cube_t set_ep(long long r)
 {
-    return set_perm(r, NUM_EDGES);
+    long long t = 0xba9876543210 ;
+    long long a[2] = {0};
+    int i;
+#define b a[i/8]
+    for (i=0; i<11; ++i)
+    {
+        int s, p;
+        s = r / fact[12 - i - 1] % (12 - i) * 4;
+        p = _bextr_u64(t, s, 4);
+        b = b | ((long long)p << i % 8 * 8);
+        t = ((t >> 4) & (-1llu << s)) | (t & ~(-1llu << s));
+    }
+    b = b | (t << i % 8 * 8);
+#undef b
+    return SET_EDGES(a[1], a[0]);
 }
 
 static cube_t inverse(cube_t x)
@@ -244,46 +286,6 @@ static inline unsigned long long set_comb(int b, int s, unsigned long long m)
     r = _pdep_u64(0xe4, a>>(s) | a>>(s-1));
     r = s>1 ? r|a : r;
     return r;
-}
-
-static inline long long get_perm(cube_t x, int n)
-{
-    long long r = 0;
-    long long t = 0xba9876543210;
-    long long b;
-    for (int i=0; i<n-1; ++i)
-    {
-        int s, p;
-        b = i % 8 ? b
-            : i/8 ? _mm256_extract_epi64(x, 1)
-            : n==NUM_EDGES ? _mm256_extract_epi64(x, 0)
-            : _mm256_extract_epi64(x, 2);
-        s = (b & 0x0f) * 4;
-        p = _bextr_u64(t, s, 4);
-        r = r * (n - i) + p;
-        t = t - (0x111111111110ull << s);
-        b = b >> 8;
-    }
-    return r;
-}
-
-static inline cube_t set_perm(long long r, int n)
-{
-    long long t = n == NUM_EDGES ? 0xba9876543210 : 0x76543210;
-    long long a[2] = {0};
-    int i;
-#define b a[i/8]
-    for (i=0; i<n-1; ++i)
-    {
-        int s, p;
-        s = r / fact[n - i - 1] % (n - i) * 4;
-        p = _bextr_u64(t, s, 4);
-        b = b | ((long long)p << i % 8 * 8);
-        t = ((t >> 4) & (-1llu << s)) | (t & ~(-1llu << s));
-    }
-    b = b | (t << i % 8 * 8);
-#undef b
-    return n==NUM_EDGES ? SET_EDGES(a[1], a[0]) : SET_CORNERS(a[0]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
