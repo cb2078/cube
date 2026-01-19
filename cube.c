@@ -137,32 +137,32 @@ static cube_t set_csep(long long r)
 
 static long long get_esep(cube_t x)
 {
-    unsigned e, s;
-    // mask of positions of the E-slice edges
-    x = _mm256_slli_epi32(x, 4);
-    e = _mm256_movemask_epi8(x);
-    e = e & 0xfff;
+    unsigned m, s;
     // mask of positions of the S-slice edges
-    x = _mm256_slli_epi32(x, 1);
+    x = _mm256_slli_epi32(x, 4);
     s = _mm256_movemask_epi8(x);
-    // "filter out" the E-slice edges from the S-slice edges
-    s = _pext_u32(s, ~e);
-    s = s & 0xff;
-    return rank_8C4[s] * 512 + INSERT_ESLICE_GAPS(rank_12C4[e]);
+    s = s & 0xfff;
+    // mask of positions of the M-slice edges
+    x = _mm256_slli_epi32(x, 1);
+    m = _mm256_movemask_epi8(x);
+    // "filter out" the S-slice edges from the M-slice edges
+    m = _pext_u32(m, ~s);
+    m = m & 0xff;
+    return rank_8C4[m] * 512 + INSERT_ESLICE_GAPS(rank_12C4[s]);
 }
 
 static cube_t set_esep(long long r)
 {
     unsigned long long b, l, h;
-    unsigned short e, s, m;
-    e = unrank_12C4[REMOVE_ESLICE_GAPS(r%512)];
-    s = unrank_8C4[r/512];
-    s = _pdep_u32(s, ~e);
-    m = 0xfff ^ s ^ e;
+    unsigned short e, m, s;
+    s = unrank_12C4[REMOVE_ESLICE_GAPS(r%512)];
+    m = unrank_8C4[r/512];
+    m = _pdep_u32(m, ~s);
+    e = 0xfff ^ m ^ s;
     b = 0xfedc000000000000;
-    b = set_comb(e, 3, 0x111111111111) | b;
-    b = set_comb(s, 2, 0x111111111111) | b;
-    b = set_comb(m, 1, 0x111111111111) | b;
+    b = set_comb(s, 3, 0x111111111111) | b;
+    b = set_comb(m, 2, 0x111111111111) | b;
+    b = set_comb(e, 1, 0x111111111111) | b;
     l = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
     b = b >> 32;
     h = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
