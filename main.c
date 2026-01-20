@@ -160,7 +160,7 @@ int main(int argc, char **argv)
         switch (c)
         {
             case 'e':
-                if (val > 0 && val > 11)
+                if (val < 0 && val > 11)
                     ERROR("invalid EO variant '%d'\n", val);
                 EO_VARIANT = val;
                 break;
