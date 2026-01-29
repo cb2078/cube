@@ -88,20 +88,6 @@ int main(void)
                 CHECK((i), get_esep(set_esep(i)));
     }
 
-    TEST("cp")
-    {
-        long long n = fact[8];
-        for (int i=0; i<n; ++i)
-            CHECK(i, get_cp(set_cp(i)));
-    }
-
-    TEST("ep")
-    {
-        long long n = fact[8];
-        for (int i=0, j; i<n; ++i)
-            j=rand()%fact[12], CHECK(j, get_ep(set_ep(j)));
-    }
-
     TEST("syms")
     {
         int moves[256];

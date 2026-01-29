@@ -2,7 +2,7 @@
 #define MAP_H
 
 #define MAP_CAPACITY (1ll<<MAP_CAPACITY_LOG2)
-#define MAP_CAPACITY_LOG2 25
+#define MAP_CAPACITY_LOG2 23
 #define MAP_KEY_BITS 60
 #define MAP_KEY_MAX ((1ll<<MAP_KEY_BITS)-1)
 #define MAP_VAL_BITS 4

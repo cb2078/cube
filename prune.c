@@ -24,7 +24,7 @@ static void init_sym(struct sym_coord *c)
                 c->info[k].class = class;
                 c->info[k].sym = inv_sym[s];
             }
-            c->self_syms[i] |= (long long)(i==k)<<s%48;
+            c->self_syms[i] |= (long long)(i==k)<<s;
         }
         if (!seen)
         {
@@ -46,9 +46,9 @@ static struct map *init_prune_map(void)
         for (long long i=0; i<MAP_CAPACITY; ++i)
         {
             if (map->data[i].val == depth-1)
-                for (int j=0; j<2; ++j) for (int m=0; m<18; ++m)
+                for (int m=0; m<18; ++m)
                 {
-                    cube_t x = (j ? apply_pre_move : apply_move)(c->set(map->data[i].key), m);
+                    cube_t x = apply_move(c->set(map->data[i].key), m);
                     for (int s=0; s<NUM_SYMS; ++s)
                     {
                         if (!is_self_sym(c, x, s))

@@ -1,23 +1,29 @@
-#define STACK_LENGTH 300
 #define QUEUE_LENGTH 43254
 #define QUEUE_DEPTH 4
 
 static int search(cube_t x, int *path, int (*h)(cube_t), int max_depth)
 {
+    struct search_node
+    {
+        cube_t cube, inverse;
+        int move;
+        int depth;
+    };
+
     int min = INT_MAX;
-    struct search_node stack[STACK_LENGTH];
+    struct search_node stack[256];
     struct search_node *top = stack;
 
-    void push(cube_t x, int move, int depth)
+    void push(cube_t x, cube_t y, int move, int depth)
     {
-        int f = h(x) + depth;
+        int f = MAX(h(x), h(y)) + depth;
         if (f > max_depth)
             min = MIN(min, f);
         else
-            *top++ = (struct search_node){x, move, depth};
+            *top++ = (struct search_node){x, y, move, depth};
     }
 
-    push(x, EMPTY_MOVE, 0);
+    push(x, inverse(x), EMPTY_MOVE, 0);
     while (top>stack)
     {
         struct search_node cur = *--top;
@@ -25,9 +31,8 @@ static int search(cube_t x, int *path, int (*h)(cube_t), int max_depth)
             path[cur.depth-1] = cur.move;
         if (0 == h(cur.cube))
             return 0;
-
         FOREACH_MOVE(cur.move)
-            push(apply_move(cur.cube, m), m, cur.depth+1);
+            push(apply_move(cur.cube, m), apply_pre_move(cur.inverse, m), m, cur.depth+1);
     }
 
     return min-max_depth;
@@ -52,7 +57,7 @@ struct queue_node
 
 static void build_search_queue(struct queue_node *queue, cube_t x)
 {
-    struct search_node stack[STACK_LENGTH];
+    struct search_node stack[256];
     struct search_node *top = stack;
     int count = 0;
     unsigned path = 0;
@@ -111,8 +116,6 @@ static int search_thread(void *__arg)
 
 static void optimal(struct coord *c, cube_t x, int *path, int *length)
 {
-    init_coord(c);
-
     *length = 0;
     while (*length < QUEUE_DEPTH)
     {

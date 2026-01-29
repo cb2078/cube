@@ -8,32 +8,27 @@
         .max = MAX,\
     };
 
-static long long get_partial_eo_esep(cube_t x)
+static long long get_eo_esep(cube_t x)
 {
-    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
+    return get_eo(x) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_partial_eo_esep(long long r)
+static cube_t set_eo_esep(long long r)
 {
     cube_t x = set_esep(r%ESEP_MAX);
     cube_t y = set_eo(r/ESEP_MAX);
     return compose(x, y);
 }
 
-static long long get_eo_ep(cube_t x)
+static long long get_partial_eo_esep(cube_t x)
 {
-    return get_eo(x) * EP_MAX + get_ep(x);
+    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_eo_ep(long long r)
-{
-    cube_t x = set_ep(r%EP_MAX);
-    cube_t y = set_eo(r/EP_MAX);
-    return compose(x, y);
-}
+#define set_partial_eo_esep set_eo_esep
 
+RAW_COORD(eo_esep, EO_ESEP_MAX);
 RAW_COORD(partial_eo_esep, 0);
-RAW_COORD(eo_ep, EO_EP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +57,6 @@ static cube_t set_co_csep(long long r)
 
 SYM_COORD(csep, CSEP_MAX, 9);
 SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
-SYM_COORD(cp, CP_MAX, 654);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -123,35 +117,21 @@ static cube_t set_sym_comp(long long r, struct coord *c)
     return compose(x, y);
 }
 
-COORD(phase1, cp, 654, partial_eo_esep, 0);
-COORD(phase1_full, cp, 654, eo_ep, EO_EP_MAX);
+COORD(phase1, co_csep, 3393, partial_eo_esep, 0);
+COORD(phase1_full, co_csep, 3393, eo_esep, EO_ESEP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 
 static int is_self_sym(struct coord *c, cube_t x, int s)
 {
-    return c->sym->self_syms[c->sym->get(x)] >> s % 48 & 1;
+    return c->sym->self_syms[c->sym->get(x)] >> s & 1;
 }
 
 static void init_coord(struct coord *c)
 {
-    static int initialised = 0;
-    if (initialised)
-        return;
-
-#ifdef DEBUG
-    if (c->sym->classes == 0)
-        c->sym->classes = c->sym->max;
-#else
-    ASSERT(c->sym->classes);
-#endif
-    c->raw->max = PARTIAL_EO_ESEP_MAX;
-    c->max = c->sym->classes * c->raw->max;
-    ASSERT(c->max);
-
+    FILE *fp;
     char filename[256];
     snprintf(filename, sizeof(filename), "e%d.bin", EO_VARIANT);
-    FILE *fp;
     c->sym->to_rep = malloc(sizeof(int)*c->sym->classes);
     c->sym->info = malloc(4*c->sym->max);
     c->table = table_new(c->max, 2);
@@ -177,5 +157,4 @@ static void init_coord(struct coord *c)
         ERROR("couldn't write '%s'\n", filename);
     }
     fclose(fp);
-    initialised = 1;
 }

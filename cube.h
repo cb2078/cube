@@ -49,10 +49,6 @@ static long long get_csep(cube_t);
 static cube_t set_csep(long long);
 static long long get_esep(cube_t);
 static cube_t set_esep(long long);
-static long long get_cp(cube_t);
-static cube_t set_cp(long long);
-static long long get_ep(cube_t);
-static cube_t set_ep(long long);
 
 static cube_t inverse(cube_t);
 

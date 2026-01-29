@@ -162,7 +162,7 @@ int main(int argc, char **argv)
             case 'e':
                 if (val < 0 && val > 11)
                     ERROR("invalid EO variant '%d'\n", val);
-                EO_VARIANT = val;
+                set_eo_variant(val);
                 break;
             case 'h':
                 help();
@@ -190,9 +190,9 @@ int main(int argc, char **argv)
 #else
     LOG("build mode: RELEASE\n");
 #endif
+    init_coord(&coord_phase1);
     if (NO_INPUT)
     {
-        init_coord(&coord_phase1);
     }
     else if (!length)
     {
