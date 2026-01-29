@@ -83,13 +83,12 @@ static int init_prune_table_dfs(void *varg)
             {
                 if (!is_self_sym(arg->c, x, s))
                     continue;
-                long long k = arg->c->get(apply_sym(x, s));
                 int v = MAX(depth-PRUNE_BASE, 0);
-                if (table_get(arg->c->table, 2, k) > v)
-                    table_set(arg->c->table, 2, k, v);
-                long long j = PRUNE_MIN_62(k);
-                if (table_get(arg->c->table, 4, j/2) > depth)
-                    table_set(arg->c->table, 4, j/2, depth);
+                long long i = arg->c->get(apply_sym(x, s));
+                long long j = PRUNE_EXT_62(i);
+                long long k = PRUNE_MIN_62(i);
+                TABLE_SET_MIN(arg->c->table, 2, j, v);
+                TABLE_SET_MIN(arg->c->table, 4, k/2, depth);
             }
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
@@ -99,7 +98,6 @@ static int init_prune_table_dfs(void *varg)
         }
 
         push(x, EMPTY_MOVE, start_depth);
-        push(inverse(x), EMPTY_MOVE, start_depth);
         while (top>stack)
         {
             struct search_node cur = *--top;

@@ -64,8 +64,6 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
     \
     static long long get_##NAME(cube_t);\
     static cube_t set_##NAME(long long);\
-    static int h_##NAME(cube_t);\
-    static int h_##NAME##_optimal(cube_t);\
     \
     static struct coord coord_##NAME =\
     {\
@@ -73,8 +71,6 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
         .get = get_##NAME,\
         .set = set_##NAME,\
         .max = SYM_CLASSES * RAW_MAX,\
-        .h = h_##NAME,\
-        .h_optimal = h_##NAME##_optimal,\
         .raw = &raw_coord_##RAW,\
         .sym = &sym_coord_##SYM,\
     };\
@@ -88,19 +84,6 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
     {\
         return set_sym_comp(x, &coord_##NAME);\
     }\
-    \
-    static int h_##NAME(cube_t x)\
-    {\
-        long long i = get_##NAME(x);\
-        int r = table_get(coord_##NAME.table, 2, i);\
-        return r ? r+PRUNE_BASE\
-            : table_get(coord_##NAME.table, 4, PRUNE_MIN_62(i)/2);\
-    }\
-    \
-    static int h_##NAME##_optimal(cube_t x)\
-    {\
-        return h_##NAME(x) ?: !cube_eq(x, new_cube());\
-    }
 
 static long long get_sym_comp(cube_t x, struct coord *c)
 {
@@ -129,17 +112,18 @@ static int is_self_sym(struct coord *c, cube_t x, int s)
 
 static void init_coord(struct coord *c)
 {
+    long long table_max = PRUNE_EXT_62(c->max);
     FILE *fp;
     char filename[256];
     snprintf(filename, sizeof(filename), "e%d.bin", EO_VARIANT);
     c->sym->to_rep = malloc(sizeof(int)*c->sym->classes);
     c->sym->info = malloc(4*c->sym->max);
-    c->table = table_new(c->max, 2);
+    c->table = table_new(table_max, 2);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {
         fread(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
         fread(c->sym->info, 4*c->sym->max, 1, fp);
-        fread(c->table, TABLE_SIZE(c->max, 2), 1, fp);
+        fread(c->table, TABLE_SIZE(table_max, 2), 1, fp);
         LOG("read '%s'\n", filename);
     }
     else
@@ -149,7 +133,7 @@ static void init_coord(struct coord *c)
         init_prune_table(c);
         fwrite(c->sym->to_rep, sizeof(int)*c->sym->classes, 1, fp);
         fwrite(c->sym->info, 4*c->sym->max, 1, fp);
-        fwrite(c->table, TABLE_SIZE(c->max, 2), 1, fp);
+        fwrite(c->table, TABLE_SIZE(table_max, 2), 1, fp);
         LOG("wrote '%s'\n", filename);
     }
     else

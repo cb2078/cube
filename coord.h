@@ -10,7 +10,7 @@
 #define CO_MAX pow3[7]
 #define CSEP_MAX choose[8][4]
 #define EO_MAX pow2[11]
-#define ESEP_MAX (512*choose[8][4])
+#define ESEP_MAX (choose[12][4]*choose[8][4])
 #define PARTIAL_EO_MAX (1<<EO_VARIANT)
 
 #define CO_CSEP_MAX (CO_MAX*CSEP_MAX)
@@ -47,9 +47,6 @@ struct coord
     long long (*get)(cube_t);
     cube_t (*set)(long long);
     long long max;
-    int (*h)(cube_t);
-    int (*h_optimal)(cube_t);
-    struct raw_coord *raw;
     struct sym_coord *sym;
     unsigned *table;
 };

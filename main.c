@@ -201,13 +201,13 @@ int main(int argc, char **argv)
         {
             read_moves(buf, moves, &length);
             x = apply_moves(new_cube(), moves, length);
-            optimal(&coord_phase1, x, moves, &length);
+            optimal(x, moves, &length);
             print_moves(moves, length), putchar('\n');
         }
     }
     else
     {
-        optimal(&coord_phase1, x, moves, &length);
+        optimal(x, moves, &length);
         print_moves(moves, length), putchar('\n');
     }
 
