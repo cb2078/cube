@@ -9,28 +9,38 @@ static void clear_stderr(void)
 static void init_sym(struct sym_coord *c)
 {
     ASSERT(!c->self_syms);
-    int class = 0;
     c->self_syms = malloc(sizeof(long long)*c->max);
+    for (long long i=0; i<c->max; ++i)
+    {
+        cube_t x = c->set(i);
+        for (int s=0; s<NUM_SYMS; ++s)
+        {
+            long long k = c->get(apply_sym(x, s));
+            c->self_syms[i] |= (long long)(i==k)<<s%48;
+        }
+        if (i%(c->max/10000)==0)
+            fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);
+    }
+    clear_stderr();
+
+    int class = 0;
     memset(c->info, 0xff, 4*c->max);
     for (long long i=0; i<c->max; ++i)
     {
-        int seen = c->info[i].class != 0xffff;
+        if (*(unsigned *)&c->info[i] != -1u)
+            continue;
         cube_t x = c->set(i);
         for (int s=0; s<NUM_SYMS; ++s)
         {
             int k = c->get(apply_sym(x, s));
-            if (!seen)
-            {
-                c->info[k].class = class;
-                c->info[k].sym = inv_sym[s];
-            }
-            c->self_syms[i] |= (long long)(i==k)<<s;
+            if (s && k==i)
+                continue;
+            c->info[k].class = class;
+            c->info[k].sym = inv_sym[s];
         }
-        if (!seen)
-        {
-            c->to_rep[class++] = i;
-        }
-        fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);
+        c->to_rep[class++] = i;
+        if (i%(c->max/10000)==0)
+            fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/c->max);
     }
     clear_stderr();
     LOG("%s classes : %d\n", c->name, class);
