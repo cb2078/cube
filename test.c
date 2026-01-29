@@ -18,8 +18,17 @@
 #include "solver.c"
 #include "table.c"
 
-#define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
 #define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
+#define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
+
+#define TEST_COORD(NAME, CAPS)\
+    TEST(#NAME)\
+        for (long long i=0; i<CAPS##_MAX; ++i)\
+        {\
+            cube_t x = new_cube();\
+            set_##NAME(&x, i);\
+            CHECK(i, get_##NAME(x));\
+        }\
 
 #include "test.inc"
 
@@ -58,35 +67,6 @@ int main(void)
         }
     }
 
-    TEST("eo")
-    {
-        long long n=pow2[11];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_eo(set_eo(i)));
-    }
-
-    TEST("co")
-    {
-        long long n=pow3[7];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_co(set_co(i)));
-    }
-
-
-    TEST("csep")
-    {
-        long long n=choose[8][4];
-        for (long long i=0; i<n; ++i)
-            CHECK(i, get_csep(set_csep(i)));
-    }
-
-    TEST("esep")
-    {
-        long long n=choose[12][4]*choose[8][4];
-        for (long long i=0; i<n; ++i)
-            CHECK((i), get_esep(set_esep(i)));
-    }
-
     TEST("syms")
     {
         int moves[256];
@@ -105,6 +85,11 @@ int main(void)
             }
         }
     }
+
+    TEST_COORD(eo, EO);
+    TEST_COORD(co, CO);
+    TEST_COORD(csep, CSEP);
+    TEST_COORD(esep, ESEP);
 
     printf("all tests passed\n");
     return 0;

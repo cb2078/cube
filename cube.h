@@ -37,13 +37,13 @@ static cube_t apply_move(cube_t, int);
 static cube_t apply_moves(cube_t, int *, int);
 
 static long long get_eo(cube_t);
-static cube_t set_eo(long long);
+static void set_eo(cube_t *, long long);
 static long long get_co(cube_t);
-static cube_t set_co(long long);
+static void set_co(cube_t *, long long);
 static long long get_csep(cube_t);
-static cube_t set_csep(long long);
+static void set_csep(cube_t *, long long);
 static long long get_esep(cube_t);
-static cube_t set_esep(long long);
+static void set_esep(cube_t *, long long);
 
 static cube_t inverse(cube_t);
 

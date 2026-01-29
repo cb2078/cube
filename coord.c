@@ -1,37 +1,3 @@
-#define RAW_COORD(NAME, MAX)\
-    \
-    static struct raw_coord raw_coord_##NAME =\
-    {\
-        .name = #NAME,\
-        .get = get_##NAME,\
-        .set = set_##NAME,\
-        .max = MAX,\
-    };
-
-static long long get_eo_esep(cube_t x)
-{
-    return get_eo(x) * ESEP_MAX + get_esep(x);
-}
-
-static cube_t set_eo_esep(long long r)
-{
-    cube_t x = set_esep(r%ESEP_MAX);
-    cube_t y = set_eo(r/ESEP_MAX);
-    return compose(x, y);
-}
-
-static long long get_partial_eo_esep(cube_t x)
-{
-    return (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
-}
-
-#define set_partial_eo_esep set_eo_esep
-
-RAW_COORD(eo_esep, EO_ESEP_MAX);
-RAW_COORD(partial_eo_esep, 0);
-
-////////////////////////////////////////////////////////////////////////////////
-
 #define SYM_COORD(NAME, MAX, CLASSES)\
     \
     static struct sym_coord sym_coord_##NAME =\
@@ -50,20 +16,17 @@ static long long get_co_csep(cube_t x)
 
 static cube_t set_co_csep(long long r)
 {
-    cube_t x = set_csep(r%CSEP_MAX);
-    cube_t y = set_co(r/CSEP_MAX);
-    return compose(x, y);
+    cube_t x = new_cube();
+    set_csep(&x, r % CSEP_MAX);
+    set_co(&x, r / CSEP_MAX);
+    return x;
 }
 
-SYM_COORD(csep, CSEP_MAX, 9);
-SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
+SYM_COORD(co_csep, CO_CSEP_MAX, CO_CSEP_CLASSES);
 
 ////////////////////////////////////////////////////////////////////////////////
 
 #define COORD(NAME, SYM, SYM_CLASSES, RAW, RAW_MAX)\
-    \
-    static long long get_##NAME(cube_t);\
-    static cube_t set_##NAME(long long);\
     \
     static struct coord coord_##NAME =\
     {\
@@ -71,37 +34,43 @@ SYM_COORD(co_csep, CO_CSEP_MAX, 3393);
         .get = get_##NAME,\
         .set = set_##NAME,\
         .max = SYM_CLASSES * RAW_MAX,\
-        .raw = &raw_coord_##RAW,\
         .sym = &sym_coord_##SYM,\
     };\
-    \
-    static long long get_##NAME(cube_t x)\
-    {\
-        return get_sym_comp(x, &coord_##NAME);\
-    }\
-    \
-    static cube_t set_##NAME(long long x)\
-    {\
-        return set_sym_comp(x, &coord_##NAME);\
-    }\
 
-static long long get_sym_comp(cube_t x, struct coord *c)
+static long long get_phase1(cube_t x)
 {
-    long long r = c->sym->get(x);
-    x = apply_sym(x, c->sym->info[r].sym);
-    r = c->sym->info[r].class;
-    return r * c->raw->max + c->raw->get(x);
+    long long r = get_co_csep(x);
+    x = apply_sym(x, coord_phase1.sym->info[r].sym);
+    r = coord_phase1.sym->info[r].class;
+    return r * PARTIAL_EO_ESEP_MAX + (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_sym_comp(long long r, struct coord *c)
+static cube_t set_phase1(long long r)
 {
-    cube_t x = c->sym->set(c->sym->to_rep[r/c->raw->max]);
-    cube_t y = c->raw->set(r%c->raw->max);
-    return compose(x, y);
+    cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / PARTIAL_EO_ESEP_MAX]);
+    set_esep(&x, r % ESEP_MAX);
+    set_eo(&x, r % PARTIAL_EO_ESEP_MAX / ESEP_MAX);
+    return x;
 }
 
-COORD(phase1, co_csep, 3393, partial_eo_esep, 0);
-COORD(phase1_full, co_csep, 3393, eo_esep, EO_ESEP_MAX);
+static long long get_phase1_full(cube_t x)
+{
+    long long r = get_co_csep(x);
+    x = apply_sym(x, coord_phase1.sym->info[r].sym);
+    r = coord_phase1.sym->info[r].class;
+    return r * EO_ESEP_MAX + get_eo(x) * ESEP_MAX + get_esep(x);
+}
+
+static cube_t set_phase1_full(long long r)
+{
+    cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / EO_ESEP_MAX]);
+    set_esep(&x, r % ESEP_MAX);
+    set_eo(&x, r % EO_ESEP_MAX / ESEP_MAX);
+    return x;
+}
+
+COORD(phase1, co_csep, CO_CSEP_CLASSES, partial_eo_esep, 0);
+COORD(phase1_full, co_csep, CO_CSEP_CLASSES, eo_esep, EO_ESEP_MAX);
 
 ////////////////////////////////////////////////////////////////////////////////
 

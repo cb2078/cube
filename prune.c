@@ -87,7 +87,7 @@ static int init_prune_table_dfs(void *varg)
 
         void push(cube_t x, int move, int depth)
         {
-            int class = arg->c->get(x)/arg->c->raw->max;
+            int class = arg->c->get(x)%arg->c->sym->classes;
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
             {

@@ -17,13 +17,7 @@
 #define EO_ESEP_MAX (EO_MAX*ESEP_MAX)
 #define PARTIAL_EO_ESEP_MAX (PARTIAL_EO_MAX*ESEP_MAX)
 
-struct raw_coord
-{
-    char *name;
-    long long (*get)(cube_t);
-    cube_t (*set)(long long);
-    long long max;
-};
+#define CO_CSEP_CLASSES 3393
 
 struct sym_coord
 {
@@ -63,8 +57,7 @@ static inline void set_eo_variant(int v)
 {
     ASSERT(v >= 0 && v < NUM_EDGES);
     EO_VARIANT = v;
-    coord_phase1.raw->max = PARTIAL_EO_ESEP_MAX;
-    coord_phase1.max = coord_phase1.sym->classes * coord_phase1.raw->max;
+    coord_phase1.max = coord_phase1.sym->classes * PARTIAL_EO_ESEP_MAX;
 }
 
 #endif

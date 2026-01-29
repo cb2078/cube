@@ -6,10 +6,10 @@
 #define ORIENT_MASK _mm256_set1_epi8(0xf0)
 #define PERMUTE_MASK _mm256_set1_epi8(0x0f)
 
-#define SET_EDGES(x, y) _mm256_set_epi64x(HIGH_BITS, LOW_BITS, (x), (y))
-#define SET_CORNERS(x) _mm256_set_epi64x(HIGH_BITS, (x), HIGH_BITS, LOW_BITS)
-#define MERGE_EDGES(x, y) SET_EDGES((x)|HIGH_BITS, (y)|LOW_BITS)
-#define MERGE_CORNERS(x) SET_CORNERS((x)|LOW_BITS)
+#define SET_CO(x, a) ((x) = _mm256_or_si256((x), _mm256_set_epi64x(0, (a), 0, 0)))
+#define SET_CP(x, a) ((x) = _mm256_insert_epi64((x), (a), 2))
+#define SET_EO(x, b, a) ((x) = _mm256_or_si256((x), _mm256_set_epi64x(0, 0, (b), (a))))
+#define SET_EP(x, b, a) ((x) = _mm256_inserti128_si256((x), _mm_set_epi64x((b), (a)), 0))
 
 static inline unsigned long long set_comb(int, int, unsigned long long);
 
@@ -82,13 +82,13 @@ static long long get_eo(cube_t x)
     return r;
 }
 
-static cube_t set_eo(long long r)
+static void set_eo(cube_t *x, long long r)
 {
     unsigned long long l, h;
     r = r | ((_mm_popcnt_u64(r)&1)<<11);
     l = _pdep_u64(r, 0x1010101010101010);
     h = _pdep_u64(r>>8, 0x1010101010101010);
-    return MERGE_EDGES(h, l);
+    SET_EO(*x, h, l);
 }
 
 static long long get_co(cube_t x)
@@ -110,12 +110,12 @@ static long long get_co(cube_t x)
     return r;
 }
 
-static cube_t set_co(long long r)
+static void set_co(cube_t *x, long long r)
 {
     unsigned long long b = 0;
     for (int i=0, p=0; i<8; ++i, p+=r%3, r/=3)
         b |= (i==7?3-p%3:r)%3<<(i*8+4);
-    return MERGE_CORNERS(b);
+    SET_CO(*x, b);
 }
 
 static long long get_csep(cube_t x)
@@ -126,13 +126,13 @@ static long long get_csep(cube_t x)
     return rank_8C4[b];
 };
 
-static cube_t set_csep(long long r)
+static void set_csep(cube_t *x, long long r)
 {
     unsigned long long a, b, m;
     a = unrank_8C4[r];
     m = 0x0101010101010101;
     b = set_comb(a, 2, m) | set_comb(0xff ^ a, 1, m);
-    return SET_CORNERS(b);
+    SET_CP(*x, b);
 }
 
 static long long get_esep(cube_t x)
@@ -151,7 +151,7 @@ static long long get_esep(cube_t x)
     return rank_8C4[m] * choose[12][4] + rank_12C4[s];
 }
 
-static cube_t set_esep(long long r)
+static void set_esep(cube_t *x, long long r)
 {
     unsigned long long b, l, h;
     unsigned short e, m, s;
@@ -166,7 +166,7 @@ static cube_t set_esep(long long r)
     l = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
     b = b >> 32;
     h = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
-    return SET_EDGES(h, l);
+    SET_EP(*x, h, l);
 }
 
 static cube_t inverse(cube_t x)
