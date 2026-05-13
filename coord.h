@@ -49,6 +49,7 @@ static struct coord coord_phase1;
 static struct coord coord_phase1_full;
 
 static int is_self_sym(struct coord *c, cube_t x, int s);
+static void init_sym(struct sym_coord *c);
 static void init_coord(struct coord *c);
 
 static int EO_VARIANT = 1;

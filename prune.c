@@ -6,10 +6,8 @@ static void clear_stderr(void)
     fprintf(stderr, "\r");
 }
 
-static void init_sym(struct sym_coord *c)
+static void fill_sym_table(struct sym_coord *c)
 {
-    ASSERT(!c->self_syms);
-    c->self_syms = malloc(sizeof(long long)*c->max);
     for (long long i=0; i<c->max; ++i)
     {
         cube_t x = c->set(i);
@@ -47,7 +45,7 @@ static void init_sym(struct sym_coord *c)
     ASSERT(class == c->classes);
 }
 
-static struct map *init_prune_map(void)
+static struct map *fill_prune_map(void)
 {
     struct coord *c = &coord_phase1_full;
     struct map *map = map_new();
@@ -76,9 +74,9 @@ static struct map *init_prune_map(void)
     return map;
 }
 
-static int init_prune_table_dfs(void *varg)
+static int fill_prune_table_dfs(void *varg)
 {
-    struct init_prune_table_arg *arg = varg;
+    struct fill_prune_table_arg *arg = varg;
 
     void dfs(cube_t x, int start_depth)
     {
@@ -128,13 +126,13 @@ static int init_prune_table_dfs(void *varg)
     return 0;
 }
 
-static void init_prune_table(struct coord *c)
+static void fill_prune_table(struct coord *c)
 {
-    struct map *map = init_prune_map();
+    struct map *map = fill_prune_map();
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
-    struct init_prune_table_arg args[THREADS];
+    struct fill_prune_table_arg args[THREADS];
     thrd_t threads[THREADS];
     for (int i=0; i<THREADS; ++i)
     {
@@ -143,7 +141,7 @@ static void init_prune_table(struct coord *c)
         args[i].c = c;
         args[i].depth = PRUNE_BASE+2;
         args[i].map = map;
-        thrd_create(&threads[i], init_prune_table_dfs, &args[i]);
+        thrd_create(&threads[i], fill_prune_table_dfs, &args[i]);
     }
     for (int i=0; i<THREADS; ++i)
         thrd_join(threads[i], NULL);

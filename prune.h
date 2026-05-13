@@ -12,7 +12,7 @@
 #define PRUNE_EXT_62(i) ((i)/choose[12][4]*512 + INSERT_ESLICE_GAPS((i)%choose[12][4]))
 #define PRUNE_MIN_62(i) ((i)/62*64+62)
 
-struct init_prune_table_arg
+struct fill_prune_table_arg
 {
     mtx_t *mutexes;
     int thread_id;
@@ -21,8 +21,8 @@ struct init_prune_table_arg
     struct map *map;
 };
 
-static void init_sym(struct sym_coord *c);
-static void init_prune_table(struct coord *c);
+static void fill_sym_table(struct sym_coord *c);
+static void fill_prune_table(struct coord *c);
 
 static int prune_base[12] =
 {
