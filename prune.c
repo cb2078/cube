@@ -114,8 +114,8 @@ static int fill_prune_table_dfs(void *varg)
         }
     }
 
-    int start = arg->thread_id*MAP_CAPACITY/THREADS;
-    int end = arg->thread_id==THREADS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/THREADS;
+    int start = arg->thread_id*MAP_CAPACITY/WORKERS;
+    int end = arg->thread_id==WORKERS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/WORKERS;
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
@@ -132,9 +132,9 @@ static void fill_prune_table(struct coord *c)
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
-    struct fill_prune_table_arg args[THREADS];
-    thrd_t threads[THREADS];
-    for (int i=0; i<THREADS; ++i)
+    struct fill_prune_table_arg args[WORKERS];
+    thrd_t threads[WORKERS];
+    for (int i=0; i<WORKERS; ++i)
     {
         args[i].mutexes = mutexes;
         args[i].thread_id = i;
@@ -143,7 +143,7 @@ static void fill_prune_table(struct coord *c)
         args[i].map = map;
         thrd_create(&threads[i], fill_prune_table_dfs, &args[i]);
     }
-    for (int i=0; i<THREADS; ++i)
+    for (int i=0; i<WORKERS; ++i)
         thrd_join(threads[i], NULL);
     for (int i=0; i<c->sym->classes; ++i)
         mtx_destroy(&mutexes[i]);

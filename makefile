@@ -1,25 +1,21 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Wno-unused-function -Wno-unused-variable -march=native
 MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
-EXE := main test
+EXE := main debug
 DEP := $(EXE:%=%.d)
 
-all: test debug
+all: debug main
+
+main: CFLAGS := $(CFLAGS) -O3
 
 debug: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -DDEBUG
-debug: main
-
-release: CFLAGS := $(CFLAGS) -O3
-release: main
-
-test: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -DDEBUG
 
 clean:
-	rm -f $(EXE) $(wildcard *.bin)
+	rm -rfv $(EXE) $(DEP) *.bin
 
-$(EXE): %: %.c
+$(EXE): %: main.c
 	$(CC) $(CFLAGS) -MMD -o $@ $<
 
-.PHONY: all clean debug release
+.PHONY: all clean
 
 -include $(DEP)

@@ -1,48 +1,34 @@
-#include "common.h"
-
-#include "coord.h"
-#include "cube.h"
-#include "data.h"
-#include "map.h"
-#include "moves.h"
-#include "prune.h"
-#include "solver.h"
-#include "table.h"
-
-#include "coord.c"
-#include "cube.c"
-#include "data.c"
-#include "map.c"
-#include "moves.c"
-#include "prune.c"
-#include "solver.c"
-#include "table.c"
-
-#define CHECK(x, y) ((x)!=(y) ? fail((x), (y), #x, #y) : (void)0)
-#define TEST(x) for (assert(!name), assert(x), name=(x), printf("running test '%s'\n", name); name; name=0)
-
-#define TEST_COORD(NAME, CAPS)\
-    TEST(#NAME)\
-        for (long long i=0; i<CAPS##_MAX; ++i)\
-        {\
-            cube_t x = new_cube();\
-            set_##NAME(&x, i);\
-            CHECK(i, get_##NAME(x));\
-        }\
-
-#include "test.inc"
-
-static char *name;
-
-static void fail(int x, int y, char *xs, char *ys)
+void run_tests(void)
 {
-    fprintf(stderr, "test \"%s\" failed (%s:%d, %s:%d)\n", name, xs, x, ys, y);
-    exit(1);
-}
+    char *name;
+    
+    void check(int x, int y)
+    {
+        if (x != y)
+        {
+            fprintf(stderr, "test '%s' failed (%d != %d)\n", name, x, y);
+            exit(1);
+        }
+    }
 
-int main(void)
-{
-    TEST("moves")
+    void test(char *s)
+    {
+        name = s;
+        printf("running test '%s'\n", name);
+    }
+
+    void test_coord(char *name, long long get(cube_t), void set(cube_t *, long long), long long max)
+    {
+        test(name);
+        for (long long i=0; i<max; ++i)
+        {
+            cube_t x = new_cube();
+            set(&x, i);
+            check(i, get(x));
+        }
+    }
+
+    test("moves");
     {
         ASSERT(LENGTH(scrambles) == LENGTH(solutions));
         for (int i=0; i<LENGTH(scrambles); ++i)
@@ -50,11 +36,11 @@ int main(void)
             cube_t x = apply_moves(new_cube(), scrambles[i], 9);
             cube_t y = apply_moves(new_cube(), solutions[i], 9);
             cube_t z = compose(x, y);
-            CHECK(cube_eq(z, new_cube()), 1);
+            check(cube_eq(z, new_cube()), 1);
         }
     }
 
-    TEST("inverse")
+    test("inverse");
     {
         int moves[256];
         for (int length=0; length<LENGTH(moves); ++length)
@@ -63,11 +49,11 @@ int main(void)
             cube_t x = apply_moves(new_cube(), moves, length);
             cube_t y = inverse(x);
             cube_t z = compose(x, y);
-            CHECK(cube_eq(z, new_cube()), 1);
+            check(cube_eq(z, new_cube()), 1);
         }
     }
 
-    TEST("syms")
+    test("syms");
     {
         int moves[256];
         int transformed_moves[LENGTH(moves)];
@@ -81,16 +67,28 @@ int main(void)
                     transformed_moves[i] = sym_moves[s%48][moves[i]];
                 if (s>47)
                     inverse_moves(transformed_moves, length);
-                CHECK(cube_eq(apply_sym(x, s), apply_moves(new_cube(), transformed_moves, length)), 1);
+                check(cube_eq(apply_sym(x, s), apply_moves(new_cube(), transformed_moves, length)), 1);
             }
         }
     }
 
-    TEST_COORD(eo, EO);
-    TEST_COORD(co, CO);
-    TEST_COORD(csep, CSEP);
-    TEST_COORD(esep, ESEP);
+    test_coord("eo", get_eo, set_eo, EO_MAX);
+    test_coord("co", get_co, set_co, CO_MAX);
+    test_coord("csep", get_csep, set_csep, CSEP_MAX);
+    test_coord("esep", get_esep, set_esep, ESEP_MAX);
+
+    test("solver");
+    {
+        for (int i=0; i<LENGTH(scrambles); ++i)
+        {
+            int moves[256], length;
+            cube_t x = apply_moves(new_cube(), scrambles[i], 9);
+            optimal(x, moves, &length);
+            check(length<=9, 1);
+            x = apply_moves(x, moves, length);
+            check(cube_eq(x, new_cube()), 1);
+        }
+    }
 
     printf("all tests passed\n");
-    return 0;
 }

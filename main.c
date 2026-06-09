@@ -8,6 +8,7 @@
 #include "prune.h"
 #include "solver.h"
 #include "table.h"
+#include "test.h"
 
 #include "coord.c"
 #include "cube.c"
@@ -17,6 +18,7 @@
 #include "prune.c"
 #include "solver.c"
 #include "table.c"
+#include "test.c"
 
 #include <time.h>
 
@@ -38,8 +40,9 @@ static struct arg args[] =
     {"help",     'h', VALUE_NONE,     "print this help message and exit"},
     {"no-input", 'n', VALUE_NONE,     "ignore input, just generate the prune table"},
     {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
-    {"threads",  't', VALUE_REQUIRED, "use NUM threads"},
+    {"test",     't', VALUE_NONE,     "run the test suite"},
     {"verbose",  'v', VALUE_NONE,     ""},
+    {"workers",  'w', VALUE_REQUIRED, "use NUM workers"},
 };
 
 int main(int argc, char **argv)
@@ -47,9 +50,9 @@ int main(int argc, char **argv)
     srand(time(0));
 
     int moves[256], length=0;
-    int threads;
     cube_t x = new_cube();
     int i=1, j=0, val=0;
+    int TESTS = 0;
 
     void help(void)
     {
@@ -76,7 +79,7 @@ int main(int argc, char **argv)
                     args[i].doc);
         fprintf(stderr,
                 "\n"
-                "By default, all threads are used and -e1 is set.\n"
+                "By default, all workers are used and -e1 is set.\n"
                 "\n"
                 "Examples:\n"
                 "  echo \"R U R' U'\" | %s -e5\n"
@@ -176,14 +179,19 @@ int main(int argc, char **argv)
                 x = apply_moves(x, moves, length);
                 break;
             case 't':
-                THREADS = val;
+                TESTS = 1;
                 break;
             case 'v':
                 VERBOSE = 1;
                 break;
+            case 'w':
+                WORKERS = val;
+                break;
             default:
                 UNREACHABLE();
         }
+    if (EO_VARIANT == -1)
+        set_eo_variant(1);
 
 #if DEBUG
     LOG("build mode: DEBUG\n");
@@ -193,6 +201,10 @@ int main(int argc, char **argv)
     init_coord(&coord_phase1);
     if (NO_INPUT)
     {
+    }
+    else if (TESTS)
+    {
+        run_tests();
     }
     else if (!length)
     {

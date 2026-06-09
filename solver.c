@@ -78,7 +78,7 @@ static int search(cube_t x, int *path, int max_depth)
 static int search_thread(void *__arg)
 {
     struct search_arg *arg = __arg;
-    for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=THREADS)
+    for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=WORKERS)
         if (!search(arg->queue[i].cube, arg->path, arg->depth))
         {
             atomic_store(arg->done, 1);
@@ -104,25 +104,25 @@ static void optimal(cube_t x, int *path, int *length)
     build_search_queue(queue, x);
     while (*length<=20)
     {
-        thrd_t threads[THREADS];
-        struct search_arg args[THREADS];
-        for (int t=0; t<THREADS; ++t)
+        thrd_t threads[WORKERS];
+        struct search_arg args[WORKERS];
+        for (int w=0; w<WORKERS; ++w)
         {
-            args[t].thread_id = t;
-            args[t].queue = queue;
-            args[t].depth = *length-QUEUE_DEPTH;
-            args[t].done = &done;
-            thrd_create(&threads[t], search_thread, &args[t]);
+            args[w].thread_id = w;
+            args[w].queue = queue;
+            args[w].depth = *length-QUEUE_DEPTH;
+            args[w].done = &done;
+            thrd_create(&threads[w], search_thread, &args[w]);
         }
-        for (int t=0; t<THREADS; ++t)
+        for (int w=0; w<WORKERS; ++w)
         {
             int i;
-            thrd_join(threads[t], &i);
+            thrd_join(threads[w], &i);
             if (i == -1)
                 continue;
             for (int j=0; j<QUEUE_DEPTH; ++j)
-                path[j] = args[t].queue[i].path>>8*j&0xff;
-            memcpy(path+4, args[t].path, sizeof(int)*args[t].depth);
+                path[j] = args[w].queue[i].path>>8*j&0xff;
+            memcpy(path+4, args[w].path, sizeof(int)*args[w].depth);
         }
         if (done)
             break;
