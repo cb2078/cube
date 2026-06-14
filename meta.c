@@ -106,6 +106,13 @@ static char *to_move_str(int x)
     return buf;
 }
 
+static void write_separator(void)
+{
+    fprintf(fp,
+            "\n"
+            "///////////////////////////////////////////////////////////////////////////////\n");
+}
+
 static void write_get_cube(cube_t *a, int n, char *name, char *fmt(int), int define)
 {
     fprintf(fp,
@@ -305,10 +312,11 @@ next:
         fprintf(fp, "},\n");
     }
     fprintf(fp,
-            "};\n"
-            "\n");
+            "};\n");
 
     // combinatorics
+    write_separator();
+    fprintf(fp, "\n");
 
     long long pow2[NUM_EDGES];
     for (int i=0; i<LENGTH(pow2); i++)
@@ -340,6 +348,7 @@ next:
     write_2d_array((long long *)choose, NUM_EDGES+1, NUM_EDGES+1, "choose");
 
     // ranking
+    write_separator();
 
     void write_rank_C(int n)
     {
