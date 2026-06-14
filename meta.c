@@ -76,19 +76,6 @@ static cube_t compose_3(cube_t x, cube_t y, cube_t z)
     return compose(compose(x, y), z);
 }
 
-static cube_t invert_co(cube_t x)
-{
-    cube_t r;
-    for (int i=0; i<NUM_CORNERS; i++)
-    {
-        int o = x.corners[i]&0xf0;
-        r.corners[i] = x.corners[i]-o+(0x30-o)%0x30;
-    }
-    for (int i=0; i<NUM_EDGES; i++)
-        r.edges[i] = x.edges[i];
-    return r;
-}
-
 static cube_t apply_sym(cube_t x, int s, cube_t *sym_table, int *inv_sym)
 {
     int mirror = s%2;
@@ -271,7 +258,7 @@ int main(void)
     int inv_sym[48];
     for (int i=0; i<48; ++i)
         for (int j=i; j<48; j+=2)
-            if (cube_eq(compose(sym_table[i], i&1 ? invert_co(sym_table[j]) : sym_table[j]), new_cube()))
+            if (cube_eq(mirrored_compose(sym_table[i], sym_table[j], j%2), new_cube()))
             {
                 inv_sym[i] = j;
                 inv_sym[j] = i;
