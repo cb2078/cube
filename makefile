@@ -12,6 +12,9 @@ debug meta: CFLAGS := $(CFLAGS) -g3 -fsanitize=undefined -fsanitize-trap -DDEBUG
 clean:
 	rm -rfv $(EXE) $(DEP) *.bin
 
+test: main
+	./main -v -t -w$(shell nproc)
+
 meta: meta.c
 	$(CC) $(CFLAGS) -o $@ $<
 	./meta
@@ -19,6 +22,6 @@ meta: meta.c
 main debug: main.c meta
 	$(CC) $(CFLAGS) -o $@ $<
 
-.PHONY: all clean
+.PHONY: all clean test
 
 -include $(DEP)
