@@ -294,7 +294,7 @@ int main(void)
             "{\n");
     for (int i=0; i<48; i++)
     {
-        fprintf(fp, "    [%d] =%s{", i, i<10?"  ":" ");
+        fprintf(fp, "    [%d]%s= {", i, i<10?"  ":" ");
         for (int j=0; j<18; j++)
         {
             if (j)
