@@ -106,7 +106,7 @@ static const long long choose[][13] =
     {1, 12, 66, 220, 495, 792, 924, 792, 495, 220, 66, 12, 1},
 };
 
-static int rank_8C4[] =
+static char rank_8C4[] =
 {
     [0b11110000] = 0,
     [0b11101000] = 1,
@@ -180,7 +180,7 @@ static int rank_8C4[] =
     [0b00001111] = 69,
 };
 
-static int unrank_8C4[] =
+static unsigned char unrank_8C4[] =
 {
     0b11110000,
     0b11101000,
@@ -254,7 +254,7 @@ static int unrank_8C4[] =
     0b00001111,
 };
 
-static int rank_12C4[] =
+static short rank_12C4[] =
 {
     [0b111100000000] = 0,
     [0b111010000000] = 1,
@@ -753,7 +753,7 @@ static int rank_12C4[] =
     [0b000000001111] = 494,
 };
 
-static int unrank_12C4[] =
+static unsigned short unrank_12C4[] =
 {
     0b111100000000,
     0b111010000000,
@@ -1252,7 +1252,7 @@ static int unrank_12C4[] =
     0b000000001111,
 };
 
-static int rank_4P4[] =
+static char rank_4P4[] =
 {
     [0b11100100] = 0,
     [0b10110100] = 1,
@@ -1280,7 +1280,7 @@ static int rank_4P4[] =
     [0b01001011] = 23,
 };
 
-static int unrank_4P4[] =
+static unsigned char unrank_4P4[] =
 {
     0b11100100,
     0b10110100,

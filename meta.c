@@ -173,14 +173,14 @@ static void write_rank(int *unrank, int n, char mode, int k, int bits)
     // TODO correct type
     // TODO merge code for each array
 
-    long long (*f)[NUM_EDGES+1] = mode=='P' ? pick : choose;
+    int count = (mode=='P' ? pick : choose)[n][k];
     int reverse = mode=='C';
     fprintf(fp,
            "\n"
-           "static int rank_%d%c%d[] =\n"
+           "static %s rank_%d%c%d[] =\n"
            "{\n",
-           n, mode, k);
-    for (int i=0; i<f[n][k]; i++)
+            count>CHAR_MAX ? "short" : "char", n, mode, k);
+    for (int i=0; i<count; i++)
     {
         fprintf(fp, "    [0b");
         write_bits(unrank[i], bits, reverse);
@@ -189,10 +189,10 @@ static void write_rank(int *unrank, int n, char mode, int k, int bits)
     fprintf(fp,
             "};\n"
             "\n"
-            "static int unrank_%d%c%d[] =\n"
+            "static unsigned %s unrank_%d%c%d[] =\n"
             "{\n",
-            n, mode, k);
-    for (int i=0; i<f[n][k]; i++)
+            bits>8 ? "short" : "char", n, mode, k);
+    for (int i=0; i<count; i++)
     {
         fprintf(fp, "    0b");
         write_bits(unrank[i], bits, reverse);
