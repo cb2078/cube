@@ -119,16 +119,31 @@ static char *to_move_str(int x)
     return buf;
 }
 
-static void write_cases(cube_t *a, int n, char *indent, char *fmt(int))
+static void write_get_cube(cube_t *a, int n, char *name, char *fmt(int), int define)
 {
+    fprintf(fp,
+            "static cube_t get_%s_cube(int x)\n"
+            "{\n"
+            "    switch (x)\n"
+            "    {\n",
+            name);
+    if (define)
+        fprintf(fp, "#define CASE(x, ...) case x: return CUBE(__VA_ARGS__);\n");
+    fprintf(fp, "        //      URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL\n");
     for (int i=0; i<n; i++)
     {
         char *s = fmt(i);
-        fprintf(fp, "%sCASE(%s,%s", indent, s, strlen(s)==1?" ":"");
+        fprintf(fp, "        CASE(%s,%s", s, strlen(s)==1?" ":"");
         for (int j=0; j<NUM_CUBIES; j++)
             fprintf(fp, "%s %2d", j?",":"", a[i].cubies[j]);
         fprintf(fp, ");\n");
     }
+    if (!define)
+        fprintf(fp, "#undef CASE\n");
+    fprintf(fp,
+            "        default: UNREACHABLE();\n"
+            "    }\n"
+            "}\n");
 }
 
 static void write_1d_array(long long *a, int n, char *name)
@@ -170,9 +185,6 @@ static void write_2d_array(long long *a, int n, int k, char *name)
 
 static void write_rank(int *unrank, int n, char mode, int k, int bits)
 {
-    // TODO correct type
-    // TODO merge code for each array
-
     int count = (mode=='P' ? pick : choose)[n][k];
     int reverse = mode=='C';
     fprintf(fp,
@@ -203,7 +215,6 @@ static void write_rank(int *unrank, int n, char mode, int k, int bits)
 
 int main(void)
 {
-    // TODO create function to write the comment string
     //                   0   1   2   3   4   5   6   7  0   1   2   3   4   5   6   7   8    9  10  11
     //                 URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL
     cube_t u    = CUBE(  4,  5,  2,  3,  1,  0,  6,  7,  0,  1,  2,  3,  8,  9,  6,  7,  5,  4, 10, 11);
@@ -216,7 +227,6 @@ int main(void)
     fp = fopen("data.c", "w");
 
     // move table
-    // TODO make a function for this and the sym cubes
 
     cube_t move_table[18];
     move_table[0] = u;
@@ -229,21 +239,10 @@ int main(void)
         move_table[i] = compose(move_table[i-6], move_table[i-6]);
     for (int i=12; i<18; ++i)
         move_table[i] = compose(move_table[i-6], move_table[i-12]);
-    fprintf(fp,
-            "static cube_t get_move_cube(int x)\n"
-            "{\n"
-            "    switch (x)\n"
-            "    {\n"
-            "#define CASE(x, ...) case x: return CUBE(__VA_ARGS__);\n"
-            "        //      URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL\n");
-    write_cases(move_table, LENGTH(move_table), "        ", to_move_str);
-    fprintf(fp,
-            "        default: UNREACHABLE();\n"
-            "    }\n"
-            "}\n"
-            "\n");
+    write_get_cube(move_table, LENGTH(move_table), "move", to_move_str, 1);
+    fprintf(fp, "\n");
 
-    // move & sym cubes
+    // sym table
 
     cube_t sym_table[48];
     sym_table[0] = new_cube();
@@ -254,17 +253,7 @@ int main(void)
         sym_table[i] = compose(u4, sym_table[i-4]);
     for (int i=16; i<48; ++i)
         sym_table[i] = compose(urf3, sym_table[i-16]);
-    fprintf(fp,
-            "static cube_t get_sym_cube(int x)\n"
-            "{\n"
-            "    switch (x)\n"
-            "    {\n"
-            "        //      URF ULB DRB DLF URB ULF DRF DLB  RF  RB  LF  LB  UF  UB  DF  DB  UR  UL  DR  DL\n");
-    write_cases(sym_table, LENGTH(sym_table), "        ", to_str);
-    fprintf(fp, "#undef CASE\n"
-            "        default: UNREACHABLE();\n"
-            "    }\n"
-            "}\n");
+    write_get_cube(sym_table, LENGTH(sym_table), "sym", to_str, 0);
 
     fp = freopen("data.h", "w", fp);
     fprintf(fp,
@@ -324,9 +313,6 @@ int main(void)
                     goto next;
                 }
             fprintf(fp, "xx");
-            cube_t a[] = {move_table[j], x, move_table[16]};
-            write_cases(a, LENGTH(a), "\n", to_str);
-            exit(1);
 next:
         }
         fprintf(fp, "},\n");
