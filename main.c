@@ -83,7 +83,7 @@ int main(int argc, char **argv)
                 "\n"
                 "Examples:\n"
                 "  echo \"R U R' U'\" | %s -e5\n"
-                "  %s -t2 -e5 < scrambles.txt\n"
+                "  %s -w2 -e5 < scrambles.txt\n"
                 "  %s -n -e3\n",
                 argv[0], argv[0], argv[0]);
         }
