@@ -22,7 +22,8 @@ struct search_arg
     int thread_id;
     struct queue_node *queue;
     int path[20];
-    int depth;
+    int start_depth;
+    int max_depth;
     int *done;
 };
 

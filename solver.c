@@ -23,9 +23,8 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
             int shift = 8*(cur.depth-1);
             unsigned mask = ~(0xffu<<shift);
             path = (path & mask) | cur.move<<shift;
-            if (cur.depth>=4)
+            if (cur.depth==QUEUE_DEPTH)
             {
-                ASSERT(cur.depth==4);
                 queue[count++] = (struct queue_node){cur.cube, path};
                 continue;
             }
@@ -38,7 +37,7 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
     ASSERT(count == QUEUE_LENGTH);
 }
 
-static int search(cube_t x, int *path, int max_depth)
+static int search(cube_t x, int *path, int start_depth, int max_depth)
 {
     struct search_node
     {
@@ -60,11 +59,11 @@ static int search(cube_t x, int *path, int max_depth)
             *top++ = (struct search_node){x, y, move, depth};
     }
 
-    push(x, inverse(x), EMPTY_MOVE, 0);
+    push(x, inverse(x), EMPTY_MOVE, start_depth);
     while (top>stack)
     {
         struct search_node cur = *--top;
-        if (cur.depth)
+        if (cur.depth-start_depth > 0)
             path[cur.depth-1] = cur.move;
         if (cube_eq(cur.cube, new_cube()))
             return 0;
@@ -79,7 +78,7 @@ static int search_thread(void *__arg)
 {
     struct search_arg *arg = __arg;
     for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=WORKERS)
-        if (!search(arg->queue[i].cube, arg->path, arg->depth))
+        if (!search(arg->queue[i].cube, arg->path, arg->start_depth, arg->max_depth))
         {
             atomic_store(arg->done, 1);
             return i;
@@ -92,7 +91,7 @@ static void optimal(cube_t x, int *path, int *length)
     *length = 0;
     while (*length < QUEUE_DEPTH)
     {
-        int diff = search(x, path, *length);
+        int diff = search(x, path, 0, *length);
         if (!diff) return;
         *length += diff;
     }
@@ -110,8 +109,11 @@ static void optimal(cube_t x, int *path, int *length)
         {
             args[w].thread_id = w;
             args[w].queue = queue;
-            args[w].depth = *length-QUEUE_DEPTH;
+            args[w].start_depth = QUEUE_DEPTH;
+            args[w].max_depth = *length;
             args[w].done = &done;
+            // TODO if we know the last move of the queue search, can we prune
+            // canonical sequances immediately after starting the search?
             thrd_create(&threads[w], search_thread, &args[w]);
         }
         for (int w=0; w<WORKERS; ++w)
@@ -122,7 +124,9 @@ static void optimal(cube_t x, int *path, int *length)
                 continue;
             for (int j=0; j<QUEUE_DEPTH; ++j)
                 path[j] = args[w].queue[i].path>>8*j&0xff;
-            memcpy(path+4, args[w].path, sizeof(int)*args[w].depth);
+            memcpy(path+QUEUE_DEPTH,
+                   args[w].path+QUEUE_DEPTH,
+                   sizeof(int)*args[w].max_depth-QUEUE_DEPTH);
         }
         if (done)
             break;
