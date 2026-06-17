@@ -93,25 +93,9 @@ static cube_t set_phase2(long long r)
     return x;
 }
 
-static long long get_phase2_full(cube_t x)
-{
-    long long r = get_co_csep(x);
-    x = apply_sym(x, coord_phase1.sym->info[r].sym);
-    return get_phase1_full(x) * ORBIT_MAX + get_orbit_slow(x);
-}
-
-static cube_t set_phase2_full(long long r)
-{
-    cube_t x = set_phase1_full(r / ORBIT_MAX);
-    cube_t y = new_cube();
-    set_orbit_slow(&y, r % ORBIT_MAX);
-    return compose(y, x);
-}
-
 COORD(phase1, co_csep, CO_CSEP_CLASSES, partial_eo_esep, 0, 2);
 COORD(phase1_full, co_csep, CO_CSEP_CLASSES, eo_esep, EO_ESEP_MAX, 2);
 COORD(phase2, orbit, ORBIT_CLASSES, eo, EO_MAX, 4);
-COORD(phase2_full, co_csep, CO_CSEP_CLASSES, eo_esep_orbit, EO_ESEP_MAX*ORBIT_MAX, 4);
 
 ////////////////////////////////////////////////////////////////////////////////
 

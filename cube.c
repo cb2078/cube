@@ -179,42 +179,6 @@ static void set_esep(cube_t *x, long long r)
     SET_EP(*x, h, l);
 }
 
-static long long get_slice(cube_t x)
-{
-    __m256i y;
-    unsigned long long h, l, b, s, m, e;
-    x = _mm256_and_si256(x, PERMUTE_MASK);
-    y = _mm256_set_epi64x(0x8080808080808080, 0x8080808080808080, 0x0f0d0b0907050301, 0x0e0c0a0806040200);
-    x = _mm256_shuffle_epi8(x, y);
-    h = _mm256_extract_epi64(x, 1);
-    l = _mm256_extract_epi64(x, 0);
-    b = h << 4 | l;
-    s = 0x0000888888888888 & b;
-    s = s >> 2 | s >> 3;
-    m = 0x0000444444444444 & b;
-    m = m >> 1 | m >> 2;
-    e = 0x0000333333333333 ^ m ^ s;
-    return rank_4P4[_pext_u64(b, s)] * 24 * 24 + rank_4P4[_pext_u64(b, m)] * 24 + rank_4P4[_pext_u64(b, e)];
-}
-
-static long long get_tetrad(cube_t x)
-{
-    unsigned long long b, m, h, l;
-    b = _mm256_extract_epi64(x, 2);
-    m = 0x0404040404040404 & b;
-    m = m >> 1 | m >> 2;
-    h = _pext_u64(b, m);
-    m = 0x0303030303030303 ^ m;
-    l = _pext_u64(b, m);
-    // rank_4P4[x] div 2 is 4P3
-    return rank_4P4[h] / 2 * 24 + rank_4P4[l];
-}
-
-static long long get_orbit_slow(cube_t x)
-{
-    return get_tetrad(x) * 24 * 24 * 24 + get_slice(x);
-}
-
 // assume cubies are placed in their tetrad/slice
 static long long get_orbit_fast(cube_t x)
 {
