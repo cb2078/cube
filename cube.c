@@ -22,19 +22,14 @@ static void print_cube(cube_t x)
 {
     char mem[32];
     _mm256_storeu_si256((__m256i *)mem, x);
-    printf("//");
-    for (int i=0; i<20; ++i)
-        printf(" %3s", cubie_str[i]);
-    printf("\n");
-    for (int j=0; j<2; ++j)
-    {
-        printf("%c:", j?'o':'p');
-        for (int i=0; i<8; ++i)
-            printf(" %3d", mem[i+16]>>4*j&0x0f);
-        for (int i=0; i<12; ++i)
-            printf(" %3d", mem[i]>>4*j&0x0f);
-        printf("\n");
-    }
+    printf("CUBE(");
+    for (int i=0; i<8; ++i)
+        printf("%s0x%02x", i?", ":"", mem[i+16]);
+    printf(",    ");
+    for (int i=0; i<12; ++i)
+        printf("%s0x%02x", i?", ":"", mem[i]);
+    printf(")");
+}
 
 static int cube_lt(cube_t x, cube_t y)
 {
