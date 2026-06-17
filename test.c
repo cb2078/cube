@@ -1,4 +1,4 @@
-void run_tests(void)
+static void run_tests(void)
 {
     char *name;
 

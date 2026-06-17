@@ -3,7 +3,7 @@
 
 #include "moves.h"
 
-void run_tests(void);
+static void run_tests(void);
 
 static int scrambles[][9] =
 {
