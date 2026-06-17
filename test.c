@@ -1,12 +1,13 @@
 void run_tests(void)
 {
     char *name;
-    
+
     void check(int x, int y)
     {
         if (x != y)
         {
             fprintf(stderr, "test '%s' failed (%d != %d)\n", name, x, y);
+            debugbreak();
             exit(1);
         }
     }
@@ -27,6 +28,8 @@ void run_tests(void)
             check(i, get(x));
         }
     }
+
+    debugbreak();
 
     test("moves");
     {
