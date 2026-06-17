@@ -37,7 +37,9 @@ static int NO_INPUT = 0;
 
 static inline void debugbreak(void)
 {
+#ifdef DEBUG
     __asm__ volatile("int $0x03");
+#endif
 }
 
 #endif
