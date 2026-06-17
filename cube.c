@@ -35,15 +35,25 @@ static void print_cube(cube_t x)
             printf(" %3d", mem[i]>>4*j&0x0f);
         printf("\n");
     }
+
+static int cube_lt(cube_t x, cube_t y)
+{
+    unsigned a, b;
+    __m256i c;
+    c = _mm256_cmpgt_epi8(x, y);
+    a = _mm256_movemask_epi8(c);
+    c = _mm256_cmpgt_epi8(y, x);
+    b = _mm256_movemask_epi8(c);
+    return a < b;
 }
 
 static int cube_eq(cube_t x, cube_t y)
 {
-    int r;
+    unsigned r;
     __m256i c;
     c = _mm256_cmpeq_epi8(x, y);
     r = _mm256_movemask_epi8(c);
-    return r == -1;
+    return r == -1u;
 }
 
 static cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
@@ -167,6 +177,73 @@ static void set_esep(cube_t *x, long long r)
     b = b >> 32;
     h = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
     SET_EP(*x, h, l);
+}
+
+static long long get_slice(cube_t x)
+{
+    __m256i y;
+    unsigned long long h, l, b, s, m, e;
+    x = _mm256_and_si256(x, PERMUTE_MASK);
+    y = _mm256_set_epi64x(0x8080808080808080, 0x8080808080808080, 0x0f0d0b0907050301, 0x0e0c0a0806040200);
+    x = _mm256_shuffle_epi8(x, y);
+    h = _mm256_extract_epi64(x, 1);
+    l = _mm256_extract_epi64(x, 0);
+    b = h << 4 | l;
+    s = 0x0000888888888888 & b;
+    s = s >> 2 | s >> 3;
+    m = 0x0000444444444444 & b;
+    m = m >> 1 | m >> 2;
+    e = 0x0000333333333333 ^ m ^ s;
+    return rank_4P4[_pext_u64(b, s)] * 24 * 24 + rank_4P4[_pext_u64(b, m)] * 24 + rank_4P4[_pext_u64(b, e)];
+}
+
+static long long get_tetrad(cube_t x)
+{
+    unsigned long long b, m, h, l;
+    b = _mm256_extract_epi64(x, 2);
+    m = 0x0404040404040404 & b;
+    m = m >> 1 | m >> 2;
+    h = _pext_u64(b, m);
+    m = 0x0303030303030303 ^ m;
+    l = _pext_u64(b, m);
+    // rank_4P4[x] div 2 is 4P3
+    return rank_4P4[h] / 2 * 24 + rank_4P4[l];
+}
+
+static long long get_orbit_slow(cube_t x)
+{
+    return get_tetrad(x) * 24 * 24 * 24 + get_slice(x);
+}
+
+// assume cubies are placed in their tetrad/slice
+static long long get_orbit_fast(cube_t x)
+{
+    unsigned long long a[4], b;
+    long long r = 0;
+    _mm256_storeu_si256((__m256i *)a, x);
+    for (int i=5; i>=0; --i)
+    {
+        if (i==3) continue;
+        b = _pext_u64(a[i/2], 0x03030303ull << i%2*32);
+        r = r * 24 + rank_4P4[b] / (i==5 ? 2 : 1);
+    }
+    return r;
+}
+
+static void set_orbit_fast(cube_t *x, long long r)
+{
+    unsigned long long a[4] = {0x0404040400000000, 0x0f0e0d0c08080808, 0x0404040400000000, HIGH_BITS}, b;
+    for (int i=0, j, p=0; i<6; ++i)
+    {
+        if (i==3) continue;
+        j = r % 24 * (i==5 ? 2 : 1); // index of permutation of 4 pieces
+        p = p ^ j&1;
+        if (i==5) j += p; // set corner parity to edge parity
+        b = unrank_4P4[j];
+        a[i/2] = _pdep_u64(b, 0x03030303ull << i%2*32) | a[i/2];
+        r /= 24;
+    }
+    *x = _mm256_lddqu_si256((__m256i *)a);
 }
 
 static cube_t inverse(cube_t x)

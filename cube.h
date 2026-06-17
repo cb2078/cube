@@ -44,6 +44,31 @@ static long long get_csep(cube_t);
 static void set_csep(cube_t *, long long);
 static long long get_esep(cube_t);
 static void set_esep(cube_t *, long long);
+static long long get_slice(cube_t);
+static void set_slice(cube_t *, long long);
+static long long get_orbit_slow(cube_t);
+#define set_orbit_slow set_orbit_fast
+static long long get_orbit_fast(cube_t);
+static void set_orbit_fast(cube_t *, long long);
+
+static inline int check_get_parity(cube_t x)
+{
+    char a[32];
+    _mm256_storeu_si256((__m256i *)a, x);
+    for (int i=0; i<LENGTH(a); ++i)
+        a[i]&=0x0f,printf("%3d",(int)a[i]);
+
+    int parity(char *a, int n)
+    {
+        int r=0;
+        for (int j=0; j<n; ++j)
+            for (int i=0; i<j; ++i)
+                r+=a[i]>a[j];
+        return r%2;
+    }
+
+    return parity(a,12)<<1|parity(a+16,8);
+}
 
 static cube_t inverse(cube_t);
 

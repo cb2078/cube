@@ -8,7 +8,7 @@ static unsigned *table_new(long long entries, int bits)
 
 static int table_get(unsigned *a, int bits, long long i)
 {
-    ASSERT(bits==2 || bits==4);
+    ASSERT(__builtin_popcount(bits) == 1);
     int divisor = sizeof(unsigned)*8/bits;
     int shift = (i&(divisor-1))*bits;
     int mask = (1<<bits)-1;
@@ -17,7 +17,7 @@ static int table_get(unsigned *a, int bits, long long i)
 
 static void table_set(unsigned *a, int bits, long long i, int x)
 {
-    ASSERT(bits==2 || bits==4);
+    ASSERT(__builtin_popcount(bits) == 1);
     int divisor = sizeof(unsigned)*8/bits;
     int shift = (i&(divisor-1))*bits;
     int mask = (1<<bits)-1;

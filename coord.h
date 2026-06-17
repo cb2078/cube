@@ -11,13 +11,15 @@
 #define CSEP_MAX choose[8][4]
 #define EO_MAX pow2[11]
 #define ESEP_MAX (choose[12][4]*choose[8][4])
+#define ORBIT_MAX (12*24*24*24*24)
 #define PARTIAL_EO_MAX (1<<EO_VARIANT)
 
 #define CO_CSEP_MAX (CO_MAX*CSEP_MAX)
 #define EO_ESEP_MAX (EO_MAX*ESEP_MAX)
 #define PARTIAL_EO_ESEP_MAX (PARTIAL_EO_MAX*ESEP_MAX)
 
-#define CO_CSEP_CLASSES 3393
+#define CO_CSEP_CLASSES 3393ll
+#define ORBIT_CLASSES 85556ll
 
 struct sym_coord
 {
@@ -43,14 +45,17 @@ struct coord
     long long max;
     struct sym_coord *sym;
     unsigned *table;
+    int bits;
 };
 
 static struct coord coord_phase1;
 static struct coord coord_phase1_full;
+static struct coord coord_phase2;
+static struct coord coord_phase2_full;
 
 static int is_self_sym(struct coord *c, cube_t x, int s);
 static void init_sym(struct sym_coord *c);
-static void init_coord(struct coord *c);
+static void init_coord(struct coord *c, void (*fill_prune_table)(void));
 
 static int EO_VARIANT = -1;
 

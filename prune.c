@@ -6,6 +6,25 @@ static void clear_stderr(void)
     fprintf(stderr, "\r");
 }
 
+static void log_dist(struct coord *c, int bits, int base, int max_depth)
+{
+    if (!VERBOSE)
+        return;
+    long long dist[21] = {0}, sum = 0;
+    for (int i=0; i<c->max; ++i)
+        dist[table_get(c->table, bits, i)]++;
+    for (int i=base; i<max_depth; ++i)
+    {
+        LOG("%s[%d] = %lld", i<10?" ":"", i, dist[i-base]);
+        if (i>base)
+            LOG("\t(%.1fx)\n", (float)dist[i-base]/dist[i-1-base]);
+        else
+            LOG("\n");
+        sum+=dist[i-base];
+    }
+    LOG("skipped %lld entries\n", c->max-sum);
+}
+
 static void fill_sym_table(struct sym_coord *c)
 {
     for (long long i=0; i<c->max; ++i)
@@ -126,8 +145,9 @@ static int fill_prune_table_dfs(void *varg)
     return 0;
 }
 
-static void fill_prune_table(struct coord *c)
+static void fill_prune_table_1(void)
 {
+    struct coord *c = &coord_phase1;
     struct map *map = fill_prune_map();
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
@@ -148,11 +168,61 @@ static void fill_prune_table(struct coord *c)
     for (int i=0; i<c->sym->classes; ++i)
         mtx_destroy(&mutexes[i]);
     clear_stderr();
-    if (!VERBOSE)
-        return;
-    long long dist[4] = {0};
-    for (int i=0; i<c->max; ++i)
-        dist[table_get(c->table, 2, i)]++;
-    for (int i=PRUNE_BASE; i<PRUNE_BASE+4; ++i)
-        LOG("%s[%d] = %lld\n", i<10?" ":"", i, dist[i-PRUNE_BASE]);
+    if (VERBOSE)
+        log_dist(c, c->bits, PRUNE_BASE, PRUNE_BASE+4);
+}
+
+#define USE_PREPASS 0
+
+// find all solutions to positions in H of 14 moves or less with IDA*
+// exit prune
+// use a prepass to save time (mostly) on the last iteration
+// use a cached prepass
+// BFS up to certain depth to minimise repreated symmetric positions
+static void fill_prune_table_2(void)
+{
+    ASSERT(EO_VARIANT == 0);
+    struct coord *c = &coord_phase2;
+
+    void prepass(void);
+
+    void dfs(int max_depth)
+    {
+        struct search_node stack[256];
+        struct search_node *top = stack;
+
+        void push(cube_t x, int move, int depth)
+        {
+            int in_H = coord_phase1.get(x) == 0;
+            if (depth == 1 && move != U && move != U2 ||
+                depth == max_depth && !in_H ||
+                depth + h(x) > max_depth)
+                return;
+            if (depth == max_depth)
+            {
+                for (int s=0; s<NUM_SYMS; s++)
+                    if (is_self_sym(c, x, s))
+                        TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
+            }
+            else
+                *top++ = (struct search_node){x, move, depth};
+        }
+
+        push(new_cube(), EMPTY_MOVE, 0);
+        while (top > stack)
+        {
+            struct search_node cur = *--top;
+            FOREACH_MOVE(cur.move)
+                push(apply_move(cur.cube, m), m, cur.depth+1);
+        }
+    }
+
+    int max_depth = 13;
+    for (int depth=0; depth<max_depth; ++depth)
+    {
+        fprintf(stderr, "\rsearching depth %d...", depth);
+        dfs(depth);
+    }
+    clear_stderr();
+    log_dist(c, c->bits, 0, max_depth);
 }

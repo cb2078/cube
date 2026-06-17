@@ -76,6 +76,8 @@ void run_tests(void)
     test_coord("co", get_co, set_co, CO_MAX);
     test_coord("csep", get_csep, set_csep, CSEP_MAX);
     test_coord("esep", get_esep, set_esep, ESEP_MAX);
+    test_coord("orbit_slow", get_orbit_slow, set_orbit_slow, ORBIT_MAX);
+    test_coord("orbit_fast", get_orbit_fast, set_orbit_fast, ORBIT_MAX);
 
     test("solver");
     {

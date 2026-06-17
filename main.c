@@ -191,14 +191,15 @@ int main(int argc, char **argv)
                 UNREACHABLE();
         }
     if (EO_VARIANT == -1)
-        set_eo_variant(1);
+        set_eo_variant(0);
 
 #if DEBUG
     LOG("build mode: DEBUG\n");
 #else
     LOG("build mode: RELEASE\n");
 #endif
-    init_coord(&coord_phase1);
+    init_coord(&coord_phase1, fill_prune_table_1);
+    init_coord(&coord_phase2, fill_prune_table_2);
     if (NO_INPUT)
     {
     }
