@@ -179,10 +179,12 @@ static void fill_prune_table_1(void)
 // use a prepass to save time (mostly) on the last iteration
 // use a cached prepass
 // BFS up to certain depth to minimise repreated symmetric positions
+// multi threding
 static void fill_prune_table_2(void)
 {
     ASSERT(EO_VARIANT == 0);
     struct coord *c = &coord_phase2;
+    int visits = 0;
 
     void prepass(void);
 
@@ -191,13 +193,18 @@ static void fill_prune_table_2(void)
         struct search_node stack[256];
         struct search_node *top = stack;
 
+        int in_H(cube_t x)
+        {
+            return coord_phase1.get(x) == 0;
+        }
+
         void push(cube_t x, int move, int depth)
         {
-            int in_H = coord_phase1.get(x) == 0;
             if (depth == 1 && move != U && move != U2 ||
-                depth == max_depth && !in_H ||
-                depth + h(x) > max_depth)
+                depth == max_depth && !in_H(x) ||
+                depth + h_phase1(x) > max_depth)
                 return;
+            visits++;
             if (depth == max_depth)
             {
                 for (int s=0; s<NUM_SYMS; s++)
@@ -213,7 +220,13 @@ static void fill_prune_table_2(void)
         {
             struct search_node cur = *--top;
             FOREACH_MOVE(cur.move)
+            {
+#if 1
+                if (in_H(cur.cube) && move_amount(m) != 2 && cur.depth + 5 > max_depth)
+                    continue;
+#endif
                 push(apply_move(cur.cube, m), m, cur.depth+1);
+            }
         }
     }
 
@@ -225,4 +238,5 @@ static void fill_prune_table_2(void)
     }
     clear_stderr();
     log_dist(c, c->bits, 0, max_depth);
+    printf("visits=%d\n", visits);
 }
