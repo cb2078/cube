@@ -22,7 +22,7 @@ static void log_dist(struct coord *c, int bits, int base, int max_depth)
             LOG("\n");
         sum+=dist[i-base];
     }
-    LOG("skipped %lld entries\n", c->max-sum);
+    LOG("skipped %lld entries (%.2f%% filled)\n", c->max-sum, 100.0*(sum)/c->max);
 }
 
 static void fill_sym_table(struct sym_coord *c)
