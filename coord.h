@@ -6,6 +6,8 @@
 #include "table.h"
 
 #define NUM_SYMS 48
+#define SYM_BITS 6
+static_assert(1<<SYM_BITS >= NUM_SYMS && 1<<SYM_BITS-1 < NUM_SYMS);
 
 #define CO_MAX pow3[7]
 #define CSEP_MAX choose[8][4]
@@ -30,8 +32,8 @@ struct sym_coord
     long long classes;
     struct
     {
-        unsigned class: 16;
-        unsigned sym: 16;
+        unsigned class: 32-SYM_BITS;
+        unsigned sym: SYM_BITS;
     } *info;
     int *to_rep;
     long long *self_syms;
