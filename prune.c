@@ -214,6 +214,9 @@ static void fill_prune_table_2(void)
         {
             if (depth == 1 && move != U && move != U2 ||
                 depth == max_depth && !in_H(x) ||
+#if USE_PREPASS
+                depth + 5 > max_depth && depth < max_depth && in_H(x) ||
+#endif
                 depth + h_phase1(x) > max_depth)
                 return;
             visits++;
@@ -232,13 +235,7 @@ static void fill_prune_table_2(void)
         {
             struct search_node cur = *--top;
             FOREACH_MOVE(cur.move)
-            {
-#if USE_PREPASS
-                if (in_H(cur.cube) && cur.depth + 5 > max_depth)
-                    continue;
-#endif
                 push(apply_move(cur.cube, m), m, cur.depth+1);
-            }
         }
     }
 
