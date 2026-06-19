@@ -172,7 +172,7 @@ static void fill_prune_table_1(void)
         log_dist(c, c->bits, PRUNE_BASE, PRUNE_BASE+4);
 }
 
-#define USE_PREPASS 0
+#define USE_PREPASS 1
 
 // find all solutions to positions in H of 14 moves or less with IDA*
 // exit prune
@@ -186,17 +186,29 @@ static void fill_prune_table_2(void)
     struct coord *c = &coord_phase2;
     int visits = 0;
 
-    void prepass(void);
+    int in_H(cube_t x)
+    {
+        return coord_phase1.get(x) == 0;
+    }
+
+    void prepass(int max_depth)
+    {
+        for (long long i=0; i<c->max; i++)
+            if (table_get(c->table, c->bits, i) == max_depth-1)
+                for (int m=U2; m<=B2; m++)
+                {
+                    cube_t x = apply_move(c->set(i), m);
+                    ASSERT(in_H(x));
+                    for (int s=0; s<NUM_SYMS; s++)
+                        if (is_self_sym(c, x, s))
+                            TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), max_depth);
+                }
+    }
 
     void dfs(int max_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
-
-        int in_H(cube_t x)
-        {
-            return coord_phase1.get(x) == 0;
-        }
 
         void push(cube_t x, int move, int depth)
         {
@@ -221,8 +233,8 @@ static void fill_prune_table_2(void)
             struct search_node cur = *--top;
             FOREACH_MOVE(cur.move)
             {
-#if 1
-                if (in_H(cur.cube) && move_amount(m) != 2 && cur.depth + 5 > max_depth)
+#if USE_PREPASS
+                if (in_H(cur.cube) && cur.depth + 5 > max_depth)
                     continue;
 #endif
                 push(apply_move(cur.cube, m), m, cur.depth+1);
@@ -233,6 +245,10 @@ static void fill_prune_table_2(void)
     int max_depth = 13;
     for (int depth=0; depth<max_depth; ++depth)
     {
+#if USE_PREPASS
+        fprintf(stderr, "\r  prepass depth %d...", depth);
+        prepass(depth);
+#endif
         fprintf(stderr, "\rsearching depth %d...", depth);
         dfs(depth);
     }

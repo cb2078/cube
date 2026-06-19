@@ -29,7 +29,7 @@ struct search_arg
 
 static void optimal(cube_t, int *, int *);
 
-static inline int h(cube_t x)
+static inline int h_phase1(cube_t x)
 {
     long long i = coord_phase1.get(x);
     long long j = PRUNE_EXT_62(i);
