@@ -184,7 +184,7 @@ static void fill_prune_table_2(void)
 {
     ASSERT(EO_VARIANT == 0);
     struct coord *c = &coord_phase2;
-    int visits = 0;
+    long long visits = 0;
 
     int in_H(cube_t x)
     {
