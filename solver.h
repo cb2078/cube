@@ -4,6 +4,9 @@
 #include "coord.h"
 #include "cube.h"
 
+#define QUEUE_LENGTH 43254
+#define QUEUE_DEPTH 4
+
 struct queue_node
 {
     cube_t cube;

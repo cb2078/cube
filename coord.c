@@ -110,7 +110,7 @@ static void init_sym(struct sym_coord *c)
     char filename[256];
     sprintf(filename, "%s.bin", c->name);
     c->to_rep = malloc(sizeof(int)*c->classes);
-    c->info = malloc(4*c->max);
+    c->info = malloc(4*c->max); // TODO don't use magic number "4" here
     c->self_syms = malloc(sizeof(long long)*c->max);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {

@@ -1,6 +1,3 @@
-#define QUEUE_LENGTH 43254
-#define QUEUE_DEPTH 4
-
 static void build_search_queue(struct queue_node *queue, cube_t x)
 {
     struct search_node stack[256];

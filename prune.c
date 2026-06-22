@@ -173,6 +173,7 @@ static void fill_prune_table_1(void)
 }
 
 #define USE_PREPASS 1
+#define MAX_DEPTH 12
 
 // find all solutions to positions in H of 14 moves or less with IDA*
 // exit prune
@@ -185,35 +186,58 @@ static void fill_prune_table_2(void)
     ASSERT(EO_VARIANT == 0);
     struct coord *c = &coord_phase2;
     long long visits = 0;
+    long long queue_visits = 1;
+    int queue_depth = 5;
+    struct queue q = queue_new(1<<14);
+
+    cube_t canonical_cube(cube_t x)
+    {
+        cube_t y, r=x;
+        for (int s=1; s<NUM_SYMS; s++)
+            r = cube_lt(y=apply_sym(x, s), r) ? y : r;
+        return r;
+    }
 
     int in_H(cube_t x)
     {
+        // NOTE since this is checking that the coordinate is 0, we do not need
+        // use the symmetric coordinate and instead just check that both raw
+        // ones are 0. This might be faster sisnce it isn't using the RAM for
+        // handling the sym coordinate.
+        //
+        // something like: get_co_csep(x) == 0 && get_esep(x) == 0
         return coord_phase1.get(x) == 0;
     }
 
-    void prepass(int max_depth)
+    void visit(cube_t x, int depth)
+    {
+        if (!in_H(x))
+            return;
+        for (int s=0; s<NUM_SYMS; s++)
+            if (is_self_sym(c, x, s))
+                TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
+    }
+
+    void prepass(int depth)
     {
         for (long long i=0; i<c->max; i++)
-            if (table_get(c->table, c->bits, i) == max_depth-1)
+            if (table_get(c->table, c->bits, i) == depth-1)
                 for (int m=U2; m<=B2; m++)
                 {
                     cube_t x = apply_move(c->set(i), m);
                     ASSERT(in_H(x));
-                    for (int s=0; s<NUM_SYMS; s++)
-                        if (is_self_sym(c, x, s))
-                            TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), max_depth);
+                    visit(x, depth);
                 }
     }
 
-    void dfs(int max_depth)
+    void dfs(cube_t x, int max_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
 
         void push(cube_t x, int move, int depth)
         {
-            if (depth == 1 && move != U && move != U2 ||
-                depth == max_depth && !in_H(x) ||
+            if (depth == max_depth && !in_H(x) ||
 #if USE_PREPASS
                 depth + 5 > max_depth && depth < max_depth && in_H(x) ||
 #endif
@@ -221,16 +245,13 @@ static void fill_prune_table_2(void)
                 return;
             visits++;
             if (depth == max_depth)
-            {
-                for (int s=0; s<NUM_SYMS; s++)
-                    if (is_self_sym(c, x, s))
-                        TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
-            }
+                visit(x, depth);
             else
                 *top++ = (struct search_node){x, move, depth};
         }
 
-        push(new_cube(), EMPTY_MOVE, 0);
+        // TODO is it possible to know what this move would be from the last BFS iteration?
+        push(x, EMPTY_MOVE, queue_depth);
         while (top > stack)
         {
             struct search_node cur = *--top;
@@ -239,17 +260,49 @@ static void fill_prune_table_2(void)
         }
     }
 
-    int max_depth = 13;
-    for (int depth=0; depth<max_depth; ++depth)
+    void bfs(int depth)
     {
-#if USE_PREPASS
-        fprintf(stderr, "\r  prepass depth %d...", depth);
-        prepass(depth);
-#endif
-        fprintf(stderr, "\rsearching depth %d...", depth);
-        dfs(depth);
+        int n = q.length;
+        while (n--)
+        {
+            cube_t x = queue_pop(&q);
+            visits++;
+            visit(x, depth);
+            FOREACH_MOVE(EMPTY_MOVE)
+                queue_push(&q, canonical_cube(apply_move(x, m)));
+        }
     }
+
+    queue_push(&q, new_cube());
+    int max_depth = MAX_DEPTH;
+    for (int depth=0; depth<max_depth; ++depth)
+        if (depth<queue_depth)
+        {
+            fprintf(stderr, "\r      bfs depth %d...", depth);
+            bfs(depth);
+            queue_visits += q.length;
+        }
+        else
+        {
+#if USE_PREPASS
+            fprintf(stderr, "\r  prepass depth %d...", depth);
+            prepass(depth);
+#endif
+            fprintf(stderr, "\rsearching depth %d...", depth);
+            for (int i=0; i<q.length; i++)
+                dfs(queue_get(&q, i), depth);
+        }
     clear_stderr();
     log_dist(c, c->bits, 0, max_depth);
-    printf("visits=%d\n", visits);
+    printf("visits=%lld\n", visits);
+    long long canonical_sequences[] =
+    {
+        1,
+        18,
+        243,
+        3240,
+        43254,
+        577368,
+    };
+    printf("queue_visits=%lld (ratio=%.1f)\n", queue_visits, (float)canonical_sequences[queue_depth]/queue_visits);
 }
