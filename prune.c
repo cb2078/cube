@@ -173,12 +173,11 @@ static void fill_prune_table_1(void)
 }
 
 #define USE_PREPASS 1
-#define MAX_DEPTH 12
+#define MAX_DEPTH 15
 
 // find all solutions to positions in H of 14 moves or less with IDA*
 // exit prune
 // use a prepass to save time (mostly) on the last iteration
-// use a cached prepass
 // BFS up to certain depth to minimise repreated symmetric positions
 // multi threding
 static void fill_prune_table_2(void)
@@ -190,11 +189,14 @@ static void fill_prune_table_2(void)
     int queue_depth = 5;
     struct queue q = queue_new(1<<14);
 
-    cube_t canonical_cube(cube_t x)
+    cube_t canonical_cube(cube_t x, int *sym)
     {
+        ASSERT(sym);
+        *sym = 0;
         cube_t y, r=x;
         for (int s=1; s<NUM_SYMS; s++)
-            r = cube_lt(y=apply_sym(x, s), r) ? y : r;
+            if (cube_lt(y=apply_sym(x, s), r))
+                r=y, *sym=s;
         return r;
     }
 
@@ -230,7 +232,7 @@ static void fill_prune_table_2(void)
                 }
     }
 
-    void dfs(cube_t x, int max_depth)
+    void dfs(cube_t x, int move, int max_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
@@ -250,8 +252,15 @@ static void fill_prune_table_2(void)
                 *top++ = (struct search_node){x, move, depth};
         }
 
-        // TODO is it possible to know what this move would be from the last BFS iteration?
-        push(x, EMPTY_MOVE, queue_depth);
+        // use the last move from the BFS iteration to prune some sequences
+        // this move has to be on either the U, R or F faces so sequences starting with a turn of the opposite face don't get pruned
+        if (move_side(move)>0)
+        {
+            int s = 11;
+            x = apply_sym(x, s);
+            move = sym_moves[s][move];
+        }
+        push(x, move, queue_depth);
         while (top > stack)
         {
             struct search_node cur = *--top;
@@ -265,15 +274,20 @@ static void fill_prune_table_2(void)
         int n = q.length;
         while (n--)
         {
-            cube_t x = queue_pop(&q);
+            struct search_node cur = queue_pop(&q);
             visits++;
-            visit(x, depth);
+            visit(cur.cube, depth);
             FOREACH_MOVE(EMPTY_MOVE)
-                queue_push(&q, canonical_cube(apply_move(x, m)));
+            {
+                int s;
+                cube_t x = canonical_cube(apply_move(cur.cube, m), &s);
+                ASSERT(cube_eq(apply_move(apply_sym(cur.cube, s), sym_moves[s][m]), x));
+                queue_push(&q, x, sym_moves[s][m], depth+1);
+            }
         }
     }
 
-    queue_push(&q, new_cube());
+    queue_push(&q, new_cube(), EMPTY_MOVE, 0);
     int max_depth = MAX_DEPTH;
     for (int depth=0; depth<max_depth; ++depth)
         if (depth<queue_depth)
@@ -290,7 +304,7 @@ static void fill_prune_table_2(void)
 #endif
             fprintf(stderr, "\rsearching depth %d...", depth);
             for (int i=0; i<q.length; i++)
-                dfs(queue_get(&q, i), depth);
+                dfs(queue_get(&q, i).cube, queue_get(&q, i).move, depth);
         }
     clear_stderr();
     log_dist(c, c->bits, 0, max_depth);
