@@ -238,7 +238,7 @@ static void fill_prune_table_2(void)
         }
     }
 
-    void dfs(cube_t x, int move, int max_depth)
+    void dfs(cube_t x, int move, int start_depth, int max_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
@@ -247,7 +247,7 @@ static void fill_prune_table_2(void)
         {
             if (depth == max_depth && !in_H(x) ||
 #if USE_PREPASS
-                depth + 5 > max_depth && depth < max_depth && in_H(x) ||
+                depth > start_depth && depth < max_depth && in_H(x) ||
 #endif
                 depth + h_phase1(x) > max_depth)
                 return;
@@ -260,13 +260,13 @@ static void fill_prune_table_2(void)
 
         // use the last move from the BFS iteration to prune some sequences
         // this move has to be on either the U, R or F faces so sequences starting with a turn of the opposite face don't get pruned
-        if (move_side(move)>0)
+        if (move != EMPTY_MOVE && move_side(move)>0)
         {
             int s = 11;
             x = apply_sym(x, s);
             move = sym_moves[s][move];
         }
-        push(x, move, queue_depth);
+        push(x, move, start_depth);
         while (top > stack)
         {
             struct search_node cur = *--top;
@@ -275,16 +275,22 @@ static void fill_prune_table_2(void)
         }
     }
 
-    void prepass(int depth)
+    void prepass(int max_depth)
     {
         for (long long i=0; i<c->max; i++)
-            if (table_get(c->table, c->bits, i) == depth-1)
+        {
+            int depth = table_get(c->table, c->bits, i);
+            if (depth > queue_depth &&
+                depth + 5 <= max_depth)
+                dfs(c->set(i), EMPTY_MOVE, depth, max_depth);
+            else if (depth == max_depth-1)
                 for (int m=U2; m<=B2; m++)
                 {
                     cube_t x = apply_move(c->set(i), m);
                     ASSERT(in_H(x));
-                    visit(x, depth);
+                    visit(x, max_depth);
                 }
+        }
     }
 
     queue_push(&q, new_cube(), EMPTY_MOVE, 0);
@@ -304,7 +310,7 @@ static void fill_prune_table_2(void)
 #endif
             fprintf(stderr, "\rsearching depth %d...", depth);
             for (int i=0; i<q.length; i++)
-                dfs(queue_get(&q, i).cube, queue_get(&q, i).move, depth);
+                dfs(queue_get(&q, i).cube, queue_get(&q, i).move, queue_depth, depth);
         }
     clear_stderr();
     log_dist(c, c->bits, 0, max_depth);
