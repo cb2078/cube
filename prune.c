@@ -288,6 +288,7 @@ static void fill_prune_table_2(void)
                 {
                     cube_t x = apply_move(c->set(i), m);
                     ASSERT(in_H(x));
+                    visits++;
                     visit(x, max_depth);
                 }
         }
