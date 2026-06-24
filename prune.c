@@ -220,16 +220,22 @@ static void fill_prune_table_2(void)
                 TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
     }
 
-    void prepass(int depth)
+    void bfs(int depth)
     {
-        for (long long i=0; i<c->max; i++)
-            if (table_get(c->table, c->bits, i) == depth-1)
-                for (int m=U2; m<=B2; m++)
-                {
-                    cube_t x = apply_move(c->set(i), m);
-                    ASSERT(in_H(x));
-                    visit(x, depth);
-                }
+        int n = q.length;
+        while (n--)
+        {
+            struct search_node cur = queue_pop(&q);
+            visits++;
+            visit(cur.cube, depth);
+            FOREACH_MOVE(EMPTY_MOVE)
+            {
+                int s;
+                cube_t x = canonical_cube(apply_move(cur.cube, m), &s);
+                ASSERT(cube_eq(apply_move(apply_sym(cur.cube, s), sym_moves[s][m]), x));
+                queue_push(&q, x, sym_moves[s][m], depth+1);
+            }
+        }
     }
 
     void dfs(cube_t x, int move, int max_depth)
@@ -269,22 +275,16 @@ static void fill_prune_table_2(void)
         }
     }
 
-    void bfs(int depth)
+    void prepass(int depth)
     {
-        int n = q.length;
-        while (n--)
-        {
-            struct search_node cur = queue_pop(&q);
-            visits++;
-            visit(cur.cube, depth);
-            FOREACH_MOVE(EMPTY_MOVE)
-            {
-                int s;
-                cube_t x = canonical_cube(apply_move(cur.cube, m), &s);
-                ASSERT(cube_eq(apply_move(apply_sym(cur.cube, s), sym_moves[s][m]), x));
-                queue_push(&q, x, sym_moves[s][m], depth+1);
-            }
-        }
+        for (long long i=0; i<c->max; i++)
+            if (table_get(c->table, c->bits, i) == depth-1)
+                for (int m=U2; m<=B2; m++)
+                {
+                    cube_t x = apply_move(c->set(i), m);
+                    ASSERT(in_H(x));
+                    visit(x, depth);
+                }
     }
 
     queue_push(&q, new_cube(), EMPTY_MOVE, 0);
