@@ -13,6 +13,8 @@ static_assert(1<<SYM_BITS >= NUM_SYMS && 1<<SYM_BITS-1 < NUM_SYMS);
 #define CSEP_MAX choose[8][4]
 #define EO_MAX pow2[11]
 #define ESEP_MAX (choose[12][4]*choose[8][4])
+#define CP_MAX fact[8]
+#define EP_MAX fact[12]
 #define ORBIT_MAX (12*24*24*24*24)
 #define PARTIAL_EO_MAX (1<<EO_VARIANT)
 

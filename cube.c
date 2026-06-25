@@ -11,7 +11,21 @@
 #define SET_EO(x, b, a) ((x) = _mm256_or_si256((x), _mm256_set_epi64x(0, 0, (b), (a))))
 #define SET_EP(x, b, a) ((x) = _mm256_inserti128_si256((x), _mm_set_epi64x((b), (a)), 0))
 
-static inline unsigned long long set_comb(int, int, unsigned long long);
+static unsigned long long set_perm(int c, int s, unsigned long long m, int p)
+{
+    unsigned long long a, b;
+    a = _pdep_u64(c, m);
+    m = a << 1 | a;
+    a = a << s;
+    b = _pdep_u64(p, m);
+    b = s>1 ? a|b : b;
+    return b;
+}
+
+static unsigned long long set_comb(int c, int s, unsigned long long m)
+{
+    return set_perm(c, s, m, 0xe4);
+}
 
 static cube_t new_cube(void)
 {
@@ -90,9 +104,10 @@ static long long get_eo(cube_t x)
 static void set_eo(cube_t *x, long long r)
 {
     unsigned long long l, h;
-    r = r | ((_mm_popcnt_u64(r)&1)<<11);
+    r = _mm_popcnt_u64(r) % 2 << 11 | r;
     l = _pdep_u64(r, 0x1010101010101010);
-    h = _pdep_u64(r>>8, 0x1010101010101010);
+    r = r >> 8;
+    h = _pdep_u64(r, 0x1010101010101010);
     SET_EO(*x, h, l);
 }
 
@@ -133,10 +148,13 @@ static long long get_csep(cube_t x)
 
 static void set_csep(cube_t *x, long long r)
 {
-    unsigned long long a, b, m;
-    a = unrank_8C4[r];
-    m = 0x0101010101010101;
-    b = set_comb(a, 2, m) | set_comb(0xff ^ a, 1, m);
+    unsigned long long b;
+    unsigned char t;
+    t = unrank_8C4[r];
+    b = 0;
+    b = b | set_comb(t, 2, 0x0101010101010101);
+    t = t ^ 0xff;
+    b = b | set_comb(t, 1, 0x0101010101010101);
     SET_CP(*x, b);
 }
 
@@ -165,9 +183,70 @@ static void set_esep(cube_t *x, long long r)
     m = _pdep_u32(m, ~s);
     e = 0xfff ^ m ^ s;
     b = 0xfedc000000000000;
-    b = set_comb(s, 3, 0x111111111111) | b;
-    b = set_comb(m, 2, 0x111111111111) | b;
-    b = set_comb(e, 1, 0x111111111111) | b;
+    b = b | set_comb(s, 3, 0x111111111111);
+    b = b | set_comb(m, 2, 0x111111111111);
+    b = b | set_comb(e, 1, 0x111111111111);
+    l = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
+    b = b >> 32;
+    h = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
+    SET_EP(*x, h, l);
+}
+
+static long long get_cp(cube_t x)
+{
+    long long b, m, h, l;
+    b = _mm256_extract_epi64(x, 2);
+    m = b & 0x0404040404040404;
+    m = m >> 1 | m >> 2;
+    h = _pext_u64(b, m);
+    m = m ^ 0x0303030303030303;
+    l = _pext_u64(b, m);
+    // TODO is doing another _pext faster than calling get_csep?
+    return get_csep(x) * fact[4] * fact[4] + rank_4P4[h] * fact[4] + rank_4P4[l];
+}
+
+static void set_cp(cube_t *x, long long r)
+{
+    unsigned long long b;
+    unsigned char t;
+    t = unrank_8C4[r / fact[4] / fact[4]];
+    b = 0;
+    b = b | set_perm(t, 2, 0x0101010101010101, unrank_4P4[r / fact[4] % fact[4]]);
+    t = t ^ 0xff;
+    b = b | set_perm(t, 1, 0x0101010101010101, unrank_4P4[r % fact[4]]);
+    SET_CP(*x, b);
+}
+
+static long long get_ep(cube_t x)
+{
+    unsigned long long b, h, l, e, m, s;
+    x = _mm256_and_si256(x, PERMUTE_MASK);
+    h = _mm256_extract_epi64(x, 1);
+    l = _mm256_extract_epi64(x, 0);
+    b = _pext_u64(h, 0x0f0f0f0f0f0f0f0f) << 32;
+    b = _pext_u64(l, 0x0f0f0f0f0f0f0f0f) | b;
+    s = 0x0000888888888888 & b;
+    s = s >> 2 | s >> 3;
+    m = 0x0000444444444444 & b;
+    m = m >> 1 | m >> 2;
+    e = 0x0000333333333333 ^ m ^ s;
+#define R(x) rank_4P4[_pext_u64(b, x)]
+    return get_esep(x) * fact[4] * fact[4] * fact[4] + R(e) * fact[4] * fact[4] + R(m) * fact[4] + R(s);
+#undef R
+}
+
+static void set_ep(cube_t *x, long long r)
+{
+    unsigned long long b, h, l;
+    unsigned short e, m, s;
+    s = unrank_12C4[r / fact[4] / fact[4] / fact[4] % choose[12][4]];
+    m = unrank_8C4[r / fact[4] / fact[4] / fact[4] / choose[12][4]];
+    m = _pdep_u32(m, ~s);
+    e = 0xfff ^ m ^ s;
+    b = 0xfedc000000000000;
+    b = b | set_perm(s, 3, 0x1111111111111111, unrank_4P4[r % fact[4]]);
+    b = b | set_perm(m, 2, 0x1111111111111111, unrank_4P4[r / fact[4] % fact[4]]);
+    b = b | set_perm(e, 1, 0x1111111111111111, unrank_4P4[r / fact[4] / fact[4] % fact[4]]);
     l = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
     b = b >> 32;
     h = _pdep_u64(b, 0x0f0f0f0f0f0f0f0f);
@@ -184,7 +263,7 @@ static long long get_orbit_fast(cube_t x)
     {
         if (i==3) continue;
         b = _pext_u64(a[i/2], 0x03030303ull << i%2*32);
-        r = r * 24 + rank_4P4[b] / (i==5 ? 2 : 1);
+        r = r * fact[4] + rank_4P4[b] / (i==5 ? 2 : 1);
     }
     return r;
 }
@@ -195,12 +274,12 @@ static void set_orbit_fast(cube_t *x, long long r)
     for (int i=0, j, p=0; i<6; ++i)
     {
         if (i==3) continue;
-        j = r % 24 * (i==5 ? 2 : 1); // index of permutation of 4 pieces
+        j = r % fact[4] * (i==5 ? 2 : 1); // index of permutation of 4 pieces
         p = p ^ j&1;
         if (i==5) j += p; // set corner parity to edge parity
         b = unrank_4P4[j];
         a[i/2] = _pdep_u64(b, 0x03030303ull << i%2*32) | a[i/2];
-        r /= 24;
+        r /= fact[4];
     }
     *x = _mm256_lddqu_si256((__m256i *)a);
 }
@@ -247,15 +326,6 @@ static cube_t inverse(cube_t x)
     // combine the orientations
     x = _mm256_or_si256(x, o);
     return x;
-}
-
-static inline unsigned long long set_comb(int b, int s, unsigned long long m)
-{
-    unsigned long long a, r;
-    a = _pdep_u64(b, m << s);
-    r = _pdep_u64(0xe4, a>>(s) | a>>(s-1));
-    r = s>1 ? r|a : r;
-    return r;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

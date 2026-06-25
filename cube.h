@@ -46,6 +46,10 @@ static long long get_esep(cube_t);
 static void set_esep(cube_t *, long long);
 static long long get_slice(cube_t);
 static void set_slice(cube_t *, long long);
+static long long get_cp(cube_t);
+static void set_cp(cube_t *, long long);
+static long long get_ep(cube_t);
+static void set_ep(cube_t *, long long);
 static long long get_orbit_fast(cube_t);
 static void set_orbit_fast(cube_t *, long long);
 
