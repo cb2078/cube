@@ -189,6 +189,12 @@ static void fill_prune_table_2(void)
     int queue_depth = 5;
     struct queue q = queue_new(1<<14);
 
+    thrd_t threads[WORKERS];
+    mtx_t mutexes[1172];
+    static_assert(ORBIT_CLASSES%LENGTH(mutexes) == 0);
+    for (int i=0; i<LENGTH(mutexes); i++)
+        mtx_init(&mutexes[i], mtx_plain);
+
     cube_t canonical_cube(cube_t x, int *sym)
     {
         ASSERT(sym);
@@ -215,9 +221,13 @@ static void fill_prune_table_2(void)
     {
         if (!in_H(x))
             return;
+        long long class = c->sym->info[get_orbit(x)].class;
+        long long i = class/(ORBIT_CLASSES/LENGTH(mutexes));
+        mtx_lock(&mutexes[i]);
         for (int s=0; s<NUM_SYMS; s++)
             if (is_self_sym(c, x, s))
                 TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
+        mtx_unlock(&mutexes[i]);
     }
 
     void bfs(int depth)
@@ -305,14 +315,28 @@ static void fill_prune_table_2(void)
         }
         else
         {
+            int dfs_parallel(void *varg)
+            {
+                int thread_id = (long long)varg;
+                int start = thread_id*q.length/WORKERS;
+                int end = thread_id==WORKERS-1 ? q.length : (thread_id+1)*q.length/WORKERS;
+                for (int i=start; i<end; i++)
+                    dfs(queue_get(&q, i).cube, queue_get(&q, i).move, queue_depth, depth);
+                return 0;
+            }
+
 #if USE_PREPASS
             fprintf(stderr, "\r  prepass depth %d...", depth);
             prepass(depth);
 #endif
             fprintf(stderr, "\rsearching depth %d...", depth);
-            for (int i=0; i<q.length; i++)
-                dfs(queue_get(&q, i).cube, queue_get(&q, i).move, queue_depth, depth);
+            for (int i=0; i<WORKERS; i++)
+                thrd_create(&threads[i], dfs_parallel, (void *)(long long)i);
+            for (int i=0; i<WORKERS; i++)
+                thrd_join(threads[i], NULL);
         }
+    for (int i=0; i<LENGTH(mutexes); i++)
+        mtx_destroy(&mutexes[i]);
     clear_stderr();
     log_dist(c, c->bits, 0, max_depth);
     printf("visits=%lld\n", visits);
