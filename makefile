@@ -22,6 +22,11 @@ meta: meta.c
 main debug: main.c meta
 	$(CC) $(CFLAGS) -o $@ $<
 
-.PHONY: all clean test
+phase2-prune: main
+	date
+	rm -f phase2.bin
+	time ./main -v -w$(shell nproc) < /dev/null
+
+.PHONY: all clean test phase2-prune
 
 -include $(DEP)
