@@ -318,9 +318,7 @@ static void fill_prune_table_2(void)
             int dfs_parallel(void *varg)
             {
                 int thread_id = (long long)varg;
-                int start = thread_id*q.length/WORKERS;
-                int end = thread_id==WORKERS-1 ? q.length : (thread_id+1)*q.length/WORKERS;
-                for (int i=start; i<end; i++)
+                for (int i=thread_id; i<q.length; i+=WORKERS)
                     dfs(queue_get(&q, i).cube, queue_get(&q, i).move, queue_depth, depth);
                 return 0;
             }
