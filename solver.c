@@ -64,6 +64,8 @@ static int search(cube_t x, int *path, int start_depth, int max_depth)
             path[cur.depth-1] = cur.move;
         if (cube_eq(cur.cube, new_cube()))
             return 0;
+        if (cur.depth == max_depth)
+            continue;
         FOREACH_MOVE(cur.move)
             push(apply_move(cur.cube, m), apply_pre_move(cur.inverse, m), m, cur.depth+1);
     }
