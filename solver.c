@@ -13,7 +13,7 @@ static void build_search_queue(struct queue_node *queue, cube_t x)
 
     push(x, EMPTY_MOVE, 0);
     while (top>stack)
-    {
+        {
         struct search_node cur = *--top;
         if (cur.depth)
         {
@@ -43,7 +43,7 @@ static int search(cube_t x, int *path, int start_depth, int max_depth)
         int depth;
     };
 
-    int min = INT_MAX;
+    int min = 20;
     struct search_node stack[256];
     struct search_node *top = stack;
 
@@ -100,7 +100,7 @@ static void optimal(cube_t x, int *path, int *length)
     int done = 0;
     struct queue_node queue[QUEUE_LENGTH];
     build_search_queue(queue, x);
-    while (*length<=20)
+    for (;;)
     {
         thrd_t threads[WORKERS];
         struct search_arg args[WORKERS];
