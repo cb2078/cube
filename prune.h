@@ -4,6 +4,9 @@
 #include "coord.h"
 #include "map.h"
 
+#define USE_PREPASS 1
+#define MAX_DEPTH 15
+
 #define MAP_DEPTH 8
 #define PRUNE_BASE (prune_base[EO_VARIANT])
 

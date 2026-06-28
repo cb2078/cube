@@ -172,9 +172,6 @@ static void fill_prune_table_1(void)
         log_dist(c, c->bits, PRUNE_BASE, PRUNE_BASE+4);
 }
 
-#define USE_PREPASS 1
-#define MAX_DEPTH 15
-
 // find all solutions to positions in H of 14 moves or less with IDA*
 // exit prune
 // use a prepass to save time (mostly) on the last iteration
@@ -204,17 +201,6 @@ static void fill_prune_table_2(void)
             if (cube_lt(y=apply_sym(x, s), r))
                 r=y, *sym=s;
         return r;
-    }
-
-    int in_H(cube_t x)
-    {
-        // NOTE since this is checking that the coordinate is 0, we do not need
-        // use the symmetric coordinate and instead just check that both raw
-        // ones are 0. This might be faster sisnce it isn't using the RAM for
-        // handling the sym coordinate.
-        //
-        // something like: get_co_csep(x) == 0 && get_esep(x) == 0
-        return coord_phase1.get(x) == 0;
     }
 
     void visit(cube_t x, int depth)
