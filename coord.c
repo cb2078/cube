@@ -95,7 +95,7 @@ static cube_t set_phase2(long long r)
 
 COORD(phase1, co_csep, CO_CSEP_CLASSES, partial_eo_esep, 0, 2);
 COORD(phase1_full, co_csep, CO_CSEP_CLASSES, eo_esep, EO_ESEP_MAX, 2);
-COORD(phase2, orbit, ORBIT_CLASSES, eo, EO_MAX, 4);
+COORD(phase2, orbit, ORBIT_CLASSES, eo, EO_MAX, 8);
 
 ////////////////////////////////////////////////////////////////////////////////
 
