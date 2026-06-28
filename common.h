@@ -12,7 +12,7 @@
 
 #define ABS(x) ({ typeof(x) a=(x); a>0 ? a : -a; })
 #define ASSERT(cond)\
-    (!(cond) ? fprintf(stderr, "%s:%d: Assertion '%s' failed.\n", __FILE__, __LINE__, #cond), UNREACHABLE() : (void)0)
+    (!(cond) ? fprintf(stderr, "%s:%d: Assertion '%s' failed.\n", __FILE__, __LINE__, #cond), debugbreak(), exit(1) : (void)0)
 #define ERROR(...) (fprintf(stderr, "cube: " __VA_ARGS__), exit(1))
 #define LENGTH(x) (long long)(sizeof(x)/sizeof(x[0]))
 #define LOG(...) (VERBOSE ? fprintf(stderr, __VA_ARGS__) : (void)0)
