@@ -201,7 +201,9 @@ int main(int argc, char **argv)
     LOG("build mode: RELEASE\n");
 #endif
     init_coord(&coord_phase1, fill_prune_table_1);
+#ifdef USE_PHASE2
     init_coord(&coord_phase2, fill_prune_table_2);
+#endif
     if (NO_INPUT)
     {
     }
