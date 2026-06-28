@@ -192,17 +192,6 @@ static void fill_prune_table_2(void)
     for (int i=0; i<LENGTH(mutexes); i++)
         mtx_init(&mutexes[i], mtx_plain);
 
-    cube_t canonical_cube(cube_t x, int *sym)
-    {
-        ASSERT(sym);
-        *sym = 0;
-        cube_t y, r=x;
-        for (int s=1; s<NUM_SYMS; s++)
-            if (cube_lt(y=apply_sym(x, s), r))
-                r=y, *sym=s;
-        return r;
-    }
-
     void visit(cube_t x, int depth)
     {
         if (!in_H(x))
@@ -227,7 +216,7 @@ static void fill_prune_table_2(void)
             FOREACH_MOVE(EMPTY_MOVE)
             {
                 int s;
-                cube_t x = canonical_cube(apply_move(cur.cube, m), &s);
+                cube_t x = cube_canonicalise(apply_move(cur.cube, m), &s);
                 ASSERT(cube_eq(apply_move(apply_sym(cur.cube, s), sym_moves[s][m]), x));
                 queue_push(&q, x, sym_moves[s][m], depth+1);
             }

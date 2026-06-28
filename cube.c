@@ -65,6 +65,17 @@ static int cube_eq(cube_t x, cube_t y)
     return r == -1u;
 }
 
+static cube_t cube_canonicalise(cube_t x, int *sym)
+{
+    ASSERT(sym);
+    *sym = 0;
+    cube_t y, r=x;
+    for (int s=1; s<NUM_SYMS; s++)
+        if (cube_lt(y=apply_sym(x, s), r))
+            r=y, *sym=s;
+    return r;
+}
+
 static cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
 {
     __m256i r, o;

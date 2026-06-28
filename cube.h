@@ -31,6 +31,7 @@ static char *cubie_str[] =
 static cube_t new_cube(void);
 static void print_cube(cube_t);
 static int cube_eq(cube_t, cube_t);
+static cube_t cube_canonicalise(cube_t, int *);
 static cube_t compose(cube_t, cube_t);
 static cube_t apply_sym(cube_t, int);
 static cube_t apply_move(cube_t, int);
