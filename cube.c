@@ -212,8 +212,8 @@ static long long get_cp(cube_t x)
     h = _pext_u64(b, m);
     m = m ^ 0x0303030303030303;
     l = _pext_u64(b, m);
-    // TODO is doing another _pext faster than calling get_csep?
-    return get_csep(x) * fact[4] * fact[4] + rank_4P4[h] * fact[4] + rank_4P4[l];
+    b = _pext_u64(b, 0x0404040404040404);
+    return rank_8C4[b] * fact[4] * fact[4] + rank_4P4[h] * fact[4] + rank_4P4[l];
 }
 
 static void set_cp(cube_t *x, long long r)
