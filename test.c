@@ -7,7 +7,7 @@ static void run_tests(void)
         if (x != y)
         {
             fprintf(stderr, "test '%s' failed (%d != %d)\n", name, x, y);
-            debugbreak();
+            DEBUGBREAK();
             exit(1);
         }
     }
@@ -29,7 +29,7 @@ static void run_tests(void)
         }
     }
 
-    debugbreak();
+    DEBUGBREAK();
 
     test("moves");
     {
