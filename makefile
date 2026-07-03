@@ -13,7 +13,7 @@ clean:
 	rm -rfv $(EXE) $(DEP) *.bin
 
 test: main
-	./main -v -t -w$(shell nproc)
+	./main -v -t -j$(shell nproc)
 
 meta: meta.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -25,7 +25,7 @@ main debug: main.c meta
 phase2-prune: main
 	date
 	rm -f phase2.bin
-	time ./main -v -w$(shell nproc) < /dev/null
+	time ./main -v -j$(shell nproc) < /dev/null
 
 .PHONY: all clean test phase2-prune
 

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <immintrin.h>
 #include <limits.h>
+#include <semaphore.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +33,7 @@ static int VERBOSE = 1;
 static int VERBOSE = 0;
 #endif
 
-static int WORKERS = 4;
+static int THREADS = 4;
 static int NO_INPUT = 0;
 
 static inline void debugbreak(void)

@@ -93,7 +93,7 @@ static struct map *fill_prune_map(void)
     return map;
 }
 
-static int fill_prune_table_dfs(void *varg)
+static void fill_prune_table_dfs(void *varg)
 {
     struct fill_prune_table_arg *arg = varg;
 
@@ -133,8 +133,8 @@ static int fill_prune_table_dfs(void *varg)
         }
     }
 
-    int start = arg->thread_id*MAP_CAPACITY/WORKERS;
-    int end = arg->thread_id==WORKERS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/WORKERS;
+    int start = arg->thread_id*MAP_CAPACITY/THREADS;
+    int end = arg->thread_id==THREADS-1 ? MAP_CAPACITY : (arg->thread_id+1)*MAP_CAPACITY/THREADS;
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
@@ -142,7 +142,6 @@ static int fill_prune_table_dfs(void *varg)
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }
-    return 0;
 }
 
 static void fill_prune_table_1(void)
@@ -152,19 +151,16 @@ static void fill_prune_table_1(void)
     mtx_t mutexes[c->sym->classes];
     for (int i=0; i<c->sym->classes; ++i)
         mtx_init(&mutexes[i], mtx_plain);
-    struct fill_prune_table_arg args[WORKERS];
-    thrd_t threads[WORKERS];
-    for (int i=0; i<WORKERS; ++i)
+    struct fill_prune_table_arg args[THREADS];
+    for (int i=0; i<THREADS; ++i)
     {
         args[i].mutexes = mutexes;
         args[i].thread_id = i;
         args[i].c = c;
         args[i].depth = PRUNE_BASE+2;
         args[i].map = map;
-        thrd_create(&threads[i], fill_prune_table_dfs, &args[i]);
     }
-    for (int i=0; i<WORKERS; ++i)
-        thrd_join(threads[i], NULL);
+    job_dispatch(fill_prune_table_dfs, args, sizeof(struct fill_prune_table_arg));
     for (int i=0; i<c->sym->classes; ++i)
         mtx_destroy(&mutexes[i]);
     clear_stderr();
@@ -186,7 +182,6 @@ static void fill_prune_table_2(void)
     int queue_depth = 5;
     struct queue q = queue_new(1<<14);
 
-    thrd_t threads[WORKERS];
     mtx_t mutexes[1172];
     static_assert(ORBIT_CLASSES%LENGTH(mutexes) == 0);
     for (int i=0; i<LENGTH(mutexes); i++)
@@ -290,12 +285,11 @@ static void fill_prune_table_2(void)
         }
         else
         {
-            int dfs_parallel(void *varg)
+            void dfs_parallel(void *varg)
             {
                 int thread_id = (long long)varg;
-                for (int i=thread_id; i<q.length; i+=WORKERS)
+                for (int i=thread_id; i<q.length; i+=THREADS)
                     dfs(queue_get(&q, i).cube, queue_get(&q, i).move, queue_depth, depth);
-                return 0;
             }
 
 #if USE_PREPASS
@@ -303,10 +297,7 @@ static void fill_prune_table_2(void)
             prepass(depth);
 #endif
             fprintf(stderr, "\rsearching depth %d...", depth);
-            for (int i=0; i<WORKERS; i++)
-                thrd_create(&threads[i], dfs_parallel, (void *)(long long)i);
-            for (int i=0; i<WORKERS; i++)
-                thrd_join(threads[i], NULL);
+            job_dispatch(dfs_parallel, 0, 0);
         }
     for (int i=0; i<LENGTH(mutexes); i++)
         mtx_destroy(&mutexes[i]);

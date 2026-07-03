@@ -28,6 +28,7 @@ struct search_arg
     int start_depth;
     int max_depth;
     int *done;
+    int result;
 };
 
 static void optimal(cube_t, int *, int *);

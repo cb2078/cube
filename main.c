@@ -3,6 +3,7 @@
 #include "coord.h"
 #include "cube.h"
 #include "data.h"
+#include "job.h"
 #include "map.h"
 #include "moves.h"
 #include "prune.h"
@@ -14,6 +15,7 @@
 #include "coord.c"
 #include "cube.c"
 #include "data.c"
+#include "job.c"
 #include "map.c"
 #include "moves.c"
 #include "prune.c"
@@ -40,11 +42,11 @@ static struct arg args[] =
 {
     {"eo",       'e', VALUE_REQUIRED, "edge orientation variant"},
     {"help",     'h', VALUE_NONE,     "print this help message and exit"},
+    {"jobs",     'j', VALUE_REQUIRED, "use NUM threads"},
     {"no-input", 'n', VALUE_NONE,     "ignore input, just generate the prune table"},
     {"random",   'r', VALUE_REQUIRED, "solve a NUM random move scramble"},
     {"test",     't', VALUE_NONE,     "run the test suite"},
     {"verbose",  'v', VALUE_NONE,     ""},
-    {"workers",  'w', VALUE_REQUIRED, "use NUM workers"},
 };
 
 int main(int argc, char **argv)
@@ -81,11 +83,11 @@ int main(int argc, char **argv)
                     args[i].doc);
         fprintf(stderr,
                 "\n"
-                "By default, all workers are used and -e1 is set.\n"
+                "By default, all threads are used and -e1 is set.\n"
                 "\n"
                 "Examples:\n"
                 "  echo \"R U R' U'\" | %s -e5\n"
-                "  %s -w2 -e5 < scrambles.txt\n"
+                "  %s -j2 -e5 < scrambles.txt\n"
                 "  %s -n -e3\n",
                 argv[0], argv[0], argv[0]);
         }
@@ -186,14 +188,21 @@ int main(int argc, char **argv)
             case 'v':
                 VERBOSE = 1;
                 break;
-            case 'w':
-                WORKERS = val;
+            case 'j':
+                THREADS = val;
                 break;
             default:
                 UNREACHABLE();
         }
     if (EO_VARIANT == -1)
         set_eo_variant(0);
+    
+    sem_init(&pool.sem_worker, 0, 0);
+    sem_init(&pool.sem_owner, 0, 0);
+    pool.entries = malloc(sizeof(pool.entries[0])*THREADS);
+    thrd_t threads[THREADS];
+    for (int i=0; i<THREADS; i++)  
+        thrd_create(&threads[i], job_thread, (void *)(long long)i);
 
 #if DEBUG
     LOG("build mode: DEBUG\n");
