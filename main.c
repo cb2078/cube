@@ -199,7 +199,7 @@ int main(int argc, char **argv)
     
     sem_init(&pool.sem_worker, 0, 0);
     sem_init(&pool.sem_owner, 0, 0);
-    pool.entries = malloc(sizeof(pool.entries[0])*THREADS);
+    pool.entries = (void *)&(char [sizeof(pool.entries[0])*THREADS]){};
     thrd_t threads[THREADS];
     for (int i=0; i<THREADS; i++)  
         thrd_create(&threads[i], job_thread, (void *)(long long)i);
