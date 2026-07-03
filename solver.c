@@ -76,11 +76,16 @@ static int search(cube_t x, int *path, int move, int start_depth, int max_depth)
 static void search_thread(void *_)
 {
     struct search_arg *arg = _;
+    int path[20];
     for (int i; !atomic_load(arg->done) && (i=atomic_fetch_add(arg->start, 1)) < QUEUE_LENGTH;)
-        if (!search(arg->queue[i].cube, arg->path, arg->queue[i].path>>(QUEUE_DEPTH-1)*8, arg->start_depth, arg->max_depth))
+        if (!search(arg->queue[i].cube, path, arg->queue[i].path>>(QUEUE_DEPTH-1)*8, QUEUE_DEPTH, arg->depth))
         {
-            atomic_store(arg->done, 1);
-            arg->result = i;
+            // check if another thread has also got here
+            if (atomic_exchange(arg->done, 1) != 0)
+                break;
+            for (int j=0; j<QUEUE_DEPTH; ++j)
+                arg->path[j] = arg->queue[i].path>>8*j&0xff;
+            memcpy(arg->path+QUEUE_DEPTH, path+QUEUE_DEPTH, sizeof(int)*arg->depth-QUEUE_DEPTH);
         }
 }
 
@@ -94,12 +99,10 @@ static void optimal(cube_t x, int *path, int *length)
         *length += diff;
     }
 
-    // TODO increase the maximum depth by whatever `search` returns
     // TODO sort the queue based on a heuristic
-    int done = 0;
     struct queue_node queue[QUEUE_LENGTH];
     build_search_queue(queue, x);
-    for (;;)
+    for (int done=0; !done; *length+=!done)
     {
         int start = 0;
         struct search_arg args[THREADS];
@@ -107,24 +110,10 @@ static void optimal(cube_t x, int *path, int *length)
         {
             args[t].start = &start;
             args[t].queue = queue;
-            args[t].start_depth = QUEUE_DEPTH;
-            args[t].max_depth = *length;
+            args[t].path = path;
+            args[t].depth = *length;
             args[t].done = &done;
-            args[t].result = -1;
         }
         job_dispatch(search_thread, args, sizeof(struct search_arg));
-        for (int t=0; t<THREADS; ++t)
-        {
-            if (args[t].result == -1)
-                continue;
-            for (int j=0; j<QUEUE_DEPTH; ++j)
-                path[j] = args[t].queue[args[t].result].path>>8*j&0xff;
-            memcpy(path+QUEUE_DEPTH,
-                   args[t].path+QUEUE_DEPTH,
-                   sizeof(int)*args[t].max_depth-QUEUE_DEPTH);
-        }
-        if (done)
-            break;
-        ++*length;
     }
 }

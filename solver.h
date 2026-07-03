@@ -24,11 +24,9 @@ struct search_arg
 {
     int *start;
     struct queue_node *queue;
-    int path[20];
-    int start_depth;
-    int max_depth;
+    int *path;
+    int depth;
     int *done;
-    int result;
 };
 
 static void optimal(cube_t, int *, int *);
