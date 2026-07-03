@@ -22,7 +22,7 @@ struct search_node
 
 struct search_arg
 {
-    int thread_id;
+    int *start;
     struct queue_node *queue;
     int path[20];
     int start_depth;

@@ -73,10 +73,10 @@ static int search(cube_t x, int *path, int move, int start_depth, int max_depth)
     return min-max_depth;
 }
 
-static void search_thread(void *__arg)
+static void search_thread(void *_)
 {
-    struct search_arg *arg = __arg;
-    for (int i=arg->thread_id; !atomic_load(arg->done) && i<QUEUE_LENGTH; i+=THREADS)
+    struct search_arg *arg = _;
+    for (int i; !atomic_load(arg->done) && (i=atomic_fetch_add(arg->start, 1)) < QUEUE_LENGTH;)
         if (!search(arg->queue[i].cube, arg->path, arg->queue[i].path>>(QUEUE_DEPTH-1)*8, arg->start_depth, arg->max_depth))
         {
             atomic_store(arg->done, 1);
@@ -101,10 +101,11 @@ static void optimal(cube_t x, int *path, int *length)
     build_search_queue(queue, x);
     for (;;)
     {
+        int start = 0;
         struct search_arg args[THREADS];
         for (int t=0; t<THREADS; ++t)
         {
-            args[t].thread_id = t;
+            args[t].start = &start;
             args[t].queue = queue;
             args[t].start_depth = QUEUE_DEPTH;
             args[t].max_depth = *length;
