@@ -27,6 +27,14 @@ phase2-prune: main
 	rm -f phase2.bin
 	time ./main -v -j$(shell nproc) < /dev/null
 
-.PHONY: all clean test phase2-prune
+single: meta
+	@$(CC) -nostdinc -E main.c 2> /dev/null \
+		| sed '/^#/d' \
+		| tr -s '\n' \
+		| (grep '^#include' common.h; echo; cat -) \
+		| tee /dev/stderr \
+		| xclip -selection clipboard
+
+.PHONY: all clean single test phase2-prune
 
 -include $(DEP)
