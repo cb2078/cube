@@ -105,15 +105,6 @@ static void optimal(cube_t x, int *path, int *length)
     for (int done=0; !done; *length+=!done)
     {
         int start = 0;
-        struct search_arg args[THREADS];
-        for (int t=0; t<THREADS; ++t)
-        {
-            args[t].start = &start;
-            args[t].queue = queue;
-            args[t].path = path;
-            args[t].depth = *length;
-            args[t].done = &done;
-        }
-        job_dispatch(search_thread, args, sizeof(struct search_arg));
+        job_dispatch(search_thread, &(struct search_arg){&start, queue, path, *length, &done}, 0);
     }
 }
