@@ -11,7 +11,7 @@
 #define SET_EO(x, b, a) ((x) = _mm256_or_si256((x), _mm256_set_epi64x(0, 0, (b), (a))))
 #define SET_EP(x, b, a) ((x) = _mm256_inserti128_si256((x), _mm_set_epi64x((b), (a)), 0))
 
-static unsigned long long set_perm(int c, int s, unsigned long long m, int p)
+static inline unsigned long long set_perm(int c, int s, unsigned long long m, int p)
 {
     unsigned long long a, b;
     a = _pdep_u64(c, m);
@@ -22,12 +22,12 @@ static unsigned long long set_perm(int c, int s, unsigned long long m, int p)
     return b;
 }
 
-static unsigned long long set_comb(int c, int s, unsigned long long m)
+static inline unsigned long long set_comb(int c, int s, unsigned long long m)
 {
     return set_perm(c, s, m, 0xe4);
 }
 
-static cube_t new_cube(void)
+static inline cube_t new_cube(void)
 {
     return CUBE(0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
 }
@@ -45,7 +45,7 @@ static void print_cube(cube_t x)
     printf(")");
 }
 
-static int cube_lt(cube_t x, cube_t y)
+static inline int cube_lt(cube_t x, cube_t y)
 {
     unsigned a, b;
     __m256i c;
@@ -56,7 +56,7 @@ static int cube_lt(cube_t x, cube_t y)
     return a < b;
 }
 
-static int cube_eq(cube_t x, cube_t y)
+static inline int cube_eq(cube_t x, cube_t y)
 {
     unsigned r;
     __m256i c;
@@ -65,7 +65,26 @@ static int cube_eq(cube_t x, cube_t y)
     return r == -1u;
 }
 
-static cube_t cube_canonicalise(cube_t x, int *sym)
+static int check_get_parity(cube_t x)
+{
+    char a[32];
+    _mm256_storeu_si256((__m256i *)a, x);
+    for (int i=0; i<LENGTH(a); ++i)
+        a[i]&=0x0f,printf("%3d",(int)a[i]);
+
+    int parity(char *a, int n)
+    {
+        int r=0;
+        for (int j=0; j<n; ++j)
+            for (int i=0; i<j; ++i)
+                r+=a[i]>a[j];
+        return r%2;
+    }
+
+    return parity(a,12)<<1|parity(a+16,8);
+}
+
+static inline cube_t cube_canonicalise(cube_t x, int *sym)
 {
     ASSERT(sym);
     *sym = 0;
@@ -76,7 +95,7 @@ static cube_t cube_canonicalise(cube_t x, int *sym)
     return r;
 }
 
-static cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
+static inline cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
 {
     __m256i r, o;
     x = _mm256_shuffle_epi8(x, y);
@@ -95,12 +114,12 @@ static cube_t mirrored_compose(cube_t x, cube_t y, int mirror)
     return r;
 }
 
-static cube_t compose(cube_t x, cube_t y)
+static inline cube_t compose(cube_t x, cube_t y)
 {
     return mirrored_compose(x, y, 0);
 }
 
-static long long get_eo(cube_t x)
+static inline long long get_eo(cube_t x)
 {
     long long r;
     x = _mm256_and_si256(x, ORIENT_MASK);
@@ -112,7 +131,7 @@ static long long get_eo(cube_t x)
     return r;
 }
 
-static void set_eo(cube_t *x, long long r)
+static inline void set_eo(cube_t *x, long long r)
 {
     unsigned long long l, h;
     r = _mm_popcnt_u64(r) % 2 << 11 | r;
@@ -122,7 +141,7 @@ static void set_eo(cube_t *x, long long r)
     SET_EO(*x, h, l);
 }
 
-static long long get_co(cube_t x)
+static inline long long get_co(cube_t x)
 {
     unsigned long long r;
     __m128i c, y;
@@ -141,7 +160,7 @@ static long long get_co(cube_t x)
     return r;
 }
 
-static void set_co(cube_t *x, long long r)
+static inline void set_co(cube_t *x, long long r)
 {
     unsigned long long b = 0;
     for (int i=0, p=0; i<8; ++i, p+=r%3, r/=3)
@@ -149,7 +168,7 @@ static void set_co(cube_t *x, long long r)
     SET_CO(*x, b);
 }
 
-static long long get_csep(cube_t x)
+static inline long long get_csep(cube_t x)
 {
     unsigned char b;
     x = _mm256_slli_epi32(x, 5);
@@ -157,7 +176,7 @@ static long long get_csep(cube_t x)
     return rank_8C4[b];
 };
 
-static void set_csep(cube_t *x, long long r)
+static inline void set_csep(cube_t *x, long long r)
 {
     unsigned long long b;
     unsigned char t;
@@ -169,7 +188,7 @@ static void set_csep(cube_t *x, long long r)
     SET_CP(*x, b);
 }
 
-static long long get_esep(cube_t x)
+static inline long long get_esep(cube_t x)
 {
     unsigned m, s;
     // mask of positions of the S-slice edges
@@ -185,7 +204,7 @@ static long long get_esep(cube_t x)
     return rank_8C4[m] * choose[12][4] + rank_12C4[s];
 }
 
-static void set_esep(cube_t *x, long long r)
+static inline void set_esep(cube_t *x, long long r)
 {
     unsigned long long b, l, h;
     unsigned short e, m, s;
@@ -203,7 +222,7 @@ static void set_esep(cube_t *x, long long r)
     SET_EP(*x, h, l);
 }
 
-static long long get_cp(cube_t x)
+static inline long long get_cp(cube_t x)
 {
     long long b, m, h, l;
     b = _mm256_extract_epi64(x, 2);
@@ -216,7 +235,7 @@ static long long get_cp(cube_t x)
     return rank_8C4[b] * fact[4] * fact[4] + rank_4P4[h] * fact[4] + rank_4P4[l];
 }
 
-static void set_cp(cube_t *x, long long r)
+static inline void set_cp(cube_t *x, long long r)
 {
     unsigned long long b;
     unsigned char t;
@@ -228,7 +247,7 @@ static void set_cp(cube_t *x, long long r)
     SET_CP(*x, b);
 }
 
-static long long get_ep(cube_t x)
+static inline long long get_ep(cube_t x)
 {
     unsigned long long b, h, l, e, m, s;
     x = _mm256_and_si256(x, PERMUTE_MASK);
@@ -246,7 +265,7 @@ static long long get_ep(cube_t x)
 #undef R
 }
 
-static void set_ep(cube_t *x, long long r)
+static inline void set_ep(cube_t *x, long long r)
 {
     unsigned long long b, h, l;
     unsigned short e, m, s;
@@ -265,7 +284,7 @@ static void set_ep(cube_t *x, long long r)
 }
 
 // assume cubies are placed in their tetrad/slice
-static long long get_orbit_fast(cube_t x)
+static inline long long get_orbit_fast(cube_t x)
 {
     unsigned long long a[4], b;
     long long r = 0;
@@ -279,7 +298,7 @@ static long long get_orbit_fast(cube_t x)
     return r;
 }
 
-static void set_orbit_fast(cube_t *x, long long r)
+static inline void set_orbit_fast(cube_t *x, long long r)
 {
     unsigned long long a[4] = {0x0404040400000000, 0x0f0e0d0c08080808, 0x0404040400000000, HIGH_BITS}, b;
     for (int i=0, j, p=0; i<6; ++i)
@@ -295,7 +314,7 @@ static void set_orbit_fast(cube_t *x, long long r)
     *x = _mm256_lddqu_si256((__m256i *)a);
 }
 
-static cube_t inverse(cube_t x)
+static inline cube_t inverse(cube_t x)
 {
     // - any permutation of the cubies can be borken into cycles
     // - cubies in the same cycle exchange places each time the permutation is
@@ -341,7 +360,7 @@ static cube_t inverse(cube_t x)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static cube_t apply_sym(cube_t x, int s)
+static inline cube_t apply_sym(cube_t x, int s)
 {
     cube_t compose_3(cube_t x, cube_t y, cube_t z)
     {
@@ -351,17 +370,17 @@ static cube_t apply_sym(cube_t x, int s)
     return compose_3(get_sym_cube(inv_sym[s]), x, get_sym_cube(s));
 }
 
-static cube_t apply_move(cube_t x, int move)
+static inline cube_t apply_move(cube_t x, int move)
 {
     return compose(x, get_move_cube(move));
 }
 
-static cube_t apply_pre_move(cube_t x, int move)
+static inline cube_t apply_pre_move(cube_t x, int move)
 {
     return compose(get_move_cube(inverse_move(move)), x);
 }
 
-static cube_t apply_moves(cube_t x, int *moves, int length)
+static inline cube_t apply_moves(cube_t x, int *moves, int length)
 {
     for (int i=0; i<length; ++i)
         x = apply_move(x, moves[i]);

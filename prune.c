@@ -68,19 +68,19 @@ static struct map *fill_prune_map(void)
 {
     struct coord *c = &coord_phase1_full;
     struct map *map = map_new();
-    map_set(map, c->get(new_cube()), 0);
+    map_set(map, get_phase1_full(new_cube()), 0);
     for (int depth=1; depth<=MAP_DEPTH; ++depth)
         for (long long i=0; i<MAP_CAPACITY; ++i)
         {
             if (map->data[i].val == depth-1)
                 for (int m=0; m<18; ++m)
                 {
-                    cube_t x = apply_move(c->set(map->data[i].key), m);
+                    cube_t x = apply_move(set_phase1_full(map->data[i].key), m);
                     for (int s=0; s<NUM_SYMS; ++s)
                     {
                         if (!is_self_sym(c, x, s))
                             continue;
-                        long long k = c->get(apply_sym(x, s));
+                        long long k = get_phase1_full(apply_sym(x, s));
                         if (map_get(map, k) == MAP_VAL_MAX)
                             map_set(map, k, depth);
                     }
@@ -93,9 +93,10 @@ static struct map *fill_prune_map(void)
     return map;
 }
 
-static void fill_prune_table_dfs(void *varg)
+static void fill_prune_table_dfs(void *_)
 {
-    struct fill_prune_table_arg *arg = varg;
+    struct fill_prune_table_arg *arg = _;
+    struct coord *c = &coord_phase1;
 
     void dfs(cube_t x, int start_depth)
     {
@@ -104,23 +105,23 @@ static void fill_prune_table_dfs(void *varg)
 
         void push(cube_t x, int move, int depth)
         {
-            int class = arg->c->get(x)%arg->c->sym->classes;
+            int class = get_phase1(x)%c->sym->classes;
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
             {
-                if (!is_self_sym(arg->c, x, s))
+                if (!is_self_sym(c, x, s))
                     continue;
                 int v = MAX(depth-PRUNE_BASE, 0);
-                long long i = arg->c->get(apply_sym(x, s));
+                long long i = get_phase1(apply_sym(x, s));
                 long long j = PRUNE_EXT_62(i);
                 long long k = PRUNE_MIN_62(i);
-                TABLE_SET_MIN(arg->c->table, 2, j, v);
-                TABLE_SET_MIN(arg->c->table, 4, k/2, depth);
+                TABLE_SET_MIN(c->table, 2, j, v);
+                TABLE_SET_MIN(c->table, 4, k/2, depth);
             }
             mtx_unlock(&arg->mutexes[class]);
             if (depth >= MAP_DEPTH &&
                 depth < arg->depth &&
-                depth <= map_get(arg->map, coord_phase1_full.get(x)))
+                depth <= map_get(arg->map, get_phase1_full(x)))
                 *top++ = (struct search_node){x, move, depth};
         }
 
@@ -138,7 +139,7 @@ static void fill_prune_table_dfs(void *varg)
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
-            dfs(coord_phase1_full.set(arg->map->data[i].key), arg->map->data[i].val);
+            dfs(set_phase1_full(arg->map->data[i].key), arg->map->data[i].val);
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }
@@ -156,7 +157,6 @@ static void fill_prune_table_1(void)
     {
         args[i].mutexes = mutexes;
         args[i].thread_id = i;
-        args[i].c = c;
         args[i].depth = PRUNE_BASE+2;
         args[i].map = map;
     }
@@ -196,7 +196,7 @@ static void fill_prune_table_2(void)
         mtx_lock(&mutexes[i]);
         for (int s=0; s<NUM_SYMS; s++)
             if (is_self_sym(c, x, s))
-                TABLE_SET_MIN(c->table, c->bits, c->get(apply_sym(x, s)), depth);
+                TABLE_SET_MIN(c->table, c->bits, get_phase2(apply_sym(x, s)), depth);
         mtx_unlock(&mutexes[i]);
     }
 
@@ -262,11 +262,11 @@ static void fill_prune_table_2(void)
             int depth = table_get(c->table, c->bits, i);
             if (depth > queue_depth &&
                 depth + 5 <= max_depth)
-                dfs(c->set(i), EMPTY_MOVE, depth, max_depth);
+                dfs(set_phase2(i), EMPTY_MOVE, depth, max_depth);
             else if (depth == max_depth-1)
                 for (int m=U2; m<=B2; m++)
                 {
-                    cube_t x = apply_move(c->set(i), m);
+                    cube_t x = apply_move(set_phase2(i), m);
                     ASSERT(in_H(x));
                     visits++;
                     visit(x, max_depth);

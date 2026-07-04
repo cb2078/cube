@@ -1,4 +1,4 @@
-static struct map *map_new(void)
+static inline struct map *map_new(void)
 {
     long long size = MAP_CAPACITY*8;
     struct map *m = malloc(sizeof(struct map)+size);
@@ -8,7 +8,7 @@ static struct map *map_new(void)
 }
 
 // https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing
-static int hash(unsigned long long k)
+static inline int hash(unsigned long long k)
 {
     unsigned long long a = 11400714819323198485ull;
     int w = 64;
@@ -17,7 +17,7 @@ static int hash(unsigned long long k)
     return (a * k) >> (w - m);
 }
 
-static int map_index(struct map *m, long long k)
+static inline int map_index(struct map *m, long long k)
 {
     ASSERT(k < MAP_KEY_MAX);
     int i = hash(k);
@@ -26,13 +26,13 @@ static int map_index(struct map *m, long long k)
     return i;
 }
 
-static int map_get(struct map *m, long long k)
+static inline int map_get(struct map *m, long long k)
 {
     int i = map_index(m, k);
     return m->data[i].val;
 }
 
-static void map_set(struct map *m, long long k, int v)
+static inline void map_set(struct map *m, long long k, int v)
 {
     ASSERT(v != MAP_VAL_MAX);
     int i = map_index(m, k);

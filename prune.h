@@ -19,7 +19,6 @@ struct fill_prune_table_arg
 {
     mtx_t *mutexes;
     int thread_id;
-    struct coord *c;
     int depth;
     struct map *map;
 };

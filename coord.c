@@ -8,12 +8,12 @@
         .classes = CLASSES,\
     };
 
-static long long get_co_csep(cube_t x)
+static inline long long get_co_csep(cube_t x)
 {
     return get_co(x) * CSEP_MAX + get_csep(x);
 }
 
-static cube_t set_co_csep(long long r)
+static inline cube_t set_co_csep(long long r)
 {
     cube_t x = new_cube();
     set_csep(&x, r % CSEP_MAX);
@@ -23,7 +23,7 @@ static cube_t set_co_csep(long long r)
 
 #define get_orbit get_orbit_fast
 
-static cube_t set_orbit(long long r)
+static inline cube_t set_orbit(long long r)
 {
     cube_t x = new_cube();
     set_orbit_fast(&x, r);
@@ -39,14 +39,12 @@ SYM_COORD(orbit, ORBIT_MAX, ORBIT_CLASSES);
     static struct coord coord_##NAME =\
     {\
         .name = #NAME,\
-        .get = get_##NAME,\
-        .set = set_##NAME,\
         .max = SYM_CLASSES * RAW_MAX,\
         .sym = &sym_coord_##SYM,\
         .bits = BITS,\
     };\
 
-static long long get_phase1(cube_t x)
+static inline long long get_phase1(cube_t x)
 {
     long long r = get_co_csep(x);
     x = apply_sym(x, coord_phase1.sym->info[r].sym);
@@ -54,7 +52,7 @@ static long long get_phase1(cube_t x)
     return r * PARTIAL_EO_ESEP_MAX + (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_phase1(long long r)
+static inline cube_t set_phase1(long long r)
 {
     cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / PARTIAL_EO_ESEP_MAX]);
     set_esep(&x, r % ESEP_MAX);
@@ -62,7 +60,7 @@ static cube_t set_phase1(long long r)
     return x;
 }
 
-static long long get_phase1_full(cube_t x)
+static inline long long get_phase1_full(cube_t x)
 {
     long long r = get_co_csep(x);
     x = apply_sym(x, coord_phase1.sym->info[r].sym);
@@ -70,7 +68,7 @@ static long long get_phase1_full(cube_t x)
     return r * EO_ESEP_MAX + get_eo(x) * ESEP_MAX + get_esep(x);
 }
 
-static cube_t set_phase1_full(long long r)
+static inline cube_t set_phase1_full(long long r)
 {
     cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / EO_ESEP_MAX]);
     set_esep(&x, r % ESEP_MAX);
@@ -78,7 +76,7 @@ static cube_t set_phase1_full(long long r)
     return x;
 }
 
-static long long get_phase2(cube_t x)
+static inline long long get_phase2(cube_t x)
 {
     long long r = get_orbit(x);
     x = apply_sym(x, coord_phase2.sym->info[r].sym);
@@ -86,7 +84,7 @@ static long long get_phase2(cube_t x)
     return r * EO_MAX + get_eo(x);
 }
 
-static cube_t set_phase2(long long r)
+static inline cube_t set_phase2(long long r)
 {
     cube_t x = set_orbit(coord_phase2.sym->to_rep[r / EO_MAX]);
     set_eo(&x, r % EO_MAX);
@@ -98,11 +96,6 @@ COORD(phase1_full, co_csep, CO_CSEP_CLASSES, eo_esep, EO_ESEP_MAX, 2);
 COORD(phase2, orbit, ORBIT_CLASSES, eo, EO_MAX, 8);
 
 ////////////////////////////////////////////////////////////////////////////////
-
-static int is_self_sym(struct coord *c, cube_t x, int s)
-{
-    return c->sym->self_syms[c->sym->get(x)] >> s & 1;
-}
 
 static void init_sym(struct sym_coord *c)
 {

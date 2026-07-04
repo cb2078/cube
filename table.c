@@ -1,4 +1,4 @@
-static unsigned *table_new(long long entries, int bits)
+static inline unsigned *table_new(long long entries, int bits)
 {
     long long size = TABLE_SIZE(entries, bits);
     unsigned *a = aligned_alloc(TABLE_ALIGN, size);
@@ -6,7 +6,7 @@ static unsigned *table_new(long long entries, int bits)
     return a;
 }
 
-static int table_get(unsigned *a, int bits, long long i)
+static inline int table_get(unsigned *a, int bits, long long i)
 {
     ASSERT(__builtin_popcount(bits) == 1);
     int divisor = sizeof(unsigned)*8/bits;
@@ -15,7 +15,7 @@ static int table_get(unsigned *a, int bits, long long i)
     return (a[i/divisor] >> shift) & mask;
 }
 
-static void table_set(unsigned *a, int bits, long long i, int x)
+static inline void table_set(unsigned *a, int bits, long long i, int x)
 {
     ASSERT(__builtin_popcount(bits) == 1);
     int divisor = sizeof(unsigned)*8/bits;

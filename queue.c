@@ -1,4 +1,4 @@
-static struct queue queue_new(long long capacity)
+static inline struct queue queue_new(long long capacity)
 {
     struct queue q = {0};
     q.capacity = capacity;
@@ -6,13 +6,13 @@ static struct queue queue_new(long long capacity)
     return q;
 }
 
-static struct search_node queue_get(struct queue *q, long long i)
+static inline struct search_node queue_get(struct queue *q, long long i)
 {
     ASSERT(i < q->start+q->length);
     return q->entries[q->start+i];
 }
 
-static void queue_push(struct queue *q, cube_t x, int move, int depth)
+static inline void queue_push(struct queue *q, cube_t x, int move, int depth)
 {
     for (long long i=0; i<q->start+q->length; i++)
         if (cube_eq(x, q->entries[i].cube))
@@ -21,7 +21,7 @@ static void queue_push(struct queue *q, cube_t x, int move, int depth)
     q->entries[q->start+q->length-1] = (struct search_node){x, move, depth};
 }
 
-static struct search_node queue_pop(struct queue *q)
+static inline struct search_node queue_pop(struct queue *q)
 {
     ASSERT(q->length--);
     long long i = q->start++;

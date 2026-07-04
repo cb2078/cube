@@ -18,8 +18,8 @@ struct map
     } data[];
 };
 
-static struct map *map_new(void);
-static int map_get(struct map *, long long);
-static void map_set(struct map *, long long, int);
+static inline struct map *map_new(void);
+static inline int map_get(struct map *, long long);
+static inline void map_set(struct map *, long long, int);
 
 #endif

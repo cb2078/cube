@@ -46,8 +46,6 @@ struct sym_coord
 struct coord
 {
     char *name;
-    long long (*get)(cube_t);
-    cube_t (*set)(long long);
     long long max;
     struct sym_coord *sym;
     unsigned *table;
@@ -59,7 +57,13 @@ static struct coord coord_phase1_full;
 static struct coord coord_phase2;
 static struct coord coord_phase2_full;
 
-static int is_self_sym(struct coord *c, cube_t x, int s);
+static inline long long get_phase1(cube_t);
+static inline cube_t set_phase1(long long);
+static inline long long get_phase1_full(cube_t);
+static inline cube_t set_phase1_full(long long);
+static inline long long get_phase2(cube_t);
+static inline cube_t set_phase2(long long);
+
 static void init_sym(struct sym_coord *c);
 static void init_coord(struct coord *c, void (*fill_prune_table)(void));
 
@@ -70,6 +74,11 @@ static inline void set_eo_variant(int v)
     ASSERT(v >= 0 && v < NUM_EDGES);
     EO_VARIANT = v;
     coord_phase1.max = coord_phase1.sym->classes * PARTIAL_EO_ESEP_MAX;
+}
+
+static inline int is_self_sym(struct coord *c, cube_t x, int s)
+{
+    return c->sym->self_syms[c->sym->get(x)] >> s & 1;
 }
 
 #endif

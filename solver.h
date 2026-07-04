@@ -39,12 +39,12 @@ static inline int in_H(cube_t x)
     // handling the sym coordinate.
     //
     // something like: get_co_csep(x) == 0 && get_esep(x) == 0
-    return coord_phase1.get(x) == 0;
+    return get_phase1(x) == 0;
 }
 
 static inline int h_phase1(cube_t x)
 {
-    long long i = coord_phase1.get(x);
+    long long i = get_phase1(x);
     long long j = PRUNE_EXT_62(i);
     long long k = PRUNE_MIN_62(i);
     int r = table_get(coord_phase1.table, 2, j);
@@ -54,7 +54,7 @@ static inline int h_phase1(cube_t x)
 static inline int h_phase2(cube_t x)
 {
     ASSERT(in_H(x));
-    return MIN(table_get(coord_phase2.table, coord_phase2.bits, coord_phase2.get(x)), MAX_DEPTH);
+    return MIN(table_get(coord_phase2.table, coord_phase2.bits, get_phase2(x)), MAX_DEPTH);
 }
 
 #endif

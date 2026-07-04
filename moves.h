@@ -46,19 +46,18 @@ static char *move_str[NUM_MOVES] =
     "Y'", "X'", "Z'", "E'", "M'", "S'",
 };
 
-static int move_type(int x);
-static int move_axis(int x);
-static int move_face(int x);
-static int move_opposite_face(int x);
-static int move_side(int x);
-static int move_amount(int x);
+static inline int move_type(int x);
+static inline int move_axis(int x);
+static inline int move_face(int x);
+static inline int move_opposite_face(int x);
+static inline int move_side(int x);
+static inline int move_amount(int x);
 static void print_moves(int *moves, int length);
-static int prune_move(int, int);
+static inline int prune_move(int, int);
 static void make_scramble(int *moves, int length);
-static int read_move(char *s);
 static void read_moves(char *s, int *moves, int *length);
 static int apply_cancellations(int *moves, int *length);
-static int inverse_move(int x);
+static inline int inverse_move(int x);
 static void inverse_moves(int *moves, int length);
 
 #endif

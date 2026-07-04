@@ -1,4 +1,4 @@
-static int move_type(int x)
+static inline int move_type(int x)
 {
     switch (x/UW)
     {
@@ -13,37 +13,37 @@ static int move_type(int x)
     }
 }
 
-static int move_axis(int x)
+static inline int move_axis(int x)
 {
     return x%3;
 }
 
-static int move_face(int x)
+static inline int move_face(int x)
 {
     return x%6;
 }
 
-static int move_opposite_face(int x)
+static inline int move_opposite_face(int x)
 {
     return move_face(x+3);
 }
 
-static int move_side(int x)
+static inline int move_side(int x)
 {
     return move_face(x)/3;
 }
 
-static int move_amount(int x)
+static inline int move_amount(int x)
 {
     return x%UW/6+1;
 }
 
-static int make_move(int face, int amount)
+static inline int make_move(int face, int amount)
 {
     return face+U2*(amount-1);
 }
 
-static int prune_move(int x, int y)
+static inline int prune_move(int x, int y)
 {
     return move_axis(x)==move_axis(y) && move_face(x)>=move_face(y);
 }
@@ -134,7 +134,7 @@ static int apply_cancellations(int *moves, int *length)
     return cancelled;
 }
 
-static int inverse_move(int x)
+static inline int inverse_move(int x)
 {
     return make_move(move_face(x), 4-move_amount(x));
 }

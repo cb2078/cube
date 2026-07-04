@@ -28,51 +28,34 @@ static char *cubie_str[] =
     "UR",  "UL",  "DR",  "DL",
 };
 
-static cube_t new_cube(void);
+static inline cube_t new_cube(void);
 static void print_cube(cube_t);
-static int cube_eq(cube_t, cube_t);
-static cube_t cube_canonicalise(cube_t, int *);
-static cube_t compose(cube_t, cube_t);
-static cube_t apply_sym(cube_t, int);
-static cube_t apply_move(cube_t, int);
-static cube_t apply_moves(cube_t, int *, int);
+static inline int cube_lt(cube_t, cube_t);
+static inline int cube_eq(cube_t, cube_t);
+static int cube_check_parity(cube_t);
+static inline cube_t cube_canonicalise(cube_t, int *);
+static inline cube_t inverse(cube_t);
+static inline cube_t compose(cube_t, cube_t);
 
-static long long get_eo(cube_t);
-static void set_eo(cube_t *, long long);
-static long long get_co(cube_t);
-static void set_co(cube_t *, long long);
-static long long get_csep(cube_t);
-static void set_csep(cube_t *, long long);
-static long long get_esep(cube_t);
-static void set_esep(cube_t *, long long);
-static long long get_slice(cube_t);
-static void set_slice(cube_t *, long long);
-static long long get_cp(cube_t);
-static void set_cp(cube_t *, long long);
-static long long get_ep(cube_t);
-static void set_ep(cube_t *, long long);
-static long long get_orbit_fast(cube_t);
-static void set_orbit_fast(cube_t *, long long);
+static inline long long get_eo(cube_t);
+static inline void set_eo(cube_t *, long long);
+static inline long long get_co(cube_t);
+static inline void set_co(cube_t *, long long);
+static inline long long get_csep(cube_t);
+static inline void set_csep(cube_t *, long long);
+static inline long long get_esep(cube_t);
+static inline void set_esep(cube_t *, long long);
+static inline long long get_slice(cube_t);
+static inline void set_slice(cube_t *, long long);
+static inline long long get_cp(cube_t);
+static inline void set_cp(cube_t *, long long);
+static inline long long get_ep(cube_t);
+static inline void set_ep(cube_t *, long long);
+static inline long long get_orbit_fast(cube_t);
+static inline void set_orbit_fast(cube_t *, long long);
 
-static inline int check_get_parity(cube_t x)
-{
-    char a[32];
-    _mm256_storeu_si256((__m256i *)a, x);
-    for (int i=0; i<LENGTH(a); ++i)
-        a[i]&=0x0f,printf("%3d",(int)a[i]);
-
-    int parity(char *a, int n)
-    {
-        int r=0;
-        for (int j=0; j<n; ++j)
-            for (int i=0; i<j; ++i)
-                r+=a[i]>a[j];
-        return r%2;
-    }
-
-    return parity(a,12)<<1|parity(a+16,8);
-}
-
-static cube_t inverse(cube_t);
+static inline cube_t apply_sym(cube_t, int);
+static inline cube_t apply_move(cube_t, int);
+static inline cube_t apply_moves(cube_t, int *, int);
 
 #endif
