@@ -1,5 +1,4 @@
-#ifndef MOVES_H
-#define MOVES_H
+#pragma once
 
 #define NUM_FACE_TURNS 18
 
@@ -59,5 +58,3 @@ static void read_moves(char *s, int *moves, int *length);
 static int apply_cancellations(int *moves, int *length);
 static inline int inverse_move(int x);
 static void inverse_moves(int *moves, int length);
-
-#endif

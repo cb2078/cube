@@ -1,5 +1,4 @@
-#ifndef PRUNE_H
-#define PRUNE_H
+#pragma once
 
 #include "coord.h"
 #include "map.h"
@@ -42,5 +41,3 @@ static int prune_base[12] =
     [10] = 10,
     [11] = 10,
 };
-
-#endif

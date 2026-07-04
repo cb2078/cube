@@ -1,5 +1,4 @@
-#ifndef QUEUE_H
-#define QUEUE_H
+#pragma once
 
 #include "cube.h"
 #include "solver.h"
@@ -17,5 +16,3 @@ static inline struct search_node queue_pop(struct queue *);
 
 // TODO find a way to merge this with the searc queue in 'solver.c'
 // NOTE this is not faster when using a linear search when checking for duplicates positions when used in solver.c
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef COORD_H
-#define COORD_H
+#pragma once
 
 #include "cube.h"
 #include "data.h"
@@ -80,5 +79,3 @@ static inline int is_self_sym(struct coord *c, cube_t x, int s)
 {
     return c->sym->self_syms[c->sym->get(x)] >> s & 1;
 }
-
-#endif

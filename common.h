@@ -1,5 +1,4 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #include <assert.h>
 #include <immintrin.h>
@@ -37,5 +36,3 @@ static int VERBOSE = 0;
 
 static int THREADS = 4;
 static int NO_INPUT = 0;
-
-#endif

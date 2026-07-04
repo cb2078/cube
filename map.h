@@ -1,5 +1,4 @@
-#ifndef MAP_H
-#define MAP_H
+#pragma once
 
 #define MAP_CAPACITY (1ll<<MAP_CAPACITY_LOG2)
 #define MAP_CAPACITY_LOG2 23
@@ -21,5 +20,3 @@ struct map
 static inline struct map *map_new(void);
 static inline int map_get(struct map *, long long);
 static inline void map_set(struct map *, long long, int);
-
-#endif

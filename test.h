@@ -1,5 +1,4 @@
-#ifndef TEST_H
-#define TEST_H
+#pragma once
 
 #include "moves.h"
 
@@ -140,5 +139,3 @@ static int solutions[][9] =
     {B3, U3, B2, L2, D3, F3, R,  D3, R2},
     {F,  D,  B,  R,  F,  D2, R2, U,  B3},
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef CUBE_H
-#define CUBE_H
+#pragma once
 
 #define NUM_CORNERS 8
 #define NUM_EDGES 12
@@ -57,5 +56,3 @@ static inline void set_orbit_fast(cube_t *, long long);
 static inline cube_t apply_sym(cube_t, int);
 static inline cube_t apply_move(cube_t, int);
 static inline cube_t apply_moves(cube_t, int *, int);
-
-#endif

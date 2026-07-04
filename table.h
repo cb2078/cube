@@ -1,5 +1,4 @@
-#ifndef TABLE_H
-#define TABLE_H
+#pragma once
 
 #define TABLE_ALIGN 16
 
@@ -9,4 +8,3 @@
 static inline unsigned *table_new(long long, int);
 static inline int table_get(unsigned *, int, long long);
 static inline void table_set(unsigned *, int, long long, int);
-#endif

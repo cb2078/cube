@@ -1,5 +1,4 @@
-#ifndef JOB_H
-#define JOB_H
+#pragma once
 
 static struct
 {
@@ -14,5 +13,3 @@ static struct
 
 static int job_thread(void *);
 static void job_dispatch(void (*f)(void *), void *, long long);
-
-#endif

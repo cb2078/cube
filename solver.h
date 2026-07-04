@@ -1,5 +1,4 @@
-#ifndef SOLVER_H
-#define SOLVER_H
+#pragma once
 
 #include "coord.h"
 #include "cube.h"
@@ -56,5 +55,3 @@ static inline int h_phase2(cube_t x)
     ASSERT(in_H(x));
     return MIN(table_get(coord_phase2.table, coord_phase2.bits, get_phase2(x)), MAX_DEPTH);
 }
-
-#endif
