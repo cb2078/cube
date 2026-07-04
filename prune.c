@@ -68,7 +68,7 @@ static struct map *fill_prune_map(void)
 {
     struct coord *c = &coord_phase1_full;
     struct map *map = map_new();
-    map_set(map, get_phase1_full(new_cube()), 0);
+    map_set(map, get_phase1_full(new_cube()), EMPTY_MOVE, 0);
     for (int depth=1; depth<=MAP_DEPTH; ++depth)
         for (long long i=0; i<MAP_CAPACITY; ++i)
         {
@@ -80,9 +80,16 @@ static struct map *fill_prune_map(void)
                     {
                         if (!is_self_sym(c, x, s))
                             continue;
-                        long long k = get_phase1_full(apply_sym(x, s));
+                        cube_t y = apply_sym(x, s);
+                        long long k = get_phase1_full(y);
                         if (map_get(map, k) == MAP_VAL_MAX)
-                            map_set(map, k, depth);
+                        {
+                            // transform the move by the symmetry
+                            int move = sym_moves[s][m];
+                            int sym = coord_phase1_full.sym->info[get_co_csep(y)].sym;
+                            // transform the move by the symmetry the brings y to its representant
+                            map_set(map, k, sym_moves[sym][move], depth);
+                        }
                     }
                 }
             if ((i+MAP_CAPACITY*(depth-1))%(MAP_DEPTH*MAP_CAPACITY/1000)==0)
@@ -98,14 +105,14 @@ static void fill_prune_table_dfs(void *_)
     struct fill_prune_table_arg *arg = _;
     struct coord *c = &coord_phase1;
 
-    void dfs(cube_t x, int start_depth)
+    void dfs(cube_t x, int move, int start_depth)
     {
         struct search_node stack[256];
         struct search_node *top = stack;
 
         void push(cube_t x, int move, int depth)
         {
-            int class = get_phase1(x)%c->sym->classes;
+            int class = get_phase1(x)%c->sym->classes; // TODO this is wrong
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
             {
@@ -124,8 +131,15 @@ static void fill_prune_table_dfs(void *_)
                 depth <= map_get(arg->map, get_phase1_full(x)))
                 *top++ = (struct search_node){x, move, depth};
         }
-
-        push(x, EMPTY_MOVE, start_depth);
+        
+        ASSERT(move != EMPTY_MOVE);
+        if (move_side(move)>0)
+        {
+            int s = 11;
+            x = apply_sym(x, s);
+            move = sym_moves[s][move];
+        }
+        push(x, move, start_depth);
         while (top>stack)
         {
             struct search_node cur = *--top;
@@ -139,7 +153,7 @@ static void fill_prune_table_dfs(void *_)
     for (int i=start; i<end; ++i)
     {
         if (arg->map->data[i].val <= MAP_DEPTH)
-            dfs(set_phase1_full(arg->map->data[i].key), arg->map->data[i].val);
+            dfs(set_phase1_full(arg->map->data[i].key), arg->map->data[i].move, arg->map->data[i].val);
         if (arg->thread_id==0 && i%(end/10000)==0)
             fprintf(stderr, "\rcompletion=%.2f%%", 100.0*i/end);
     }

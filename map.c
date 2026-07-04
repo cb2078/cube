@@ -32,11 +32,12 @@ static inline int map_get(struct map *m, long long k)
     return m->data[i].val;
 }
 
-static inline void map_set(struct map *m, long long k, int v)
+static inline void map_set(struct map *m, long long k, int move, int v)
 {
     ASSERT(v != MAP_VAL_MAX);
     int i = map_index(m, k);
     m->data[i].key = k;
+    m->data[i].move = move;
     m->data[i].val = v;
     m->count++;
 }
