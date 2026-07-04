@@ -15,24 +15,23 @@ static_assert(1<<SYM_BITS >= NUM_SYMS && 1<<SYM_BITS-1 < NUM_SYMS);
 #define ESEP_MAX (choose[12][4]*choose[8][4])
 #define CP_MAX fact[8]
 #define EP_MAX fact[12]
-#define ORBIT_MAX (12*24*24*24*24)
-#define PARTIAL_EO_MAX (1<<EO_VARIANT)
 
 #define CO_CSEP_MAX (CO_MAX*CSEP_MAX)
 #define EO_ESEP_MAX (EO_MAX*ESEP_MAX)
-#define PARTIAL_EO_ESEP_MAX (PARTIAL_EO_MAX*ESEP_MAX)
 
 #define CO_CSEP_CLASSES 3393ll
 #define ORBIT_CLASSES 85556ll
-static_assert(ORBIT_CLASSES < 1<<INFO_BITS-SYM_BITS);
 
-struct sym_coord
+#define SYM_COORD_NAME "co_csep"
+#define SYM_COORD_CLASSES CO_CSEP_CLASSES
+#define SYM_COORD_MAX CO_CSEP_MAX
+static_assert(SYM_COORD_CLASSES < 1<<INFO_BITS-SYM_BITS);
+
+#define COORD_NAME ""
+#define COORD_MAX (SYM_COORD_CLASSES*(ESEP_MAX<<EO_VARIANT))
+
+static struct 
 {
-    char *name;
-    long long (*get)(cube_t);
-    cube_t (*set)(long long);
-    long long max;
-    long long classes;
     struct
     {
         unsigned class: INFO_BITS-SYM_BITS;
@@ -40,42 +39,25 @@ struct sym_coord
     } *info;
     int *to_rep;
     long long *self_syms;
-};
+} sym_coord;
 
-struct coord
+static struct
 {
-    char *name;
-    long long max;
-    struct sym_coord *sym;
     unsigned *table;
     int bits;
-};
+} coord;
 
-static struct coord coord_phase1;
-static struct coord coord_phase1_full;
-static struct coord coord_phase2;
-static struct coord coord_phase2_full;
+static inline long long get_sym_coord(cube_t);
+static inline cube_t set_sym_coord(long long);
+static inline long long get_coord(cube_t, int);
+static inline cube_t set_coord(long long, int);
 
-static inline long long get_phase1(cube_t);
-static inline cube_t set_phase1(long long);
-static inline long long get_phase1_full(cube_t);
-static inline cube_t set_phase1_full(long long);
-static inline long long get_phase2(cube_t);
-static inline cube_t set_phase2(long long);
+static void init_sym(void);
+static void init_coord(void);
 
-static void init_sym(struct sym_coord *c);
-static void init_coord(struct coord *c, void (*fill_prune_table)(void));
+static int EO_VARIANT;
 
-static int EO_VARIANT = -1;
-
-static inline void set_eo_variant(int v)
+static inline int is_self_sym(cube_t x, int s)
 {
-    ASSERT(v >= 0 && v < NUM_EDGES);
-    EO_VARIANT = v;
-    coord_phase1.max = coord_phase1.sym->classes * PARTIAL_EO_ESEP_MAX;
-}
-
-static inline int is_self_sym(struct coord *c, cube_t x, int s)
-{
-    return c->sym->self_syms[c->sym->get(x)] >> s & 1;
+    return sym_coord.self_syms[get_sym_coord(x)] >> s & 1;
 }

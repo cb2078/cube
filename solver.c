@@ -49,7 +49,7 @@ static int search(cube_t x, int *path, int move, int start_depth, int max_depth)
 
     void push(cube_t x, cube_t y, int move, int depth)
     {
-        int f = MAX(h_phase1(x), h_phase1(y)) + depth;
+        int f = MAX(h(x), h(y)) + depth;
         if (f > max_depth)
             min = MIN(min, f);
         else

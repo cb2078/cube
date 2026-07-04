@@ -22,9 +22,8 @@ struct fill_prune_table_arg
     struct map *map;
 };
 
-static void fill_sym_table(struct sym_coord *c);
-static void fill_prune_table_1(void);
-static void fill_prune_table_2(void);
+static void fill_sym_table(void);
+static void fill_prune_table(void);
 
 static int prune_base[12] =
 {

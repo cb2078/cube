@@ -7,7 +7,6 @@
 #include "map.h"
 #include "moves.h"
 #include "prune.h"
-#include "queue.h"
 #include "solver.h"
 #include "table.h"
 #include "test.h"
@@ -19,7 +18,6 @@
 #include "map.c"
 #include "moves.c"
 #include "prune.c"
-#include "queue.c"
 #include "solver.c"
 #include "table.c"
 #include "test.c"
@@ -169,7 +167,7 @@ int main(int argc, char **argv)
             case 'e':
                 if (val < 0 && val > 11)
                     ERROR("invalid EO variant '%d'\n", val);
-                set_eo_variant(val);
+                EO_VARIANT = val;
                 break;
             case 'h':
                 help();
@@ -194,8 +192,6 @@ int main(int argc, char **argv)
             default:
                 UNREACHABLE();
         }
-    if (EO_VARIANT == -1)
-        set_eo_variant(0);
     
     sem_init(&pool.sem_worker, 0, 0);
     sem_init(&pool.sem_owner, 0, 0);
@@ -209,10 +205,8 @@ int main(int argc, char **argv)
 #else
     LOG("build mode: RELEASE\n");
 #endif
-    init_coord(&coord_phase1, fill_prune_table_1);
-#ifdef USE_PHASE2
-    init_coord(&coord_phase2, fill_prune_table_2);
-#endif
+    init_sym();
+    init_coord();
     if (NO_INPUT)
     {
     }

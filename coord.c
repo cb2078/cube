@@ -1,19 +1,9 @@
-#define SYM_COORD(NAME, MAX, CLASSES)\
-    static struct sym_coord sym_coord_##NAME =\
-    {\
-        .name = #NAME,\
-        .get = get_##NAME,\
-        .set = set_##NAME,\
-        .max = MAX,\
-        .classes = CLASSES,\
-    };
-
-static inline long long get_co_csep(cube_t x)
+static inline long long get_sym_coord(cube_t x)
 {
     return get_co(x) * CSEP_MAX + get_csep(x);
 }
 
-static inline cube_t set_co_csep(long long r)
+static inline cube_t set_sym_coord(long long r)
 {
     cube_t x = new_cube();
     set_csep(&x, r % CSEP_MAX);
@@ -21,103 +11,45 @@ static inline cube_t set_co_csep(long long r)
     return x;
 }
 
-#define get_orbit get_orbit_fast
-
-static inline cube_t set_orbit(long long r)
+static inline long long get_coord(cube_t x, int i)
 {
-    cube_t x = new_cube();
-    set_orbit_fast(&x, r);
-    return x;
+    long long r = get_sym_coord(x);
+    x = apply_sym(x, sym_coord.info[r].sym);
+    r = sym_coord.info[r].class;
+    return r * (ESEP_MAX<<i) + (get_eo(x) & (1<<i)-1) * ESEP_MAX + get_esep(x);
 }
 
-SYM_COORD(co_csep, CO_CSEP_MAX, CO_CSEP_CLASSES);
-SYM_COORD(orbit, ORBIT_MAX, ORBIT_CLASSES);
+static inline cube_t set_coord(long long r, int i)
+{
+    cube_t x = set_sym_coord(sym_coord.to_rep[r / (ESEP_MAX<<i)]);
+    set_esep(&x, r % ESEP_MAX);
+    set_eo(&x, r / ESEP_MAX & (1<<i)-1);
+    return x;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define COORD(NAME, SYM, SYM_CLASSES, RAW, RAW_MAX, BITS)\
-    static struct coord coord_##NAME =\
-    {\
-        .name = #NAME,\
-        .max = SYM_CLASSES * RAW_MAX,\
-        .sym = &sym_coord_##SYM,\
-        .bits = BITS,\
-    };\
-
-static inline long long get_phase1(cube_t x)
-{
-    long long r = get_co_csep(x);
-    x = apply_sym(x, coord_phase1.sym->info[r].sym);
-    r = coord_phase1.sym->info[r].class;
-    return r * PARTIAL_EO_ESEP_MAX + (get_eo(x) & (PARTIAL_EO_MAX-1)) * ESEP_MAX + get_esep(x);
-}
-
-static inline cube_t set_phase1(long long r)
-{
-    cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / PARTIAL_EO_ESEP_MAX]);
-    set_esep(&x, r % ESEP_MAX);
-    set_eo(&x, r % PARTIAL_EO_ESEP_MAX / ESEP_MAX);
-    return x;
-}
-
-static inline long long get_phase1_full(cube_t x)
-{
-    long long r = get_co_csep(x);
-    x = apply_sym(x, coord_phase1.sym->info[r].sym);
-    r = coord_phase1.sym->info[r].class;
-    return r * EO_ESEP_MAX + get_eo(x) * ESEP_MAX + get_esep(x);
-}
-
-static inline cube_t set_phase1_full(long long r)
-{
-    cube_t x = set_co_csep(coord_phase1.sym->to_rep[r / EO_ESEP_MAX]);
-    set_esep(&x, r % ESEP_MAX);
-    set_eo(&x, r % EO_ESEP_MAX / ESEP_MAX);
-    return x;
-}
-
-static inline long long get_phase2(cube_t x)
-{
-    long long r = get_orbit(x);
-    x = apply_sym(x, coord_phase2.sym->info[r].sym);
-    r = coord_phase2.sym->info[r].class;
-    return r * EO_MAX + get_eo(x);
-}
-
-static inline cube_t set_phase2(long long r)
-{
-    cube_t x = set_orbit(coord_phase2.sym->to_rep[r / EO_MAX]);
-    set_eo(&x, r % EO_MAX);
-    return x;
-}
-
-COORD(phase1, co_csep, CO_CSEP_CLASSES, partial_eo_esep, 0, 2);
-COORD(phase1_full, co_csep, CO_CSEP_CLASSES, eo_esep, EO_ESEP_MAX, 2);
-COORD(phase2, orbit, ORBIT_CLASSES, eo, EO_MAX, 8);
-
-////////////////////////////////////////////////////////////////////////////////
-
-static void init_sym(struct sym_coord *c)
+static void init_sym(void)
 {
     FILE *fp;
     char filename[256];
-    sprintf(filename, "%s.bin", c->name);
-    c->to_rep = malloc(sizeof(int)*c->classes);
-    c->info = malloc(INFO_BITS/8*c->max);
-    c->self_syms = malloc(sizeof(long long)*c->max);
+    sprintf(filename, "%s.bin", SYM_COORD_NAME);
+    sym_coord.to_rep = malloc(sizeof(int)*SYM_COORD_CLASSES);
+    sym_coord.info = malloc(INFO_BITS/8*SYM_COORD_MAX);
+    sym_coord.self_syms = malloc(sizeof(long long)*SYM_COORD_MAX);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {
-        fread(c->to_rep, sizeof(int)*c->classes, 1, fp);
-        fread(c->info, 4*c->max, 1, fp);
-        fread(c->self_syms, sizeof(long long)*c->max, 1, fp);
+        fread(sym_coord.to_rep, sizeof(int)*SYM_COORD_CLASSES, 1, fp);
+        fread(sym_coord.info, 4*SYM_COORD_MAX, 1, fp);
+        fread(sym_coord.self_syms, sizeof(long long)*SYM_COORD_MAX, 1, fp);
         LOG("read '%s'\n", filename);
     }
     else if ((fp = fopen(filename, "wb")))
     {
-        fill_sym_table(c);
-        fwrite(c->to_rep, sizeof(int)*c->classes, 1, fp);
-        fwrite(c->info, 4*c->max, 1, fp);
-        fwrite(c->self_syms, sizeof(long long)*c->max, 1, fp);
+        fill_sym_table();
+        fwrite(sym_coord.to_rep, sizeof(int)*SYM_COORD_CLASSES, 1, fp);
+        fwrite(sym_coord.info, 4*SYM_COORD_MAX, 1, fp);
+        fwrite(sym_coord.self_syms, sizeof(long long)*SYM_COORD_MAX, 1, fp);
         LOG("wrote '%s'\n", filename);
     }
     else
@@ -127,24 +59,23 @@ static void init_sym(struct sym_coord *c)
     fclose(fp);
 }
 
-static void init_coord(struct coord *c, void (*fill_prune_table)(void))
+static void init_coord(void)
 {
-    init_sym(c->sym);
-
-    long long table_max = c->bits==2 ? PRUNE_EXT_62(c->max) : c->max;
+    long long table_max = PRUNE_EXT_62(COORD_MAX);
     FILE *fp;
     char filename[256];
-    snprintf(filename, sizeof(filename), c==&coord_phase1?"%se%d.bin":"%s.bin", c->name, EO_VARIANT);
-    c->table = table_new(table_max, c->bits);
+    snprintf(filename, sizeof(filename), "%se%d.bin", COORD_NAME, EO_VARIANT);
+    coord.bits = 2;
+    coord.table = table_new(table_max, coord.bits);
     if (!NO_INPUT && (fp = fopen(filename, "rb")))
     {
-        fread(c->table, TABLE_SIZE(table_max, c->bits), 1, fp);
+        fread(coord.table, TABLE_SIZE(table_max, coord.bits), 1, fp);
         LOG("read '%s'\n", filename);
     }
     else if ((fp = fopen(filename, "wb")))
     {
         fill_prune_table();
-        fwrite(c->table, TABLE_SIZE(table_max, c->bits), 1, fp);
+        fwrite(coord.table, TABLE_SIZE(table_max, coord.bits), 1, fp);
         LOG("wrote '%s'\n", filename);
     }
     else
