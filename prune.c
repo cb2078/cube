@@ -112,7 +112,7 @@ static void fill_prune_table_dfs(void *_)
 
         void push(cube_t x, int move, int depth)
         {
-            int class = get_phase1(x)%c->sym->classes; // TODO this is wrong
+            int class = get_phase1(x)/PARTIAL_EO_ESEP_MAX;
             mtx_lock(&arg->mutexes[class]);
             for (int s=0; s<NUM_SYMS; ++s)
             {
