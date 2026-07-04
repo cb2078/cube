@@ -11,7 +11,7 @@ static void log_dist(struct coord *c, int bits, int base, int max_depth)
     if (!VERBOSE)
         return;
     long long dist[21] = {0}, sum = 0;
-    for (int i=0; i<c->max; ++i)
+    for (long long i=0; i<c->max; ++i)
         dist[table_get(c->table, bits, i)]++;
     for (int i=base; i<max_depth; ++i)
     {
