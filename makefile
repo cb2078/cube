@@ -1,6 +1,5 @@
 CC := gcc
 CFLAGS := -MMD -Werror -Wall -Wextra -Wno-unused-function -Wno-unused-variable -Wno-parentheses -march=native
-MAKEFLAGS := $(MAKEFLAGS) --jobs=$(shell nproc)
 EXE := main debug meta
 DEP := $(EXE:%=%.d)
 
